@@ -329,25 +329,6 @@
 
     </main>
 
-    <!-- Success Modal Overlay -->
-    <div id="successOverlay" class="fixed inset-0 z-[100] bg-slate-950/80 backdrop-blur-sm hidden items-center justify-center p-4">
-        <div class="bg-slate-800 border border-slate-700 rounded-3xl p-8 max-w-sm w-full text-center shadow-2xl animate-enter">
-            <div class="mx-auto w-20 h-20 bg-emerald-900/30 rounded-full flex items-center justify-center mb-6 border border-emerald-800/50">
-                <i class="ph-bold ph-check text-4xl text-emerald-400"></i>
-            </div>
-            <h3 class="text-2xl font-bold text-slate-100 mb-2">Logged Successfully</h3>
-            <p class="text-slate-400 mb-8">Your command center has been updated.</p>
-            <div class="space-y-3">
-                <button onclick="resetLogForm()" class="w-full bg-slate-900 border border-slate-700 text-slate-100 font-bold py-4 rounded-xl active:scale-[0.98] transition-transform">
-                    Log Another
-                </button>
-                <button onclick="closeSuccessAndGoHome()" class="w-full bg-emerald-600 text-white font-bold py-4 rounded-xl active:scale-[0.98] transition-transform">
-                    Done
-                </button>
-            </div>
-        </div>
-    </div>
-
     <!-- Wipe Confirmation Modal -->
     <div id="wipeOverlay" class="fixed inset-0 z-[100] bg-slate-950/80 backdrop-blur-sm hidden items-center justify-center p-4">
         <div class="bg-slate-800 border border-slate-700 rounded-3xl p-8 max-w-sm w-full text-center shadow-2xl animate-enter">
@@ -763,8 +744,10 @@
             // Add visual button feedback
             const btn = document.getElementById('btn-submit');
             const originalText = btn.innerText;
-            btn.innerText = "Saving...";
-            btn.classList.add('opacity-80');
+            const originalClasses = btn.className;
+            
+            btn.innerText = editingTxId ? "Updating..." : "Saving...";
+            btn.classList.add('opacity-80', 'pointer-events-none');
             
             // Slight delay so the button press feels responsive
             setTimeout(() => {
@@ -790,18 +773,19 @@
                 if (isNaN(amount) || amount <= 0) {
                     showToast('Please enter a valid positive amount.', 'error');
                     btn.innerText = originalText;
-                    btn.classList.remove('opacity-80');
+                    btn.className = originalClasses;
                     return;
                 }
                 if (!description || (isPaid && !date) || (!isPaid && !dueDate)) {
                     showToast('Please fill all required fields.', 'error');
                     btn.innerText = originalText;
-                    btn.classList.remove('opacity-80');
+                    btn.className = originalClasses;
                     return;
                 }
 
                 // Generate ID safely (works perfectly offline and on local computer files)
                 const safeId = Date.now().toString(36) + Math.random().toString(36).substring(2);
+                const wasEdit = !!editingTxId;
 
                 if (editingTxId) {
                     // Update existing transaction
@@ -832,13 +816,15 @@
 
                 saveDataLocally();
                 
-                // Show Success Modal
-                document.getElementById('successOverlay').classList.remove('hidden');
-                document.getElementById('successOverlay').classList.add('flex');
+                // Success Animation & Auto-Redirect
+                btn.innerText = "Success! ✓";
+                btn.className = "w-full bg-emerald-500 text-white font-bold text-lg py-4 rounded-2xl shadow-lg shadow-emerald-900/20 transition-all pointer-events-none";
                 
-                // Reset button visuals
-                btn.innerText = originalText;
-                btn.classList.remove('opacity-80');
+                setTimeout(() => {
+                    resetLogForm();
+                    switchTab('dashboard');
+                    showToast(wasEdit ? 'Transaction Updated' : 'Logged Successfully', 'success');
+                }, 800); // Waits just under a second so you can see "Success!" before redirecting
                 
             }, 150); 
         }
@@ -937,21 +923,13 @@
             document.getElementById('billPaidSubText').className = 'text-xs text-blue-400/80';
             document.getElementById('billPaidToggleContainer').className = 'bg-blue-900/20 border border-blue-800/50 rounded-2xl p-4 flex items-center justify-between cursor-pointer';
 
-            updateFormUI();
+            updateFormUI(); // This automatically resets the Save button's colors back to normal
             
             // Revert Edit UI Buttons
             const btnSubmit = document.getElementById('btn-submit');
-            btnSubmit.classList.remove('w-2/3');
+            btnSubmit.classList.remove('w-2/3', 'pointer-events-none');
             btnSubmit.classList.add('w-full');
             document.getElementById('btn-cancel-edit').classList.add('hidden');
-
-            document.getElementById('successOverlay').classList.add('hidden');
-            document.getElementById('successOverlay').classList.remove('flex');
-        }
-
-        function closeSuccessAndGoHome() {
-            resetLogForm();
-            switchTab('dashboard');
         }
 
         /* --- PROTOTYPE SHARING --- */
