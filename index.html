@@ -76,6 +76,94 @@
     <!-- Toast Notification Container -->
     <div id="toast-container" class="fixed top-4 left-0 right-0 z-50 flex flex-col items-center gap-2 pointer-events-none px-4"></div>
 
+    <!-- ========================================== -->
+    <!-- ONBOARDING OVERLAY                         -->
+    <!-- ========================================== -->
+    <div id="onboardingOverlay" class="fixed inset-0 z-[200] bg-slate-950 flex flex-col hidden animate-enter">
+        <div class="flex-1 overflow-y-auto px-6 py-12 flex flex-col justify-center max-w-lg mx-auto w-full relative">
+            
+            <!-- Step 1: Welcome & Concept -->
+            <div id="onboardStep1" class="flex flex-col items-center text-center space-y-6 animate-enter">
+                <div class="w-24 h-24 bg-emerald-900/30 rounded-full flex items-center justify-center border border-emerald-800/50 shadow-[0_0_40px_rgba(52,211,153,0.15)]">
+                    <i class="ph-fill ph-anchor text-5xl text-emerald-400"></i>
+                </div>
+                <div>
+                    <h2 class="text-3xl font-extrabold text-slate-100 mb-3">Welcome to<br><span class="text-emerald-400">Tight Ship</span></h2>
+                    <p class="text-slate-400 text-lg leading-relaxed">Your offline financial command center. We focus on one crucial number: your <strong class="text-slate-200">True Safe to Spend</strong>.</p>
+                </div>
+                <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 text-left w-full shadow-lg">
+                    <p class="text-sm text-slate-400 mb-2">How it works:</p>
+                    <ul class="space-y-3">
+                        <li class="flex items-start gap-3 text-sm text-slate-300">
+                            <i class="ph-fill ph-wallet text-emerald-400 text-xl shrink-0 mt-0.5"></i>
+                            <span>It tracks your actual <strong>Cash on Hand</strong>.</span>
+                        </li>
+                        <li class="flex items-start gap-3 text-sm text-slate-300">
+                            <i class="ph-fill ph-minus-circle text-rose-400 text-xl shrink-0 mt-0.5"></i>
+                            <span>It automatically subtracts <strong>All Upcoming Bills</strong>.</span>
+                        </li>
+                        <li class="flex items-start gap-3 text-sm text-slate-300">
+                            <i class="ph-fill ph-shield-check text-blue-400 text-xl shrink-0 mt-0.5"></i>
+                            <span>Leaving you with a safe number you can spend without guilt!</span>
+                        </li>
+                    </ul>
+                </div>
+                <button onclick="goToOnboardStep(2)" class="w-full bg-emerald-600 text-white font-bold text-lg py-4 rounded-2xl shadow-lg shadow-emerald-900/20 active:scale-[0.98] transition-all mt-8">
+                    Get Started <i class="ph-bold ph-arrow-right ml-1"></i>
+                </button>
+            </div>
+
+            <!-- Step 2: Starting Balance -->
+            <div id="onboardStep2" class="flex flex-col items-center text-center space-y-6 hidden animate-enter">
+                <div class="w-24 h-24 bg-blue-900/30 rounded-full flex items-center justify-center border border-blue-800/50">
+                    <i class="ph-fill ph-piggy-bank text-5xl text-blue-400"></i>
+                </div>
+                <div>
+                    <h2 class="text-3xl font-extrabold text-slate-100 mb-3">Set Your Baseline</h2>
+                    <p class="text-slate-400 text-lg">To make the math work, what is your current bank account balance right now?</p>
+                </div>
+                <div class="w-full mt-4">
+                    <div class="relative">
+                        <span class="absolute left-6 top-1/2 -translate-y-1/2 text-slate-500 font-bold text-3xl">$</span>
+                        <input type="number" id="onboardBalance" step="0.01" min="0" class="w-full bg-slate-900 border border-slate-700 rounded-3xl py-6 pl-14 pr-6 text-4xl font-black text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all placeholder-slate-700 text-center" placeholder="0.00">
+                    </div>
+                </div>
+                <div class="w-full flex flex-col gap-3 mt-8">
+                    <button onclick="saveStartingBalance()" class="w-full bg-blue-600 text-white font-bold text-lg py-4 rounded-2xl shadow-lg shadow-blue-900/20 active:scale-[0.98] transition-all">
+                        Set Starting Balance
+                    </button>
+                    <button onclick="goToOnboardStep(3)" class="w-full py-4 text-slate-500 font-bold text-sm active:text-slate-300">
+                        Skip / Start at Zero
+                    </button>
+                </div>
+            </div>
+
+            <!-- Step 3: Connect Drive -->
+            <div id="onboardStep3" class="flex flex-col items-center text-center space-y-6 hidden animate-enter">
+                <div class="w-24 h-24 bg-amber-900/30 rounded-full flex items-center justify-center border border-amber-800/50">
+                    <i class="ph-fill ph-google-drive-logo text-5xl text-amber-400"></i>
+                </div>
+                <div>
+                    <h2 class="text-3xl font-extrabold text-slate-100 mb-3">Secure Your Ledger</h2>
+                    <p class="text-slate-400 text-lg">Tight Ship is 100% private. Your data never touches our servers. It lives only on your phone.</p>
+                </div>
+                <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 text-left w-full shadow-lg">
+                    <p class="text-sm text-slate-300 mb-0">Connect your Google Drive now to create an automatic, hidden backup folder. If you lose your phone, you won't lose your ledger.</p>
+                </div>
+                <div class="w-full flex flex-col gap-3 mt-8">
+                    <button onclick="handleAuthClick()" class="w-full bg-slate-100 text-slate-950 font-black text-lg py-4 rounded-2xl shadow-lg active:scale-[0.98] transition-all flex items-center justify-center gap-2">
+                        <i class="ph-bold ph-link text-xl"></i> Connect Google Drive
+                    </button>
+                    <button onclick="finishOnboarding()" class="w-full py-4 text-slate-500 font-bold text-sm active:text-slate-300">
+                        I'll do this later
+                    </button>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+
     <!-- Main Application Area -->
     <main class="flex-1 overflow-y-auto pb-24 w-full max-w-lg mx-auto relative bg-slate-950">
         
@@ -84,7 +172,7 @@
         <!-- ========================================== -->
         <section id="tab-dashboard" class="tab-content active p-4 space-y-6">
             <header class="pt-4 pb-2 relative flex items-center justify-center">
-                <h1 class="text-xl font-bold text-slate-500 tracking-wide uppercase mb-1">Tight Ship</h1>
+                <h1 class="text-xl font-bold text-slate-500 tracking-wide uppercase mb-1 flex items-center gap-2"><i class="ph-fill ph-anchor"></i> Tight Ship</h1>
                 <!-- PWA Install Button -->
                 <button id="installAppBtn" class="hidden absolute right-0 top-2 p-2 text-emerald-400 hover:text-emerald-300 transition-colors rounded-full bg-emerald-900/20 border border-emerald-800/50 shadow-sm" onclick="installApp()" title="Install App to Home Screen">
                     <i class="ph-bold ph-download-simple text-lg"></i>
@@ -429,7 +517,53 @@
             document.getElementById('input-due-date').valueAsDate = new Date();
             updateDashboard();
             updateFormUI();
+            checkOnboarding();
         });
+
+        /* --- ONBOARDING LOGIC --- */
+        function checkOnboarding() {
+            if (!localStorage.getItem('tightShipOnboarded')) {
+                document.getElementById('onboardingOverlay').classList.remove('hidden');
+            }
+        }
+
+        function goToOnboardStep(step) {
+            document.getElementById('onboardStep1').classList.add('hidden');
+            document.getElementById('onboardStep2').classList.add('hidden');
+            document.getElementById('onboardStep3').classList.add('hidden');
+            
+            document.getElementById(`onboardStep${step}`).classList.remove('hidden');
+        }
+
+        function saveStartingBalance() {
+            const rawAmount = document.getElementById('onboardBalance').value;
+            const amount = parseFloat(rawAmount) || 0;
+            
+            if (amount > 0) {
+                const safeId = (typeof crypto !== 'undefined' && crypto.randomUUID) ? crypto.randomUUID() : 'tx_' + Date.now().toString(36) + Math.random().toString(36).substring(2, 9);
+                const newTx = {
+                    id: safeId,
+                    type: 'income',
+                    amount: amount,
+                    description: 'Starting Balance',
+                    date: new Date().toISOString().split('T')[0],
+                    isPaid: true,
+                    dueDate: null,
+                    receipt: null,
+                    createdAt: new Date().toISOString()
+                };
+                transactions.push(newTx);
+                saveDataLocally();
+            }
+            goToOnboardStep(3);
+        }
+
+        function finishOnboarding() {
+            localStorage.setItem('tightShipOnboarded', 'true');
+            document.getElementById('onboardingOverlay').classList.add('hidden');
+            updateDashboard();
+            showToast("Welcome aboard!", "success");
+        }
 
         /* --- NAVIGATION --- */
         function switchTab(tabId) {
@@ -652,11 +786,10 @@
                 });
             }
 
-            // Sync Banner Logic (CRITICAL FIX APPLIED HERE)
+            // Sync Banner Logic
             const b = document.getElementById('sync-warning-banner');
             const hideBanner = localStorage.getItem('hideTightShipSyncBanner') === 'true';
             
-            // Removed undefined !driveFileId variable check that was causing silent crash
             if (!accessToken && !hideBanner) {
                 b.classList.remove('hidden');
             } else {
@@ -830,7 +963,6 @@
                     return;
                 }
 
-                // Fallback robust UUID ID generation
                 const safeId = (typeof crypto !== 'undefined' && crypto.randomUUID) ? crypto.randomUUID() : 'tx_' + Date.now().toString(36) + Math.random().toString(36).substring(2, 9);
                 const wasEdit = !!editingTxId;
 
@@ -854,16 +986,13 @@
                     transactions.push(newTx);
                 }
 
-                // Robust Error Catching Block
                 try {
-                    saveDataLocally(); // This updates the dashboard logic safely now
+                    saveDataLocally(); 
                     
-                    // Show Success Modal instead of auto-redirecting
                     document.getElementById('successOverlayTitle').innerText = wasEdit ? "Update Successful" : "Logged Successfully";
                     document.getElementById('successOverlay').classList.remove('hidden');
                     document.getElementById('successOverlay').classList.add('flex');
                     
-                    // Reset the save button text/visuals behind the modal
                     btn.innerText = originalText;
                     btn.className = originalClasses;
                     
@@ -985,6 +1114,29 @@
             document.getElementById('btn-cancel-edit').classList.add('hidden');
         }
 
+        /* --- PWA INSTALL LOGIC --- */
+        let deferredPrompt;
+
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            document.getElementById('installAppBtn').classList.remove('hidden');
+        });
+
+        window.addEventListener('appinstalled', (evt) => {
+            document.getElementById('installAppBtn').classList.add('hidden');
+            showToast('App installed successfully!', 'success');
+        });
+
+        async function installApp() {
+            if (deferredPrompt) {
+                deferredPrompt.prompt();
+                const { outcome } = await deferredPrompt.userChoice;
+                deferredPrompt = null;
+                document.getElementById('installAppBtn').classList.add('hidden');
+            }
+        }
+
         /* --- PROTOTYPE SHARING --- */
         function shareApp() {
             if (navigator.share) {
@@ -1045,37 +1197,6 @@
             showToast('Device memory wiped clean.', 'success');
         }
 
-        /* --- PWA INSTALL LOGIC --- */
-        let deferredPrompt;
-
-        window.addEventListener('beforeinstallprompt', (e) => {
-            // Prevent the mini-infobar from appearing on mobile
-            e.preventDefault();
-            // Stash the event so it can be triggered later.
-            deferredPrompt = e;
-            // Update UI notify the user they can install the PWA
-            document.getElementById('installAppBtn').classList.remove('hidden');
-        });
-
-        window.addEventListener('appinstalled', (evt) => {
-            // Hide the button once installed
-            document.getElementById('installAppBtn').classList.add('hidden');
-            showToast('App installed successfully!', 'success');
-        });
-
-        async function installApp() {
-            if (deferredPrompt) {
-                // Show the native install prompt
-                deferredPrompt.prompt();
-                // Wait for the user to respond to the prompt
-                const { outcome } = await deferredPrompt.userChoice;
-                
-                // We've used the prompt, and can't use it again, throw it away
-                deferredPrompt = null;
-                document.getElementById('installAppBtn').classList.add('hidden');
-            }
-        }
-
         /* --- GOOGLE DRIVE SYNC LOGIC --- */
         function gapiLoaded() {
             gapi.load('client', initializeGapiClient);
@@ -1100,6 +1221,11 @@
                         accessToken = tokenResponse.access_token;
                         updateDriveUI(true);
                         showToast('Connected to Google Drive', 'success');
+                        
+                        // If they connected during onboarding, finish onboarding
+                        if (!localStorage.getItem('tightShipOnboarded')) {
+                            finishOnboarding();
+                        }
                     }
                 },
             });
@@ -1110,18 +1236,14 @@
                 showToast('Developer Error: Missing Client ID in code.', 'error');
                 return;
             }
-            
-            // Safety check: Ensure Google scripts actually loaded and weren't blocked
             if (!tokenClient) {
-                showToast('Google services are still loading or blocked by your browser. Please refresh or disable ad-blockers.', 'error');
+                showToast('Google services are still loading or blocked by your browser.', 'error');
                 return;
             }
-            
             if (typeof gapi === 'undefined' || !gapi.client) {
                 showToast('Google API is not ready. Please check your connection.', 'error');
                 return;
             }
-
             if (gapi.client.getToken() === null) {
                 tokenClient.requestAccessToken({prompt: 'consent'});
             } else {
