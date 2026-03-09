@@ -173,7 +173,7 @@
             </div>
 
             <!-- The Form -->
-            <form id="txForm" class="space-y-5" onsubmit="handleLogTransaction(event)">
+            <form id="txForm" class="space-y-5" onsubmit="handleLogTransaction(event); return false;">
                 
                 <!-- Amount -->
                 <div>
@@ -338,10 +338,10 @@
             <h3 class="text-2xl font-bold text-slate-100 mb-2">Are you absolutely sure?</h3>
             <p class="text-slate-400 mb-8 text-sm">This will delete all data on this device. If you haven't synced to Drive, it's gone forever.</p>
             <div class="flex gap-3">
-                <button onclick="closeWipePrompt()" class="flex-1 bg-slate-900 border border-slate-700 text-slate-100 font-bold py-3 rounded-xl active:scale-[0.98] transition-transform">
+                <button type="button" onclick="closeWipePrompt()" class="flex-1 bg-slate-900 border border-slate-700 text-slate-100 font-bold py-3 rounded-xl active:scale-[0.98] transition-transform">
                     Cancel
                 </button>
-                <button onclick="executeWipeData()" class="flex-1 bg-rose-600 text-white font-bold py-3 rounded-xl active:scale-[0.98] transition-transform">
+                <button type="button" onclick="executeWipeData()" class="flex-1 bg-rose-600 text-white font-bold py-3 rounded-xl active:scale-[0.98] transition-transform">
                     Yes, Wipe It
                 </button>
             </div>
@@ -440,7 +440,6 @@
         }
 
         /* --- UTILS (FAULT-TOLERANT) --- */
-        // Bulletproof Date Formatter: Ignores broken data from old tests
         function formatDateUI(dateStr) {
             if (!dateStr || typeof dateStr !== 'string') return '--';
             const parts = dateStr.split('-');
@@ -615,10 +614,12 @@
                 });
             }
 
-            // Sync Banner Logic
+            // Sync Banner Logic (CRITICAL FIX APPLIED HERE)
             const b = document.getElementById('sync-warning-banner');
             const hideBanner = localStorage.getItem('hideTightShipSyncBanner') === 'true';
-            if (!accessToken && !driveFileId && !hideBanner) {
+            
+            // Removed undefined !driveFileId variable check that was causing silent crash
+            if (!accessToken && !hideBanner) {
                 b.classList.remove('hidden');
             } else {
                 b.classList.add('hidden');
@@ -791,7 +792,8 @@
                     return;
                 }
 
-                const safeId = Date.now().toString(36) + Math.random().toString(36).substring(2);
+                // Fallback robust UUID ID generation
+                const safeId = (typeof crypto !== 'undefined' && crypto.randomUUID) ? crypto.randomUUID() : 'tx_' + Date.now().toString(36) + Math.random().toString(36).substring(2, 9);
                 const wasEdit = !!editingTxId;
 
                 if (editingTxId) {
