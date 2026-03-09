@@ -109,6 +109,21 @@
                 <h3 id="cashOnHandAmount" class="text-2xl font-bold tracking-tight text-slate-100">$0.00</h3>
             </div>
 
+            <!-- Sync Warning Banner -->
+            <div id="sync-warning-banner" class="hidden bg-amber-50 border border-amber-200 p-4 rounded-2xl flex flex-col sm:flex-row gap-3 items-start sm:items-center justify-between shadow-sm">
+                <div class="flex gap-3 items-start">
+                    <div class="text-amber-600 mt-0.5"><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg></div>
+                    <div>
+                        <p class="text-sm font-bold text-amber-900">Backup Required</p>
+                        <p class="text-xs text-amber-700 font-medium">Connect to Google Drive to secure your data.</p>
+                    </div>
+                </div>
+                <div class="flex gap-2 w-full sm:w-auto mt-1 sm:mt-0">
+                    <button onclick="dismissSyncBanner()" class="px-3 py-2 text-amber-700 text-xs font-bold rounded-lg hover:bg-amber-100 transition-colors">Dismiss</button>
+                    <button onclick="switchTab('settings')" class="flex-1 sm:flex-none px-4 py-2 bg-amber-600 text-white text-xs font-bold rounded-lg shadow-sm hover:bg-amber-700 transition-colors text-center">Fix Now</button>
+                </div>
+            </div>
+
             <!-- Outstanding Bills Queue -->
             <div id="outstandingBillsContainer" class="hidden">
                 <h3 class="text-sm font-bold text-rose-400 uppercase tracking-wider mb-3 flex items-center gap-2">
@@ -165,7 +180,7 @@
                     <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Amount</label>
                     <div class="relative">
                         <span class="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 font-bold text-xl">$</span>
-                        <input type="number" id="txAmount" step="0.01" min="0" required class="w-full bg-slate-900 border border-slate-700 rounded-2xl py-4 pl-10 pr-4 text-xl font-bold text-slate-100 focus:outline-none focus:ring-2 focus:ring-slate-500 focus:border-transparent transition-all placeholder-slate-700" placeholder="0.00">
+                        <input type="number" id="txAmount" step="0.01" min="0.01" required class="w-full bg-slate-900 border border-slate-700 rounded-2xl py-4 pl-10 pr-4 text-xl font-bold text-slate-100 focus:outline-none focus:ring-2 focus:ring-slate-500 focus:border-transparent transition-all placeholder-slate-700" placeholder="0.00" onblur="if(this.value) this.value = Math.abs(parseFloat(this.value)).toFixed(2)">
                     </div>
                 </div>
 
@@ -218,8 +233,11 @@
                     </label>
                 </div>
 
-                <!-- Submit -->
-                <div class="pt-4">
+                <!-- Submit & Edit Actions -->
+                <div class="pt-4 flex gap-3">
+                    <button type="button" id="btn-cancel-edit" onclick="cancelEdit()" class="hidden w-1/3 bg-slate-800 border border-slate-700 text-slate-300 font-bold text-lg py-4 rounded-2xl shadow-lg active:scale-[0.98] transition-all">
+                        Cancel
+                    </button>
                     <button type="submit" id="btn-submit" class="w-full bg-emerald-600 text-white font-bold text-lg py-4 rounded-2xl shadow-lg shadow-emerald-900/20 active:scale-[0.98] transition-all">
                         Save Transaction
                     </button>
@@ -261,6 +279,22 @@
                     </button>
                     <button onclick="handleSignoutClick()" class="w-full text-sm text-slate-500 hover:text-slate-300 mt-2 py-2 underline transition-colors">
                         Disconnect Account
+                    </button>
+                </div>
+            </div>
+
+            <!-- Share Prototype -->
+            <div>
+                <h3 class="text-sm font-bold text-slate-500 uppercase tracking-wider mb-3 ml-1">Share App</h3>
+                <div class="bg-slate-800 rounded-2xl border border-slate-700 shadow-sm overflow-hidden flex flex-col">
+                    <button onclick="shareApp()" class="flex items-center gap-3 p-4 hover:bg-slate-700/50 active:bg-slate-700 transition-colors text-left w-full group">
+                        <div class="bg-slate-900 p-2 rounded-full text-blue-400 group-hover:text-blue-300 border border-slate-700">
+                            <i class="ph-bold ph-share-network text-lg"></i>
+                        </div>
+                        <div>
+                            <p class="font-bold text-slate-100">Share App Link</p>
+                            <p class="text-xs text-slate-400">Send this prototype to others</p>
+                        </div>
                     </button>
                 </div>
             </div>
@@ -372,6 +406,7 @@
         /* --- STATE --- */
         let transactions = JSON.parse(localStorage.getItem('tightShipTransactions')) || [];
         let currentBase64Receipt = null;
+        let editingTxId = null;
         let tokenClient;
         let accessToken = null;
 
@@ -506,14 +541,20 @@
                     else if (daysAway === 0) { urgencyClass = 'text-rose-400 font-bold'; urgencyText = 'Due Today'; }
 
                     const el = document.createElement('div');
-                    el.className = 'bg-slate-800 p-4 rounded-xl border border-rose-900/50 shadow-sm flex justify-between items-center';
+                    el.className = 'bg-slate-800 p-4 rounded-xl border border-rose-900/50 shadow-sm flex flex-col gap-3';
                     el.innerHTML = `
-                        <div>
-                            <p class="font-bold text-slate-100">${bill.description}</p>
-                            <p class="text-xs ${urgencyClass}">${urgencyText} (${formatDateUI(bill.dueDate)})</p>
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <p class="font-bold text-slate-100">${bill.description}</p>
+                                <p class="text-xs ${urgencyClass}">${urgencyText} (${formatDateUI(bill.dueDate)})</p>
+                            </div>
+                            <span class="font-bold text-rose-400 text-lg">${formatMoney(bill.amount)}</span>
                         </div>
-                        <div class="flex items-center gap-3">
-                            <span class="font-bold text-rose-400">${formatMoney(bill.amount)}</span>
+                        <div class="flex justify-between items-center pt-2 border-t border-slate-700/50">
+                            <div class="flex gap-2">
+                                <button onclick="editTx('${bill.id}')" class="p-2 text-slate-400 hover:text-slate-200 transition-colors"><i class="ph-bold ph-pencil-simple text-lg"></i></button>
+                                <button onclick="deleteTx('${bill.id}')" class="p-2 text-rose-500/80 hover:text-rose-400 transition-colors"><i class="ph-bold ph-trash text-lg"></i></button>
+                            </div>
                             <button onclick="payBill('${bill.id}')" class="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-bold active:bg-blue-700 shadow-sm flex items-center gap-1 transition-colors">
                                 <i class="ph-bold ph-check"></i> Pay
                             </button>
@@ -550,21 +591,36 @@
                     const borderClass = isLast ? '' : 'border-b border-slate-700/50';
 
                     const el = document.createElement('div');
-                    el.className = `p-4 flex justify-between items-center ${borderClass}`;
+                    el.className = `p-4 flex flex-col gap-2 ${borderClass}`;
                     el.innerHTML = `
-                        <div class="flex items-center gap-3">
-                            <div class="${bgIcon} p-2 rounded-full border border-slate-700/50">
-                                <i class="ph-fill ${icon} text-lg"></i>
+                        <div class="flex justify-between items-center">
+                            <div class="flex items-center gap-3">
+                                <div class="${bgIcon} p-2 rounded-full border border-slate-700/50">
+                                    <i class="ph-fill ${icon} text-lg"></i>
+                                </div>
+                                <div>
+                                    <p class="font-bold text-slate-100 leading-tight">${tx.description}</p>
+                                    <p class="text-xs text-slate-400 mt-0.5">${formatDateUI(tx.date || tx.dueDate)} ${tx.receipt ? '• <i class="ph-fill ph-image"></i>' : ''}</p>
+                                </div>
                             </div>
-                            <div>
-                                <p class="font-bold text-slate-100 leading-tight">${tx.description}</p>
-                                <p class="text-xs text-slate-400 mt-0.5">${formatDateUI(tx.date)} ${tx.receipt ? '• <i class="ph-fill ph-image"></i>' : ''}</p>
-                            </div>
+                            <span class="font-bold ${colorClass} text-right">${amountPrefix}${formatMoney(tx.amount)}</span>
                         </div>
-                        <span class="font-bold ${colorClass}">${amountPrefix}${formatMoney(tx.amount)}</span>
+                        <div class="flex justify-end gap-1 mt-1">
+                            <button onclick="editTx('${tx.id}')" class="p-1.5 text-slate-500 hover:text-slate-300 transition-colors"><i class="ph-bold ph-pencil-simple"></i></button>
+                            <button onclick="deleteTx('${tx.id}')" class="p-1.5 text-rose-500/60 hover:text-rose-400 transition-colors"><i class="ph-bold ph-trash"></i></button>
+                        </div>
                     `;
                     ledgerEl.appendChild(el);
                 });
+            }
+
+            // Sync Banner Logic
+            const b = document.getElementById('sync-warning-banner');
+            const hideBanner = localStorage.getItem('hideTightShipSyncBanner') === 'true';
+            if (!accessToken && !driveFileId && !hideBanner) {
+                b.classList.remove('hidden');
+            } else {
+                b.classList.add('hidden');
             }
         }
 
@@ -582,20 +638,17 @@
                 lblDesc.innerText = 'Source';
                 lblDate.innerText = 'Date Received';
                 document.getElementById('txDescription').placeholder = 'e.g. Freelance Client';
-                btn.innerText = "Save Income";
-                btn.className = "w-full bg-emerald-600 text-white font-bold text-lg py-4 rounded-2xl shadow-lg shadow-emerald-900/20 active:scale-[0.98] transition-all";
+                btn.innerText = editingTxId ? "Update Income" : "Save Income";
             } else if (type === 'spend') {
                 lblDesc.innerText = 'Vendor';
                 lblDate.innerText = 'Date Spent';
                 document.getElementById('txDescription').placeholder = 'e.g. Grocery Store';
-                btn.innerText = "Save Spending";
-                btn.className = "w-full bg-rose-600 text-white font-bold text-lg py-4 rounded-2xl shadow-lg shadow-rose-900/20 active:scale-[0.98] transition-all";
+                btn.innerText = editingTxId ? "Update Spending" : "Save Spending";
             } else if (type === 'bill') {
                 lblDesc.innerText = 'Biller';
                 document.getElementById('txDescription').placeholder = 'e.g. Electricity Co.';
                 toggleContainer.classList.remove('hidden');
-                btn.innerText = "Save Bill";
-                btn.className = "w-full bg-blue-600 text-white font-bold text-lg py-4 rounded-2xl shadow-lg shadow-blue-900/20 active:scale-[0.98] transition-all";
+                btn.innerText = editingTxId ? "Update Bill" : "Save Bill";
                 syncBillDateLabel(); 
             }
             
@@ -702,8 +755,9 @@
             e.preventDefault();
             
             const type = document.querySelector('input[name="txType"]:checked').value;
-            const amount = parseFloat(document.getElementById('txAmount').value);
-            const description = document.getElementById('txDescription').value;
+            const rawAmount = document.getElementById('txAmount').value;
+            const amount = parseFloat(rawAmount);
+            const description = document.getElementById('txDescription').value.trim();
             
             // Grabs correct date or dueDate variables based on bill status
             let date = document.getElementById('txDate').value;
@@ -718,30 +772,108 @@
                 }
             }
 
-            // Fallback validation
-            if (!amount || !description || (isPaid && !date) || (!isPaid && !dueDate)) {
+            // Fallback validation & Guardrails
+            if (isNaN(amount) || amount <= 0) {
+                showToast('Please enter a valid positive amount.', 'error');
+                return;
+            }
+            if (!description || (isPaid && !date) || (!isPaid && !dueDate)) {
                 showToast('Please fill all required fields.', 'error');
                 return;
             }
 
-            const newTx = {
-                id: crypto.randomUUID(),
-                type,
-                amount,
-                description,
-                date,
-                isPaid,
-                dueDate,
-                receipt: currentBase64Receipt,
-                createdAt: new Date().toISOString()
-            };
+            if (editingTxId) {
+                // Update existing transaction
+                const txIndex = transactions.findIndex(t => t.id === editingTxId);
+                if (txIndex > -1) {
+                    transactions[txIndex] = {
+                        ...transactions[txIndex],
+                        type, amount, description, date, isPaid, dueDate,
+                        receipt: currentBase64Receipt || transactions[txIndex].receipt,
+                        updatedAt: new Date().toISOString()
+                    };
+                }
+            } else {
+                // Create new transaction
+                const newTx = {
+                    id: crypto.randomUUID(),
+                    type,
+                    amount,
+                    description,
+                    date,
+                    isPaid,
+                    dueDate,
+                    receipt: currentBase64Receipt,
+                    createdAt: new Date().toISOString()
+                };
+                transactions.push(newTx);
+            }
 
-            transactions.push(newTx);
             saveDataLocally();
             
             // Show Success Modal
             document.getElementById('successOverlay').classList.remove('hidden');
             document.getElementById('successOverlay').classList.add('flex');
+        }
+
+        function editTx(id) {
+            const tx = transactions.find(t => t.id === id);
+            if (!tx) return;
+
+            editingTxId = id;
+            currentBase64Receipt = tx.receipt || null;
+
+            // Select the right radio button
+            document.querySelector(`input[name="txType"][value="${tx.type}"]`).checked = true;
+            updateFormUI(); // Triggers UI changes based on type
+
+            // Populate text/number fields
+            document.getElementById('txAmount').value = tx.amount;
+            document.getElementById('txDescription').value = tx.description;
+
+            // Handle date logic carefully
+            if (tx.type === 'bill') {
+                document.getElementById('txIsPaid').checked = tx.isPaid;
+                toggleBillPaid(); // Force UI update for the checkbox state
+                if (tx.isPaid) {
+                    document.getElementById('txDate').value = tx.date;
+                } else {
+                    document.getElementById('input-due-date').value = tx.dueDate;
+                }
+            } else {
+                document.getElementById('txDate').value = tx.date;
+            }
+
+            // Restore preview if there is a receipt
+            if (currentBase64Receipt) {
+                const preview = document.getElementById('receiptPreview');
+                preview.src = currentBase64Receipt;
+                preview.classList.remove('hidden');
+                document.getElementById('receiptPrompt').classList.add('hidden');
+                document.getElementById('receiptChangeText').classList.remove('hidden');
+            }
+
+            // Update UI Buttons for Editing
+            const btnSubmit = document.getElementById('btn-submit');
+            btnSubmit.classList.remove('w-full');
+            btnSubmit.classList.add('w-2/3');
+            document.getElementById('btn-cancel-edit').classList.remove('hidden');
+
+            switchTab('log'); // Send user to the form tab
+        }
+
+        function cancelEdit() {
+            editingTxId = null;
+            resetLogForm();
+            switchTab('dashboard');
+        }
+
+        function deleteTx(id) {
+            if(confirm("Are you sure you want to permanently delete this transaction?")) {
+                transactions = transactions.filter(t => t.id !== id);
+                saveDataLocally();
+                showToast('Transaction deleted', 'info');
+            }
         }
 
         function payBill(id) {
@@ -762,6 +894,7 @@
             document.getElementById('txDate').valueAsDate = new Date();
             document.getElementById('input-due-date').valueAsDate = new Date();
             currentBase64Receipt = null;
+            editingTxId = null;
             
             // Reset image preview
             document.getElementById('receiptPreview').classList.add('hidden');
@@ -779,6 +912,12 @@
 
             updateFormUI();
             
+            // Revert Edit UI Buttons
+            const btnSubmit = document.getElementById('btn-submit');
+            btnSubmit.classList.remove('w-2/3');
+            btnSubmit.classList.add('w-full');
+            document.getElementById('btn-cancel-edit').classList.add('hidden');
+
             document.getElementById('successOverlay').classList.add('hidden');
             document.getElementById('successOverlay').classList.remove('flex');
         }
@@ -786,6 +925,31 @@
         function closeSuccessAndGoHome() {
             resetLogForm();
             switchTab('dashboard');
+        }
+
+        /* --- PROTOTYPE SHARING --- */
+        function shareApp() {
+            if (navigator.share) {
+                navigator.share({
+                    title: 'Tight Ship Command Center',
+                    text: 'Check out this offline-first financial command center prototype!',
+                    url: window.location.href
+                }).catch(console.error);
+            } else {
+                // Fallback to copy to clipboard for unsupported browsers
+                const dummy = document.createElement('input');
+                document.body.appendChild(dummy);
+                dummy.value = window.location.href;
+                dummy.select();
+                document.execCommand('copy');
+                document.body.removeChild(dummy);
+                showToast('Link copied to clipboard!', 'success');
+            }
+        }
+
+        function dismissSyncBanner() {
+            localStorage.setItem('hideTightShipSyncBanner', 'true');
+            document.getElementById('sync-warning-banner').classList.add('hidden');
         }
 
         /* --- DATA MANAGEMENT --- */
@@ -826,7 +990,8 @@
 
         /* --- UTILS --- */
         function formatMoney(num) {
-            return '$' + Math.abs(num).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+            const sign = num < 0 ? '-' : '';
+            return sign + '$' + Math.abs(num).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
         }
 
         function formatDateUI(dateStr) {
@@ -1022,5 +1187,4 @@
         }
     </script>
 </body>
-
 </html>
