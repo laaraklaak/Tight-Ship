@@ -18,7 +18,7 @@
     <!-- localForage for IndexedDB (Infinite Storage) -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/localforage/1.10.0/localforage.min.js"></script>
 
-    <!-- PapaParse for Offline CSV Bank Imports -->
+    <!-- PapaParse for Offline CSV -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
 
     <!-- Google Identity & Drive APIs -->
@@ -39,47 +39,69 @@
 </head>
 <body class="bg-slate-950 text-slate-100 h-screen flex flex-col font-sans overflow-hidden antialiased selection:bg-blue-900">
 
-    <div id="toast-container" class="fixed top-4 left-0 right-0 z-[300] flex flex-col items-center gap-2 pointer-events-none px-4"></div>
+    <div id="toast-container" class="fixed top-4 left-0 right-0 z-[600] flex flex-col items-center gap-2 pointer-events-none px-4"></div>
 
-    <!-- Onboarding Overlay -->
-    <div id="onboardingOverlay" class="fixed inset-0 z-[200] bg-slate-950 flex flex-col hidden animate-enter">
+    <!-- ========================================== -->
+    <!-- ONBOARDING OVERLAY (Optional Setup Guide)  -->
+    <!-- ========================================== -->
+    <div id="onboardingOverlay" class="fixed inset-0 z-[450] bg-slate-950 flex flex-col hidden animate-enter">
         <div class="flex-1 overflow-y-auto px-6 py-12 flex flex-col justify-center max-w-lg mx-auto w-full relative">
+            
             <div id="onboardStep1" class="flex flex-col items-center text-center space-y-6 animate-enter">
-                <div class="w-24 h-24 bg-emerald-900/30 rounded-full flex items-center justify-center border border-emerald-800/50">
+                <div class="w-24 h-24 bg-emerald-900/30 rounded-full flex items-center justify-center border border-emerald-800/50 shadow-[0_0_40px_rgba(52,211,153,0.15)]">
                     <i class="ph-fill ph-anchor text-5xl text-emerald-400"></i>
                 </div>
                 <div>
                     <h2 class="text-3xl font-extrabold text-slate-100 mb-3">Welcome to<br><span class="text-emerald-400">Tight Ship</span></h2>
-                    <p class="text-slate-400 text-lg leading-relaxed">Your offline financial command center.</p>
+                    <p class="text-slate-400 text-lg leading-relaxed">The anti-budget ledger. We focus on one number: your <strong>True Safe to Spend</strong>.</p>
                 </div>
-                <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 text-left w-full">
-                    <ul class="space-y-3">
-                        <li class="flex items-start gap-3 text-sm text-slate-300"><i class="ph-fill ph-wallet text-emerald-400 text-xl"></i><span>Track actual <strong>Cash on Hand</strong>.</span></li>
-                        <li class="flex items-start gap-3 text-sm text-slate-300"><i class="ph-fill ph-minus-circle text-rose-400 text-xl"></i><span>Auto-subtract <strong>Upcoming Bills</strong>.</span></li>
-                    </ul>
+                <div class="bg-slate-900 border border-slate-800 rounded-3xl p-6 text-left w-full space-y-4">
+                    <div class="flex gap-4">
+                        <div class="bg-emerald-500/20 p-2 h-fit rounded-lg text-emerald-400"><i class="ph-bold ph-plus"></i></div>
+                        <div><p class="font-bold text-slate-100 text-sm">Income</p><p class="text-xs text-slate-500">Add any money coming in.</p></div>
+                    </div>
+                    <div class="flex gap-4">
+                        <div class="bg-rose-500/20 p-2 h-fit rounded-lg text-rose-400"><i class="ph-bold ph-minus"></i></div>
+                        <div><p class="font-bold text-slate-100 text-sm">Bills</p><p class="text-xs text-slate-500">Log upcoming bills to "reserve" that cash.</p></div>
+                    </div>
                 </div>
-                <button onclick="goToOnboardStep(2)" class="w-full bg-emerald-600 text-white font-bold text-lg py-4 rounded-2xl">Get Started</button>
+                <button onclick="goToOnboardStep(2)" class="w-full bg-emerald-600 text-white font-bold text-lg py-5 rounded-2xl shadow-lg active:scale-[0.98]">
+                    Get Started <i class="ph-bold ph-arrow-right ml-1"></i>
+                </button>
             </div>
+
             <div id="onboardStep2" class="flex flex-col items-center text-center space-y-6 hidden animate-enter">
                 <div class="w-24 h-24 bg-blue-900/30 rounded-full flex items-center justify-center border border-blue-800/50">
                     <i class="ph-fill ph-piggy-bank text-5xl text-blue-400"></i>
                 </div>
-                <h2 class="text-3xl font-extrabold text-slate-100 mb-3">Starting Balance</h2>
+                <div>
+                    <h2 class="text-3xl font-extrabold text-slate-100 mb-3">Starting Point</h2>
+                    <p class="text-slate-400 text-lg">What is your current bank account balance right now?</p>
+                </div>
                 <div class="w-full relative">
                     <span class="absolute left-6 top-1/2 -translate-y-1/2 text-slate-500 font-bold text-3xl">$</span>
-                    <input type="number" id="onboardBalance" step="0.01" class="w-full bg-slate-900 border border-slate-700 rounded-3xl py-6 pl-14 pr-6 text-4xl font-black text-center" placeholder="0.00">
+                    <input type="number" id="onboardBalance" step="0.01" class="w-full bg-slate-900 border border-slate-700 rounded-3xl py-7 pl-14 pr-6 text-4xl font-black text-center focus:ring-2 focus:ring-blue-500 outline-none" placeholder="0.00">
                 </div>
-                <button onclick="saveStartingBalance()" class="w-full bg-blue-600 text-white font-bold text-lg py-4 rounded-2xl">Set Balance</button>
-                <button onclick="goToOnboardStep(3)" class="text-slate-500 font-bold text-sm">Skip</button>
+                <div class="w-full space-y-3">
+                    <button onclick="saveStartingBalance()" class="w-full bg-blue-600 text-white font-bold text-lg py-5 rounded-2xl shadow-lg active:scale-[0.98]">Log Balance</button>
+                    <button onclick="goToOnboardStep(3)" class="w-full py-4 text-slate-500 font-bold text-sm hover:text-slate-300">Skip / Start at $0.00</button>
+                </div>
             </div>
+
             <div id="onboardStep3" class="flex flex-col items-center text-center space-y-6 hidden animate-enter">
-                <div class="w-24 h-24 bg-amber-900/30 rounded-full flex items-center justify-center border border-amber-800/50">
-                    <i class="ph-fill ph-google-drive-logo text-5xl text-amber-400"></i>
+                <div class="w-24 h-24 bg-amber-900/30 rounded-full flex items-center justify-center border border-amber-800/50 text-amber-400">
+                    <i class="ph-fill ph-google-drive-logo text-5xl"></i>
                 </div>
-                <h2 class="text-3xl font-extrabold text-slate-100">Secure Backup</h2>
-                <p class="text-slate-400">Connect Google Drive to create a private backup folder.</p>
-                <button onclick="handleAuthClick()" class="w-full bg-slate-100 text-slate-950 font-black text-lg py-4 rounded-2xl">Connect Google Drive</button>
-                <button onclick="finishOnboarding()" class="text-slate-500 font-bold text-sm">I'll do this later</button>
+                <div>
+                    <h2 class="text-3xl font-extrabold text-slate-100 mb-3 text-balance">Cloud Backup (Optional)</h2>
+                    <p class="text-slate-400 text-lg leading-relaxed">Secure your data. Link Google Drive to keep a private backup of your ledger.</p>
+                </div>
+                <div class="w-full space-y-3">
+                    <button id="btnOnboardDrive" onclick="handleAuthClick()" class="w-full bg-slate-100 text-slate-950 font-black text-lg py-5 rounded-2xl shadow-lg flex items-center justify-center gap-2 active:scale-[0.98]">
+                        <i class="ph-bold ph-link text-xl"></i> Connect Google Drive
+                    </button>
+                    <button onclick="finishOnboarding()" class="w-full py-5 text-slate-500 font-bold text-sm hover:text-slate-300">Skip & Start Tracking</button>
+                </div>
             </div>
         </div>
     </div>
@@ -87,64 +109,77 @@
     <!-- What's New Overlay -->
     <div id="whatsNewOverlay" class="fixed inset-0 z-[150] bg-slate-950/80 backdrop-blur-sm hidden items-center justify-center p-4 animate-enter">
         <div class="bg-slate-800 border border-slate-700 rounded-3xl p-8 max-w-sm w-full shadow-2xl relative">
-            <h3 class="text-2xl font-extrabold text-slate-100 mb-2">App Updated!</h3>
+            <h3 class="text-2xl font-extrabold text-slate-100 mb-4">App Updated!</h3>
             <ul class="space-y-4 mb-8">
-                <li class="flex items-start gap-3"><i class="ph-fill ph-magic-wand text-emerald-400 text-lg"></i><div><p class="text-sm font-bold text-slate-200">Smarter Paste</p><p class="text-xs text-slate-400">Selective extraction filters out years and dates.</p></div></li>
-                <li class="flex items-start gap-3"><i class="ph-fill ph-arrows-clockwise text-blue-400 text-lg"></i><div><p class="text-sm font-bold text-slate-200">Recurring Bills</p><p class="text-xs text-slate-400">Auto-repeat monthly bills.</p></div></li>
+                <li class="flex items-start gap-3"><i class="ph-fill ph-magic-wand text-emerald-400 text-xl"></i><div><p class="text-sm font-bold">Refined Smart Paste</p><p class="text-xs text-slate-400">Buttons fixed and extraction is now more selective.</p></div></li>
+                <li class="flex items-start gap-3"><i class="ph-fill ph-arrows-clockwise text-blue-400 text-xl"></i><div><p class="text-sm font-bold">Auto-Recurring Bills</p><p class="text-xs text-slate-400">Now correctly logs current bills before generating next month's.</p></div></li>
             </ul>
-            <button onclick="closeWhatsNew()" class="w-full bg-blue-600 text-white font-bold py-4 rounded-xl">Awesome, let's go!</button>
+            <button onclick="closeWhatsNew()" class="w-full bg-blue-600 text-white font-bold py-4 rounded-xl">Awesome!</button>
         </div>
     </div>
 
     <!-- Smart Paste Overlay -->
-    <div id="smartPasteOverlay" class="fixed inset-0 z-[150] bg-slate-950 hidden flex-col animate-enter">
+    <div id="smartPasteOverlay" class="fixed inset-0 z-[450] bg-slate-950 hidden flex-col animate-enter">
         <div class="flex-1 flex flex-col p-6 max-w-lg mx-auto w-full">
             <header class="flex justify-between items-center mb-6">
                 <h3 class="text-2xl font-black text-slate-100">Smart Paste</h3>
                 <button onclick="closeSmartPaste()" class="text-slate-500 text-2xl p-2"><i class="ph-bold ph-x"></i></button>
             </header>
-            <textarea id="smartPasteInput" class="flex-1 w-full bg-slate-900 border border-slate-700 rounded-3xl p-6 text-slate-200 text-sm focus:ring-2 focus:ring-emerald-500 transition-all placeholder-slate-700 resize-none mb-6" placeholder="Paste bank transaction text here..."></textarea>
-            <button onclick="processSmartPaste()" class="w-full bg-emerald-600 text-white font-black py-5 rounded-2xl shadow-lg flex items-center justify-center gap-2"><i class="ph-bold ph-magic-wand text-xl"></i> Extract Transactions</button>
+            <p class="text-xs text-slate-500 mb-4 uppercase font-bold tracking-widest">Paste bank transaction text here</p>
+            <textarea id="smartPasteInput" class="flex-1 w-full bg-slate-900 border border-slate-700 rounded-3xl p-6 text-slate-200 text-sm focus:ring-2 focus:ring-emerald-500 transition-all placeholder-slate-700 resize-none mb-6" placeholder="e.g. 03/05/2026 AMAZON $45.99"></textarea>
+            <button id="btnSmartPasteProcess" onclick="processSmartPaste()" class="w-full bg-emerald-600 text-white font-black py-5 rounded-2xl shadow-lg flex items-center justify-center gap-2">
+                <i class="ph-bold ph-magic-wand text-xl"></i> Extract Transactions
+            </button>
         </div>
     </div>
 
-    <!-- Main App -->
+    <!-- Main App Content -->
     <main class="flex-1 overflow-y-auto pb-24 w-full max-w-lg mx-auto relative bg-slate-950">
+        <!-- Dashboard -->
         <section id="tab-dashboard" class="tab-content active p-4 space-y-6">
             <header class="pt-4 pb-2 relative flex items-center justify-center">
-                <h1 class="text-xl font-bold text-slate-500 tracking-wide uppercase mb-1 flex items-center gap-2"><i class="ph-fill ph-anchor"></i> Tight Ship</h1>
+                <h1 class="text-xl font-bold text-slate-500 uppercase tracking-wide flex items-center gap-2"><i class="ph-fill ph-anchor"></i> Tight Ship</h1>
                 <button id="installAppBtn" class="hidden absolute right-0 top-2 p-2 text-emerald-400 rounded-full bg-emerald-900/20 border border-emerald-800/50 shadow-sm" onclick="installApp()"><i class="ph-bold ph-download-simple text-lg"></i></button>
             </header>
-            <div class="bg-slate-800 rounded-3xl p-6 shadow-lg border border-slate-700 text-center flex flex-col items-center justify-center transition-colors duration-300 relative overflow-hidden" id="safeToSpendCard">
+            
+            <div class="bg-slate-800 rounded-3xl p-6 shadow-lg border border-slate-700 text-center relative overflow-hidden" id="safeToSpendCard">
                 <div class="absolute top-0 right-0 w-24 h-24 bg-emerald-900/20 rounded-bl-full -z-10" id="safeSpendAccent"></div>
-                <p class="text-sm font-semibold text-slate-400 uppercase tracking-wider mb-2">Current Financial Standing</p>
+                <p class="text-sm font-semibold text-slate-400 uppercase tracking-wider mb-2">Safe to Spend</p>
                 <h2 id="safeToSpendAmount" class="text-5xl font-extrabold tracking-tight text-emerald-400 mb-1">$0.00</h2>
-                <p class="text-xs text-slate-400 mt-2 bg-slate-900/50 px-3 py-1 rounded-full border border-slate-700/50">Income - Spend - All Bills</p>
+                <p class="text-[10px] text-slate-500 mt-2 bg-slate-950/40 px-3 py-1 rounded-full border border-slate-700/50 w-fit mx-auto uppercase font-bold tracking-widest">Cash - Unpaid Bills</p>
             </div>
+
             <div class="grid grid-cols-2 gap-3">
-                <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 flex flex-col justify-center shadow-md relative">
+                <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 flex flex-col justify-center shadow-md">
                     <p class="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Cash on Hand</p>
-                    <h3 id="cashOnHandAmount" class="text-xl sm:text-2xl font-bold tracking-tight text-slate-100">$0.00</h3>
+                    <h3 id="cashOnHandAmount" class="text-xl sm:text-2xl font-bold text-slate-100">$0.00</h3>
                 </div>
-                <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 flex flex-col justify-center shadow-md relative">
+                <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 flex flex-col justify-center shadow-md">
                     <p class="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Total Owed</p>
-                    <h3 id="totalOwedAmount" class="text-xl sm:text-2xl font-bold tracking-tight text-rose-400">$0.00</h3>
+                    <h3 id="totalOwedAmount" class="text-xl sm:text-2xl font-bold text-rose-400">$0.00</h3>
                 </div>
             </div>
-            <div id="sync-warning-banner" class="hidden bg-amber-50 border border-amber-200 p-4 rounded-2xl flex flex-col gap-3 shadow-sm">
-                <p class="text-sm font-bold text-amber-900">Backup Required</p>
-                <div class="flex gap-2"><button onclick="dismissSyncBanner()" class="text-amber-700 text-xs font-bold px-2 py-1">Dismiss</button><button onclick="switchTab('settings')" class="bg-amber-600 text-white text-xs font-bold px-3 py-1 rounded-lg">Fix Now</button></div>
+
+            <div id="sync-warning-banner" class="hidden bg-amber-900/20 border border-amber-900/50 p-4 rounded-2xl flex flex-col gap-3 shadow-md animate-enter">
+                <div class="flex items-center gap-3 text-amber-400">
+                    <i class="ph-fill ph-warning-circle text-xl"></i>
+                    <p class="text-sm font-bold">Cloud Sync Disconnected</p>
+                </div>
+                <button onclick="switchTab('settings')" class="bg-amber-600 text-white text-xs font-bold py-2.5 rounded-xl shadow-lg">Connect Google Drive</button>
             </div>
+
             <div id="outstandingBillsContainer" class="hidden">
-                <h3 class="text-sm font-bold text-rose-400 uppercase tracking-wider mb-3">Unpaid Bills</h3>
+                <h3 class="text-sm font-bold text-rose-400 uppercase tracking-wider mb-3 flex items-center gap-2"><i class="ph-fill ph-warning-circle"></i> Unpaid Bills</h3>
                 <div id="unpaidBillsList" class="space-y-2"></div>
             </div>
+
             <div>
-                <h3 class="text-sm font-bold text-slate-500 uppercase tracking-wider mb-3">Recent Ledger</h3>
-                <div id="recentLedgerList" class="bg-slate-800 rounded-2xl border border-slate-700 overflow-hidden"></div>
+                <h3 class="text-sm font-bold text-slate-500 uppercase tracking-wider mb-3 ml-1">Recent Ledger</h3>
+                <div id="recentLedgerList" class="bg-slate-800 rounded-2xl border border-slate-700 overflow-hidden shadow-sm"></div>
             </div>
         </section>
 
+        <!-- Log Transaction -->
         <section id="tab-log" class="tab-content p-4">
             <h2 class="text-2xl font-bold text-slate-100 mb-6 pt-2">Log Transaction</h2>
             <div class="grid grid-cols-3 gap-2 mb-8 bg-slate-900 p-1.5 rounded-2xl border border-slate-800">
@@ -153,57 +188,81 @@
                 <label class="cursor-pointer"><input type="radio" name="txType" value="bill" class="peer sr-only" onchange="updateFormUI()"><div class="text-center py-3 rounded-xl text-sm font-semibold text-slate-500 peer-checked:bg-slate-800 peer-checked:text-blue-400 transition-all flex flex-col items-center gap-1"><i class="ph-fill ph-file-text text-xl"></i> Bill</div></label>
             </div>
             <form id="txForm" class="space-y-5" onsubmit="handleLogTransaction(event); return false;">
-                <div><label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Amount</label><div class="relative"><span class="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 font-bold text-xl">$</span><input type="number" id="txAmount" step="0.01" min="0.01" required class="w-full bg-slate-900 border border-slate-700 rounded-2xl py-4 pl-10 pr-4 text-xl font-bold" placeholder="0.00"></div></div>
-                <div><label id="lblDescription" class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Source</label><input type="text" id="txDescription" required class="w-full bg-slate-900 border border-slate-700 rounded-2xl py-4 px-4 text-lg" placeholder="e.g. Payment"></div>
+                <div><label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Amount</label><div class="relative"><span class="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 font-bold text-xl">$</span><input type="number" id="txAmount" step="0.01" min="0.01" required class="w-full bg-slate-900 border border-slate-700 rounded-2xl py-4 pl-10 pr-4 text-xl font-bold outline-none focus:ring-2 focus:ring-slate-500"></div></div>
+                <div><label id="lblDescription" class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Source</label><input type="text" id="txDescription" required class="w-full bg-slate-900 border border-slate-700 rounded-2xl py-4 px-4 text-lg outline-none focus:ring-2 focus:ring-slate-500" placeholder="e.g. Rent, Client Payment"></div>
+                
                 <div id="billPaidToggleContainer" class="hidden bg-blue-900/20 border border-blue-800/50 rounded-2xl p-4 flex items-center justify-between cursor-pointer" onclick="toggleBillPaid()"><div class="flex items-center gap-3"><i id="billPaidIcon" class="ph-fill ph-check-circle text-blue-400 text-3xl"></i><div><p class="font-bold text-blue-300" id="billPaidText">Already Paid</p></div></div><input type="checkbox" id="txIsPaid" checked class="sr-only"></div>
                 <div id="recurringBillContainer" class="hidden bg-slate-900 border border-slate-700 rounded-2xl p-4 flex items-center justify-between cursor-pointer" onclick="toggleRecurring()"><div class="flex items-center gap-3"><i id="recurringIcon" class="ph-bold ph-arrows-clockwise text-slate-500 text-3xl"></i><div><p class="font-bold text-slate-300" id="recurringText">Does not repeat</p></div></div><input type="checkbox" id="txIsRecurring" class="sr-only"></div>
-                <div id="field-date"><label id="lblDate" class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Date</label><div class="relative"><input type="date" id="txDate" required class="w-full bg-slate-900 border border-slate-700 rounded-2xl py-4 px-4 text-lg relative z-10 bg-transparent"><i class="ph ph-calendar-blank absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 text-xl"></i></div></div>
-                <div id="field-due-date" class="hidden"><label class="block text-xs font-bold text-rose-400 uppercase tracking-wider mb-1">Due Date</label><div class="relative"><input type="date" id="input-due-date" class="w-full bg-slate-900 border border-rose-900/50 rounded-2xl py-4 px-4 text-lg relative z-10 bg-transparent"><i class="ph ph-calendar-blank absolute right-4 top-1/2 -translate-y-1/2 text-rose-500 text-xl"></i></div></div>
-                <div><label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Receipt (Optional)</label><label class="flex flex-col items-center justify-center w-full h-32 bg-slate-900 border-2 border-dashed border-slate-700 rounded-2xl cursor-pointer overflow-hidden relative"><div id="receiptPrompt" class="text-center"><i class="ph ph-camera text-3xl text-slate-600 mb-1"></i><p class="text-xs text-slate-500">Upload Receipt</p></div><img id="receiptPreview" class="hidden absolute inset-0 w-full h-full object-cover opacity-50"><input type="file" id="txReceipt" accept="image/*" class="hidden" onchange="handleReceiptUpload(event)"></label></div>
-                <div class="pt-4 flex gap-3"><button type="button" id="btn-cancel-edit" onclick="cancelEdit()" class="hidden w-1/3 bg-slate-800 border border-slate-700 text-slate-300 font-bold py-4 rounded-2xl">Cancel</button><button type="submit" id="btn-submit" class="w-full bg-emerald-600 text-white font-bold py-4 rounded-2xl">Save Transaction</button></div>
+                
+                <div id="field-date"><label id="lblDate" class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Date</label><div class="relative"><input type="date" id="txDate" required class="w-full bg-slate-900 border border-slate-700 rounded-2xl py-4 px-4 text-lg relative z-10 bg-transparent"><i class="ph ph-calendar-blank absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 text-xl z-0"></i></div></div>
+                <div id="field-due-date" class="hidden"><label class="block text-xs font-bold text-rose-400 uppercase tracking-wider mb-1">Due Date</label><div class="relative"><input type="date" id="input-due-date" class="w-full bg-slate-900 border border-rose-900/50 rounded-2xl py-4 px-4 text-lg relative z-10 bg-transparent"><i class="ph ph-calendar-blank absolute right-4 top-1/2 -translate-y-1/2 text-rose-500 text-xl z-0"></i></div></div>
+                
+                <div><label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Receipt (Optional)</label><label class="flex flex-col items-center justify-center w-full h-32 bg-slate-900 border-2 border-dashed border-slate-700 rounded-2xl cursor-pointer overflow-hidden relative group"><div id="receiptPrompt" class="text-center"><i class="ph ph-camera text-3xl text-slate-600 mb-1"></i><p class="text-xs text-slate-500">Snap Photo</p></div><img id="receiptPreview" class="hidden absolute inset-0 w-full h-full object-cover opacity-50"><input type="file" id="txReceipt" accept="image/*" class="hidden" onchange="handleReceiptUpload(event)"></label></div>
+                <div class="pt-4 flex gap-3"><button type="button" id="btn-cancel-edit" onclick="cancelEdit()" class="hidden w-1/3 bg-slate-800 border border-slate-700 text-slate-300 font-bold py-4 rounded-2xl">Cancel</button><button type="submit" id="btn-submit" class="w-full bg-emerald-600 text-white font-bold py-4 rounded-xl shadow-lg active:scale-[0.98]">Save Transaction</button></div>
             </form>
         </section>
 
+        <!-- Setup -->
         <section id="tab-settings" class="tab-content p-4 space-y-8">
-            <h2 class="text-2xl font-bold text-slate-100 mb-2 pt-2">Settings & Sync</h2>
-            <div class="bg-slate-800 rounded-3xl p-5 shadow-sm border border-slate-700"><div class="flex items-center gap-4 mb-4"><div class="bg-blue-900/30 p-3 rounded-2xl text-blue-400 border border-blue-800/50"><i class="ph-fill ph-google-drive-logo text-3xl"></i></div><div><h3 class="font-bold text-slate-100 text-lg">Google Drive</h3><p class="text-sm text-slate-400" id="syncStatusText">Not connected</p></div></div><div id="driveUnauthUI" class="space-y-3"><button onclick="handleAuthClick()" class="w-full bg-slate-900 border border-slate-700 text-slate-100 font-bold py-3 rounded-xl flex justify-center items-center gap-2"><i class="ph-bold ph-link"></i> Connect Account</button></div><div id="driveAuthUI" class="hidden space-y-3"><button onclick="syncToDrive()" class="w-full bg-emerald-600 text-white font-bold py-3 rounded-xl flex justify-center items-center gap-2"><i class="ph-bold ph-cloud-arrow-up"></i> Backup Now</button><button onclick="syncFromDrive()" class="w-full bg-slate-900 border border-slate-700 text-slate-100 font-bold py-3 rounded-xl flex justify-center items-center gap-2"><i class="ph-bold ph-cloud-arrow-down"></i> Restore Data</button><button onclick="handleSignoutClick()" class="w-full text-xs text-slate-500 py-2 underline">Disconnect</button></div></div>
-            <div class="bg-slate-800 rounded-2xl border border-slate-700 overflow-hidden flex flex-col">
-                <button onclick="openSmartPaste()" class="flex items-center gap-3 p-4 border-b border-slate-700/50 text-left w-full"><div class="bg-slate-900 p-2 rounded-full text-emerald-400"><i class="ph-bold ph-magic-wand text-lg"></i></div><div><p class="font-bold text-slate-100">Smart Paste Import</p><p class="text-xs text-slate-400">Extract bank text instantly</p></div></button>
-                <button onclick="document.getElementById('csvFileInput').click()" class="flex items-center gap-3 p-4 border-b border-slate-700/50 text-left w-full"><div class="bg-slate-900 p-2 rounded-full text-blue-400"><i class="ph-bold ph-file-csv text-lg"></i></div><div><p class="font-bold text-slate-100">Import Bank CSV</p><p class="text-xs text-slate-400">Bulk add from bank files</p></div></button>
-                <input type="file" id="csvFileInput" accept=".csv" class="hidden" onchange="handleCSVUpload(event)">
-                <button onclick="archiveOldData()" class="flex items-center gap-3 p-4 border-b border-slate-700/50 text-left w-full"><div class="bg-slate-900 p-2 rounded-full text-amber-400"><i class="ph-bold ph-archive text-lg"></i></div><div><p class="font-bold text-slate-100">Archive Old Data</p><p class="text-xs text-slate-400">Items > 90 days old</p></div></button>
-                <button onclick="downloadJson()" class="flex items-center gap-3 p-4 border-b border-slate-700/50 text-left w-full"><div class="bg-slate-900 p-2 rounded-full text-slate-400"><i class="ph-bold ph-download-simple text-lg"></i></div><div><p class="font-bold text-slate-100">Export Ledger</p><p class="text-xs text-slate-400">Download .json file</p></div></button>
-                <button onclick="promptWipeData()" class="flex items-center gap-3 p-4 text-left w-full"><div class="bg-rose-900/20 p-2 rounded-full text-rose-400 border border-rose-900/50"><i class="ph-bold ph-trash text-lg"></i></div><div><p class="font-bold text-rose-400">Wipe Memory</p><p class="text-xs text-rose-500/80">Delete all local data</p></div></button>
+            <h2 class="text-2xl font-bold text-slate-100 mb-2 pt-2">Setup & Sync</h2>
+            <div class="bg-slate-800 rounded-3xl p-5 border border-slate-700 shadow-sm">
+                <div class="flex items-center gap-4 mb-4">
+                    <div class="bg-blue-900/30 p-3 rounded-2xl text-blue-400 border border-blue-800/50"><i class="ph-fill ph-google-drive-logo text-3xl"></i></div>
+                    <div><h3 class="font-bold text-slate-100 text-lg">Google Drive</h3><p class="text-sm text-slate-400" id="syncStatusText">Not connected</p></div>
+                </div>
+                <div id="driveUnauthUI" class="space-y-3"><button onclick="handleAuthClick()" class="w-full bg-slate-900 border border-slate-700 text-slate-100 font-bold py-3 rounded-xl active:scale-[0.98]">Connect Google Account</button></div>
+                <div id="driveAuthUI" class="hidden space-y-3"><button onclick="syncToDrive()" class="w-full bg-emerald-600 text-white font-bold py-3 rounded-xl active:scale-[0.98]">Backup Now</button><button onclick="syncFromDrive()" class="w-full bg-slate-900 border border-slate-700 text-slate-100 font-bold py-3 rounded-xl active:scale-[0.98]">Restore Backup</button><button onclick="handleSignoutClick()" class="w-full text-xs text-slate-500 py-2 underline">Disconnect</button></div>
+            </div>
+
+            <div>
+                <h3 class="text-sm font-bold text-slate-500 uppercase tracking-wider mb-3 ml-1">Data Management</h3>
+                <div class="bg-slate-800 rounded-2xl border border-slate-700 overflow-hidden flex flex-col shadow-sm">
+                    <div class="p-4 border-b border-slate-700/50 flex items-center justify-between">
+                        <div class="flex items-center gap-3">
+                            <div class="bg-emerald-900/30 p-2 rounded-full text-emerald-400"><i class="ph-bold ph-hard-drive"></i></div>
+                            <div><p class="font-bold text-slate-100 text-sm">Safe-Save Active</p><p class="text-[10px] text-slate-500 uppercase font-bold">Auto-Saving to Local Memory</p></div>
+                        </div>
+                        <i class="ph-fill ph-check-circle text-emerald-400 text-xl"></i>
+                    </div>
+                    <button onclick="openSmartPaste()" class="flex items-center gap-3 p-4 border-b border-slate-700/50 text-left w-full hover:bg-slate-700/30"><div class="bg-slate-900 p-2 rounded-full text-emerald-400 border border-slate-700"><i class="ph-bold ph-magic-wand text-lg"></i></div><div><p class="font-bold text-slate-100 text-sm">Smart Paste Import</p><p class="text-[10px] text-slate-400 uppercase font-bold tracking-widest">Extract bank text</p></div></button>
+                    <button onclick="document.getElementById('csvFileInput').click()" class="flex items-center gap-3 p-4 border-b border-slate-700/50 text-left w-full hover:bg-slate-700/30"><div class="bg-slate-900 p-2 rounded-full text-blue-400 border border-slate-700"><i class="ph-bold ph-file-csv text-lg"></i></div><div><p class="font-bold text-slate-100 text-sm">Import CSV Statement</p><p class="text-[10px] text-slate-400 uppercase font-bold tracking-widest">Add from bank file</p></div></button>
+                    <input type="file" id="csvFileInput" accept=".csv" class="hidden" onchange="handleCSVUpload(event)">
+                    <button onclick="archiveOldData()" class="flex items-center gap-3 p-4 border-b border-slate-700/50 text-left w-full hover:bg-slate-700/30"><div class="bg-slate-900 p-2 rounded-full text-amber-400 border border-slate-700"><i class="ph-bold ph-archive text-lg"></i></div><div><p class="font-bold text-slate-100 text-sm">Prune Ledger</p><p class="text-[10px] text-slate-400 uppercase font-bold tracking-widest">Archive items > 90 days</p></div></button>
+                    <button onclick="promptWipeData()" class="flex items-center gap-3 p-4 text-left w-full hover:bg-rose-900/10 group"><div class="bg-rose-900/20 group-hover:bg-rose-900/40 p-2 rounded-full text-rose-400 border border-rose-900/50 transition-colors"><i class="ph-bold ph-trash text-lg"></i></div><div><p class="font-bold text-rose-400 text-sm">Wipe Phone Memory</p><p class="text-[10px] text-rose-500/60 font-bold uppercase tracking-widest">Delete local data</p></div></button>
+                </div>
             </div>
         </section>
     </main>
 
     <!-- Navigation -->
-    <nav class="fixed bottom-0 w-full max-w-lg mx-auto bg-slate-900/95 backdrop-blur-md border-t border-slate-800 h-20 flex justify-around items-center px-2 z-40">
-        <button onclick="switchTab('dashboard')" id="nav-dashboard" class="nav-btn flex-1 flex flex-col items-center justify-center py-2 text-slate-100"><div class="nav-pill flex items-center justify-center w-16 h-12 rounded-full bg-slate-800"><i class="ph-fill ph-squares-four text-2xl"></i></div><span class="text-[10px] font-bold mt-1 uppercase">Dash</span></button>
-        <button onclick="switchTab('log')" id="nav-log" class="nav-btn flex-1 flex flex-col items-center justify-center py-2 text-slate-500"><div class="nav-pill flex items-center justify-center w-16 h-12 rounded-full"><i class="ph-fill ph-plus-circle text-2xl"></i></div><span class="text-[10px] font-bold mt-1 uppercase">Log</span></button>
-        <button onclick="switchTab('settings')" id="nav-settings" class="nav-btn flex-1 flex flex-col items-center justify-center py-2 text-slate-500"><div class="nav-pill flex items-center justify-center w-16 h-12 rounded-full"><i class="ph-fill ph-gear text-2xl"></i></div><span class="text-[10px] font-bold mt-1 uppercase">Setup</span></button>
+    <nav class="fixed bottom-0 w-full max-w-lg mx-auto bg-slate-900/95 backdrop-blur-md border-t border-slate-800 h-20 flex justify-around items-center z-40">
+        <button onclick="switchTab('dashboard')" id="nav-dashboard" class="nav-btn flex-1 flex flex-col items-center py-2 text-slate-100"><div class="nav-pill flex items-center justify-center w-16 h-12 rounded-full bg-slate-800"><i class="ph-fill ph-squares-four text-2xl"></i></div><span class="text-[10px] font-bold mt-1 uppercase">Dash</span></button>
+        <button onclick="switchTab('log')" id="nav-log" class="nav-btn flex-1 flex flex-col items-center py-2 text-slate-500"><div class="nav-pill flex items-center justify-center w-16 h-12 rounded-full"><i class="ph-fill ph-plus-circle text-2xl"></i></div><span class="text-[10px] font-bold mt-1 uppercase">Log</span></button>
+        <button onclick="switchTab('settings')" id="nav-settings" class="nav-btn flex-1 flex flex-col items-center py-2 text-slate-500"><div class="nav-pill flex items-center justify-center w-16 h-12 rounded-full"><i class="ph-fill ph-gear text-2xl"></i></div><span class="text-[10px] font-bold mt-1 uppercase">Setup</span></button>
     </nav>
 
     <!-- Success Modal Overlay -->
-    <div id="successOverlay" class="fixed inset-0 z-[100] bg-slate-950/80 backdrop-blur-sm hidden items-center justify-center p-4">
+    <div id="successOverlay" class="fixed inset-0 z-[550] bg-slate-950/90 backdrop-blur-sm hidden items-center justify-center p-4">
         <div class="bg-slate-800 border border-slate-700 rounded-3xl p-8 max-w-sm w-full text-center shadow-2xl animate-enter">
-            <div class="mx-auto w-20 h-20 bg-emerald-900/30 rounded-full flex items-center justify-center mb-6 border border-emerald-800/50 text-emerald-400"><i class="ph-bold ph-check text-4xl"></i></div>
+            <div class="mx-auto w-20 h-20 bg-emerald-900/30 rounded-full flex items-center justify-center mb-6 text-emerald-400 border border-emerald-800/50"><i class="ph-bold ph-check text-4xl"></i></div>
             <h3 id="successOverlayTitle" class="text-2xl font-bold text-slate-100 mb-2">Success</h3>
-            <div class="flex flex-col gap-3 mt-8"><button onclick="closeSuccessAndGoHome()" class="w-full bg-emerald-600 text-white font-bold py-4 rounded-xl">Return to Dashboard</button><button onclick="closeSuccessAndLogAnother()" class="w-full bg-slate-900 border border-slate-700 text-slate-300 font-bold py-4 rounded-xl">Log Another</button></div>
+            <div class="flex flex-col gap-3 mt-8">
+                <button onclick="closeSuccessAndGoHome()" class="w-full bg-emerald-600 text-white font-bold py-4 rounded-xl active:scale-[0.98]">Return to Dashboard</button>
+                <button onclick="closeSuccessAndLogAnother()" class="w-full bg-slate-900 border border-slate-700 text-slate-300 font-bold py-4 rounded-xl active:scale-[0.98]">Log Another Entry</button>
+            </div>
         </div>
     </div>
 
     <!-- Wipe Confirmation Modal -->
-    <div id="wipeOverlay" class="fixed inset-0 z-[100] bg-slate-950/80 backdrop-blur-sm hidden items-center justify-center p-4">
-        <div class="bg-slate-800 border border-slate-700 rounded-3xl p-8 max-w-sm w-full text-center shadow-2xl animate-enter">
-            <h3 class="text-2xl font-bold text-slate-100 mb-2">Wipe Memory?</h3><p class="text-slate-400 mb-8 text-sm">This cannot be undone.</p>
-            <div class="flex gap-3"><button onclick="closeWipePrompt()" class="flex-1 bg-slate-900 border border-slate-700 text-slate-100 font-bold py-3 rounded-xl">Cancel</button><button onclick="executeWipeData()" class="flex-1 bg-rose-600 text-white font-bold py-3 rounded-xl">Yes, Wipe It</button></div>
+    <div id="wipeOverlay" class="fixed inset-0 z-[550] bg-slate-950/90 hidden items-center justify-center p-4">
+        <div class="bg-slate-800 border border-slate-700 rounded-3xl p-8 max-w-sm w-full text-center shadow-2xl">
+            <h3 class="text-2xl font-bold text-slate-100 mb-2">Wipe Memory?</h3><p class="text-slate-400 mb-8 text-sm">This deletes all local data. Backups on Drive remain safe.</p>
+            <div class="flex gap-3"><button onclick="closeWipePrompt()" class="flex-1 bg-slate-900 border border-slate-700 py-3 rounded-xl font-bold">Cancel</button><button onclick="executeWipeData()" class="flex-1 bg-rose-600 py-3 rounded-xl font-bold">Delete All</button></div>
         </div>
     </div>
 
     <script>
-        const APP_VERSION = '6.0'; 
+        const APP_VERSION = '7.4'; 
         const FILE_NAME = 'tight-ship-ledger.json';
         const GOOGLE_CLIENT_ID = '590906229865-rlo3ap84ngm5rr6hmsov2sg9ko0o24sp.apps.googleusercontent.com';
         const SCOPES = 'https://www.googleapis.com/auth/drive.appdata';
@@ -213,17 +272,22 @@
             document.getElementById('txDate').valueAsDate = new Date();
             document.getElementById('input-due-date').valueAsDate = new Date();
             try {
-                const legacy = localStorage.getItem('tightShipTransactions');
-                if (legacy) { transactions = JSON.parse(legacy); await localforage.setItem('tightShipTransactions', transactions); localStorage.removeItem('tightShipTransactions'); }
-                else transactions = await localforage.getItem('tightShipTransactions') || [];
+                const legacy = await localforage.getItem('tightShipTransactions');
+                transactions = legacy || [];
             } catch(e) { transactions = []; }
             updateDashboard(); updateFormUI(); checkAppStates();
         });
 
+        /* --- ONBOARDING & UPDATES --- */
         function checkAppStates() {
             const v = localStorage.getItem('tightShipVersion');
-            if (!localStorage.getItem('tightShipOnboarded')) { document.getElementById('onboardingOverlay').classList.remove('hidden'); localStorage.setItem('tightShipVersion', APP_VERSION); }
-            else if (v !== APP_VERSION) { document.getElementById('whatsNewOverlay').classList.remove('hidden','flex'); document.getElementById('whatsNewOverlay').classList.add('flex'); }
+            if (!localStorage.getItem('tightShipOnboarded')) { 
+                document.getElementById('onboardingOverlay').classList.remove('hidden'); 
+                localStorage.setItem('tightShipVersion', APP_VERSION); 
+            } else if (v !== APP_VERSION) { 
+                document.getElementById('whatsNewOverlay').classList.remove('hidden','flex'); 
+                document.getElementById('whatsNewOverlay').classList.add('flex'); 
+            }
         }
         function closeWhatsNew() { localStorage.setItem('tightShipVersion', APP_VERSION); document.getElementById('whatsNewOverlay').classList.add('hidden'); }
         function goToOnboardStep(s) { ['onboardStep1','onboardStep2','onboardStep3'].forEach(id => document.getElementById(id).classList.add('hidden')); document.getElementById(`onboardStep${s}`).classList.remove('hidden'); }
@@ -234,38 +298,45 @@
         }
         function finishOnboarding() { localStorage.setItem('tightShipOnboarded', 'true'); document.getElementById('onboardingOverlay').classList.add('hidden'); updateDashboard(); showToast("Welcome!", "success"); }
 
-        /* --- SMART PASTE --- */
-        function openSmartPaste() { document.getElementById('smartPasteOverlay').classList.remove('hidden','flex'); document.getElementById('smartPasteOverlay').classList.add('flex'); document.getElementById('smartPasteInput').focus(); }
-        function closeSmartPaste() { document.getElementById('smartPasteOverlay').classList.add('hidden'); document.getElementById('smartPasteInput').value = ''; }
-
+        /* --- SMART PASTE REFINED --- */
+        function openSmartPaste() { 
+            const overlay = document.getElementById('smartPasteOverlay');
+            overlay.classList.remove('hidden'); overlay.classList.add('flex'); document.getElementById('smartPasteInput').focus(); 
+        }
+        function closeSmartPaste() { 
+            const overlay = document.getElementById('smartPasteOverlay');
+            overlay.classList.remove('flex'); overlay.classList.add('hidden'); document.getElementById('smartPasteInput').value = ''; 
+        }
         async function processSmartPaste() {
             const rawText = document.getElementById('smartPasteInput').value.trim();
             if (!rawText) return;
-            const lines = rawText.split('\n');
-            let count = 0;
+            const btn = document.getElementById('btnSmartPasteProcess');
+            btn.classList.add('opacity-50', 'pointer-events-none');
+            const lines = rawText.split('\n'); let count = 0;
             lines.forEach(line => {
-                if (line.match(/balance|account|available|statement|payment to|ending in|total/i)) return; 
-                // Regex: Matches digits with two decimals, prioritizing those with - or $ 
-                const amountMatches = line.match(/[-+]?\s?\$?\d{1,3}(?:[.,]\d{3})*[.,]\d{2}(?!\d)/g);
-                if (!amountMatches) return;
-                const dateMatch = line.match(/(?:\d{1,2}[\/\-]\d{1,2}(?:[\/\-]\d{2,4})?)|(?:(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s\d{1,2})/i);
-                let rawAmount = amountMatches.find(m => m.includes('-') || m.includes('$')) || amountMatches[0];
-                if (dateMatch && rawAmount.replace(/[^\d]/g, '') === dateMatch[0].replace(/[^\d]/g, '') && amountMatches.length > 1) {
-                    rawAmount = amountMatches.find(m => m !== rawAmount) || rawAmount;
-                }
-                const amountValue = parseFloat(rawAmount.replace(/[$,\s]/g, ''));
-                if (isNaN(amountValue) || amountValue === 0) return;
-                let desc = line.replace(rawAmount, '').replace(dateMatch ? dateMatch[0] : '', '').replace(/[\|\-\:\t\$\+]/g, ' ').replace(/\s\s+/g, ' ').trim();
-                const type = (rawAmount.includes('-') || line.toLowerCase().includes('debit')) ? 'spend' : 'income';
-                const dateObj = dateMatch ? new Date(dateMatch[0]) : new Date();
-                transactions.push({ id: 'tx_'+Date.now()+Math.random().toString(36).substr(2,4), type, amount: Math.abs(amountValue), description: (desc||"Bank Item").substring(0,60), date: (isNaN(dateObj) ? new Date() : dateObj).toISOString().split('T')[0], isPaid: true, isRecurring: false, createdAt: new Date().toISOString() });
+                if (line.match(/balance|account|available|statement|total/i)) return; 
+                // Regex for Selective Extraction: Numbers with EXACTLY two decimals (e.g. .00, .99)
+                const amtM = line.match(/[-+]?\s?\$?\d{1,3}(?:[.,]\d{3})*[.,]\d{2}(?!\d)/g);
+                if (!amtM) return;
+                const dtM = line.match(/(?:\d{1,2}[\/\-]\d{1,2}(?:[\/\-]\d{2,4})?)|(?:(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s\d{1,2})/i);
+                let rawA = amtM.find(m => m.includes('-') || m.includes('$')) || amtM[0];
+                if (dtM && rawA.replace(/[^\d]/g, '') === dtM[0].replace(/[^\d]/g, '') && amtM.length > 1) rawA = amtM.find(m => m !== rawA) || rawA;
+                const val = parseFloat(rawA.replace(/[$,\s]/g, ''));
+                if (isNaN(val) || val === 0) return;
+                let desc = line.replace(rawA, '').replace(dtM ? dtM[0] : '', '').replace(/[\|\-\:\t\$\+]/g, ' ').replace(/\s\s+/g, ' ').trim();
+                transactions.push({ id: 'tx_'+Date.now()+Math.random(), type: (rawA.includes('-')||line.toLowerCase().includes('debit'))?'spend':'income', amount: Math.abs(val), description: (desc||"Bank Item").substring(0,60), date: (dtM ? new Date(dtM[0]) : new Date()).toISOString().split('T')[0], isPaid: true, isRecurring: false, createdAt: new Date().toISOString() });
                 count++;
             });
-            if (count > 0) { await saveDataLocally(); showToast(`Imported ${count}!`, 'success'); closeSmartPaste(); switchTab('dashboard'); }
-            else showToast("No valid amounts found.", "error");
+            btn.classList.remove('opacity-50', 'pointer-events-none');
+            if (count > 0) { 
+                closeSmartPaste(); 
+                document.getElementById('successOverlayTitle').innerText = `Imported ${count} Items`;
+                document.getElementById('successOverlay').classList.remove('hidden'); document.getElementById('successOverlay').classList.add('flex');
+                saveDataLocally(); 
+            } else showToast("No transaction amounts found.", "error");
         }
 
-        /* --- UI & DASHBOARD --- */
+        /* --- UI LOGIC --- */
         function updateDashboard() {
             let inc=0, spd=0, pdB=0, unpd=0; const bills=[], ledger=[];
             transactions.forEach(tx => {
@@ -276,113 +347,110 @@
             });
             const cash = Math.max(0, inc - spd - pdB); const safe = cash - unpd;
             document.getElementById('safeToSpendAmount').innerText = formatMoney(safe);
-            document.getElementById('safeToSpendAmount').className = safe < 0 ? 'text-5xl font-extrabold tracking-tight text-rose-400 mb-1' : 'text-5xl font-extrabold tracking-tight text-emerald-400 mb-1';
+            document.getElementById('safeToSpendAmount').className = safe < 0 ? 'text-5xl font-extrabold text-rose-400 mb-1' : 'text-5xl font-extrabold text-emerald-400 mb-1';
             document.getElementById('safeToSpendCard').classList.toggle('border-rose-900/50', safe < 0);
             document.getElementById('cashOnHandAmount').innerText = formatMoney(cash);
             document.getElementById('totalOwedAmount').innerText = formatMoney(unpd);
-            const bList = document.getElementById('unpaidBillsList'); bList.innerHTML = '';
+            const bL = document.getElementById('unpaidBillsList'); bL.innerHTML = '';
             if(bills.length > 0){
                 document.getElementById('outstandingBillsContainer').classList.remove('hidden');
                 bills.sort((a,b) => new Date(a.dueDate)-new Date(b.dueDate)).forEach(b => {
                     const d = getDaysDifference(new Date(), new Date(b.dueDate));
-                    let cl = 'text-slate-400', txt = `Due in ${d}d`;
-                    if(d<0){ cl='text-rose-400 font-bold'; txt=`Overdue ${Math.abs(d)}d`; } else if(d<=3) cl='text-amber-400 font-bold'; else if(d===0){ cl='text-rose-400 font-bold'; txt='Due Today'; }
-                    const el = document.createElement('div'); el.className='bg-slate-800 p-4 rounded-xl border border-rose-900/50 flex flex-col gap-3 animate-enter';
-                    el.innerHTML = `<div class="flex justify-between items-start"><div><p class="font-bold">${b.description}</p><p class="text-xs ${cl}">${txt}</p></div><span class="font-bold text-rose-400">${formatMoney(b.amount)}</span></div><div class="flex justify-between items-center"><div class="flex gap-2"><button onclick="editTx('${b.id}')" class="p-2 text-slate-400"><i class="ph-bold ph-pencil-simple"></i></button><button onclick="deleteTx('${b.id}')" class="p-2 text-rose-500/80"><i class="ph-bold ph-trash"></i></button></div><button onclick="payBill('${b.id}')" class="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-bold">Pay</button></div>`;
-                    bList.appendChild(el);
+                    let cl = d<0?'text-rose-400 font-bold':d<=3?'text-amber-400 font-bold':'text-slate-400';
+                    const el = document.createElement('div'); el.className='bg-slate-800 p-4 rounded-xl border border-rose-900/50 flex flex-col gap-3 animate-enter shadow-sm';
+                    el.innerHTML = `<div class="flex justify-between items-start"><div><p class="font-bold">${b.description}</p><p class="text-xs ${cl}">${d<0?`Overdue ${Math.abs(d)}d`:`Due in ${d}d`}</p></div><span class="font-bold text-rose-400">${formatMoney(b.amount)}</span></div><div class="flex justify-between items-center"><div class="flex gap-2"><button onclick="editTx('${b.id}')" class="p-2 text-slate-400"><i class="ph-bold ph-pencil-simple"></i></button><button onclick="deleteTx('${b.id}')" class="p-2 text-rose-500/80"><i class="ph-bold ph-trash"></i></button></div><button onclick="payBill('${b.id}')" class="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-bold shadow-lg">Pay Bill</button></div>`;
+                    bL.appendChild(el);
                 });
             } else document.getElementById('outstandingBillsContainer').classList.add('hidden');
-            const lList = document.getElementById('recentLedgerList'); lList.innerHTML = '';
-            if(!ledger.length) lList.innerHTML = '<div class="p-8 text-center text-slate-500 text-sm">No items.</div>';
+            const lL = document.getElementById('recentLedgerList'); lL.innerHTML = '';
+            if(!ledger.length) lL.innerHTML = '<div class="p-8 text-center text-slate-500 text-sm">No ledger entries.</div>';
             else ledger.sort((a,b) => new Date(b.date||b.dueDate)-new Date(a.date||a.dueDate)).slice(0,20).forEach(tx => {
-                let col=tx.type==='income'?'text-emerald-400':'text-slate-100', pre=tx.type==='income'?'+':'-';
                 const el = document.createElement('div'); el.className='p-4 flex flex-col border-b border-slate-700/50';
-                el.innerHTML = `<div class="flex justify-between items-center"><div class="flex items-center gap-3"><div><p class="font-bold text-slate-100 leading-tight">${tx.description}</p><p class="text-xs text-slate-500">${formatDateUI(tx.date||tx.dueDate)}</p></div></div><span class="font-bold ${col}">${pre}${formatMoney(tx.amount)}</span></div><div class="flex justify-end gap-1"><button onclick="editTx('${tx.id}')" class="p-1 text-slate-500"><i class="ph-bold ph-pencil-simple"></i></button><button onclick="deleteTx('${tx.id}')" class="p-1 text-rose-500/60"><i class="ph-bold ph-trash"></i></button></div>`;
-                lList.appendChild(el);
+                el.innerHTML = `<div class="flex justify-between items-center"><div><p class="font-bold leading-tight">${tx.description}</p><p class="text-xs text-slate-500">${formatDateUI(tx.date||tx.dueDate)}</p></div><span class="font-bold ${tx.type==='income'?'text-emerald-400':'text-slate-100'}">${tx.type==='income'?'+':'-'}${formatMoney(tx.amount)}</span></div><div class="flex justify-end gap-1 mt-1"><button onclick="editTx('${tx.id}')" class="p-1 text-slate-500"><i class="ph-bold ph-pencil-simple"></i></button><button onclick="deleteTx('${tx.id}')" class="p-1 text-rose-500/60"><i class="ph-bold ph-trash"></i></button></div>`;
+                lL.appendChild(el);
             });
             document.getElementById('sync-warning-banner').classList.toggle('hidden', accessToken || localStorage.getItem('hideTightShipSyncBanner')==='true');
         }
 
-        /* --- LOGGING --- */
+        /* --- LOGGING RECURRING FIX --- */
         async function handleLogTransaction(e){
             e.preventDefault();
             const type=document.querySelector('input[name="txType"]:checked').value, amt=parseFloat(document.getElementById('txAmount').value), desc=document.getElementById('txDescription').value.trim();
-            if(!amt || !desc) return showToast("Amount and description required", "error");
+            if(!amt || !desc) return showToast("Amount & Description required", "error");
             let date=document.getElementById('txDate').value, isP=true, due=null, isR=false;
             if(type==='bill'){ isP=document.getElementById('txIsPaid').checked; isR=document.getElementById('txIsRecurring').checked; if(!isP){ due=document.getElementById('input-due-date').value; date=null; } }
             const txData = { id: editingTxId||'tx_'+Date.now(), type, amount:amt, description:desc, date, isPaid:isP, dueDate:due, isRecurring:isR, receipt:currentBase64Receipt, updatedAt:new Date().toISOString() };
             if(editingTxId){ const idx=transactions.findIndex(t=>t.id===editingTxId); transactions[idx]={...transactions[idx], ...txData}; }
             else { txData.createdAt=new Date().toISOString(); transactions.push(txData); }
-            
-            // UI Update first for responsiveness
-            document.getElementById('successOverlayTitle').innerText=editingTxId?"Updated":"Logged";
-            document.getElementById('successOverlay').classList.remove('hidden');
-            document.getElementById('successOverlay').classList.add('flex');
-            
-            // Save in background
-            saveDataLocally();
+            document.getElementById('successOverlayTitle').innerText=editingTxId?"Updated":"Logged Successfully"; document.getElementById('successOverlay').classList.remove('hidden'); document.getElementById('successOverlay').classList.add('flex'); saveDataLocally();
         }
 
-        function switchTab(t) {
-            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
-            document.querySelectorAll('.nav-btn').forEach(btn => { btn.classList.remove('text-slate-100'); btn.classList.add('text-slate-500'); btn.querySelector('.nav-pill').classList.remove('bg-slate-800'); });
-            document.getElementById(`tab-${t}`).classList.add('active');
-            document.getElementById(`nav-${t}`).classList.replace('text-slate-500','text-slate-100');
-            document.getElementById(`nav-${t}`).querySelector('.nav-pill').classList.add('bg-slate-800');
-            if(t==='dashboard') updateDashboard();
-        }
-
-        function closeSuccessAndGoHome(){ document.getElementById('successOverlay').classList.add('hidden'); resetLogForm(); switchTab('dashboard'); }
-        function closeSuccessAndLogAnother(){ document.getElementById('successOverlay').classList.add('hidden'); resetLogForm(); }
-        function resetLogForm(){ document.getElementById('txForm').reset(); document.getElementById('txDate').valueAsDate=new Date(); editingTxId=null; currentBase64Receipt=null; document.getElementById('receiptPreview').classList.add('hidden'); document.getElementById('receiptPrompt').classList.remove('hidden'); document.getElementById('btn-submit').innerText="Save Transaction"; document.getElementById('btn-cancel-edit').classList.add('hidden'); updateFormUI(); }
-        function editTx(id){ const tx=transactions.find(t=>t.id===id); if(!tx)return; editingTxId=id; currentBase64Receipt=tx.receipt; document.querySelector(`input[name="txType"][value="${tx.type}"]`).checked=true; updateFormUI(); document.getElementById('txAmount').value=tx.amount; document.getElementById('txDescription').value=tx.description; if(tx.type==='bill'){ document.getElementById('txIsPaid').checked=tx.isPaid; document.getElementById('txIsRecurring').checked=tx.isRecurring; toggleBillPaid(); updateRecurringUI(); if(tx.isPaid) document.getElementById('txDate').value=tx.date; else document.getElementById('input-due-date').value=tx.dueDate; } else document.getElementById('txDate').value=tx.date; if(tx.receipt){ const p=document.getElementById('receiptPreview'); p.src=tx.receipt; p.classList.remove('hidden'); document.getElementById('receiptPrompt').classList.add('hidden'); } document.getElementById('btn-submit').innerText="Update"; document.getElementById('btn-cancel-edit').classList.remove('hidden'); switchTab('log'); }
-        function cancelEdit(){ editingTxId=null; resetLogForm(); switchTab('dashboard'); }
-        function deleteTx(id){ if(confirm("Delete?")){ transactions=transactions.filter(t=>t.id!==id); saveDataLocally(); } }
-        async function handleReceiptUpload(e){ const f=e.target.files[0]; if(!f)return; const r=new FileReader(); r.readAsDataURL(f); r.onload=(ev)=>{ const img=new Image(); img.src=ev.target.result; img.onload=()=>{ const c=document.createElement('canvas'); const m=1200; let w=img.width, h=img.height; if(w>h && w>m){ h*=m/w; w=m; } else if(h>m){ w*=m/h; h=m; } c.width=w; c.height=h; c.getContext('2d').drawImage(img,0,0,w,h); currentBase64Receipt=c.toDataURL('image/jpeg',0.8); const p=document.getElementById('receiptPreview'); p.src=currentBase64Receipt; p.classList.remove('hidden'); document.getElementById('receiptPrompt').classList.add('hidden'); }; }; }
-        function toggleBillPaid(){ const c=document.getElementById('txIsPaid'); c.checked=!c.checked; document.getElementById('billPaidIcon').className=c.checked?'ph-fill ph-check-circle text-blue-400 text-3xl':'ph-fill ph-clock text-rose-400 text-3xl'; syncBillDateLabel(); }
-        function syncBillDateLabel(){ const p=document.getElementById('txIsPaid').checked; document.getElementById('field-due-date').classList.toggle('hidden',p); document.getElementById('field-date').classList.toggle('hidden',!p); }
-        function toggleRecurring(){ const c=document.getElementById('txIsRecurring'); c.checked=!c.checked; updateRecurringUI(); }
-        function updateRecurringUI(){ const c=document.getElementById('txIsRecurring').checked; document.getElementById('recurringIcon').className=c?'ph-bold ph-arrows-clockwise text-blue-400 text-3xl':'ph-bold ph-arrows-clockwise text-slate-500 text-3xl'; document.getElementById('recurringText').innerText=c?'Repeats Monthly':'Does not repeat'; }
-
-        async function saveDataLocally(){ await localforage.setItem('tightShipTransactions', transactions); updateDashboard(); syncToDriveBackground(); }
-        function updateFormUI() {
-            const t = document.querySelector('input[name="txType"]:checked').value;
-            document.getElementById('billPaidToggleContainer').classList.toggle('hidden', t!=='bill');
-            document.getElementById('recurringBillContainer').classList.toggle('hidden', t!=='bill');
-            document.getElementById('lblDescription').innerText = t==='income'?'Source':t==='spend'?'Vendor':'Biller';
-        }
-        function handleCSVUpload(e){ const f=e.target.files[0]; if(!f)return; Papa.parse(f, { header:true, skipEmptyLines:true, complete:(r)=>processCSVData(r.data) }); }
-        async function processCSVData(data){ if(!data.length)return; data.forEach(row=>{ const h=Object.keys(row), aK=h.find(k=>k.toLowerCase().includes('amount')), dK=h.find(k=>k.toLowerCase().includes('date')), deK=h.find(k=>k.toLowerCase().includes('desc')); const aV=parseFloat(String(row[aK]).replace(/[^0-9.-]+/g,"")); if(isNaN(aV))return; transactions.push({id:'tx_'+Date.now()+Math.random(), type:aV>0?'income':'spend', amount:Math.abs(aV), description:row[deK]||'Imported', date:new Date(row[dK]).toISOString().split('T')[0], isPaid:true, isRecurring:false, createdAt:new Date().toISOString() }); }); await saveDataLocally(); switchTab('dashboard'); }
-        async function downloadJson(){ const arc=await localforage.getItem('tightShipArchived')||[]; const d=JSON.stringify({version:2, transactions, archived:arc},null,2); const a=document.createElement('a'); a.href="data:text/json;charset=utf-8,"+encodeURIComponent(d); a.download="tight-ship.json"; a.click(); }
-        async function archiveOldData(){ const cut=new Date(); cut.setDate(cut.getDate()-90); const cS=cut.toISOString().split('T')[0]; let ac=[], ar=await localforage.getItem('tightShipArchived')||[], ct=0; transactions.forEach(tx=>{ if(tx.type==='bill'&&!tx.isPaid)ac.push(tx); else if((tx.date||tx.dueDate)<cS){ ar.push(tx); ct++; } else ac.push(tx); }); if(ct>0){ transactions=ac; await localforage.setItem('tightShipTransactions',ac); await localforage.setItem('tightShipArchived',ar); updateDashboard(); showToast(`Archived ${ct}`,'success'); } }
-        function promptWipeData(){ document.getElementById('wipeOverlay').classList.remove('hidden'); document.getElementById('wipeOverlay').classList.add('flex'); }
-        function closeWipePrompt(){ document.getElementById('wipeOverlay').classList.add('hidden'); }
-        async function executeWipeData(){ transactions=[]; await localforage.clear(); localStorage.clear(); location.reload(); }
         function payBill(id){
             const tx = transactions.find(t=>t.id===id);
             if(tx){
-                const old = tx.dueDate||tx.date||new Date().toISOString().split('T')[0]; tx.isPaid=true; tx.date=new Date().toISOString().split('T')[0]; tx.dueDate=null;
-                if(tx.isRecurring){ let n = new Date(old); n.setMonth(n.getMonth()+1); transactions.push({ id:'tx_'+Date.now(), type:'bill', amount:tx.amount, description:tx.description, date:null, dueDate:n.toISOString().split('T')[0], isPaid:false, isRecurring:true, createdAt:new Date().toISOString() }); }
+                const oldRef = tx.dueDate || tx.date || new Date().toISOString().split('T')[0];
+                tx.isPaid = true; tx.date = new Date().toISOString().split('T')[0]; tx.dueDate = null;
+                if (tx.isRecurring) {
+                    let nextM = new Date(oldRef); nextM.setMonth(nextM.getMonth() + 1);
+                    transactions.push({ id: 'tx_'+Date.now(), type: 'bill', amount: tx.amount, description: tx.description, date: null, dueDate: nextM.toISOString().split('T')[0], isPaid: false, isRecurring: true, receipt: null, createdAt: new Date().toISOString() });
+                }
                 saveDataLocally(); showToast('Paid!', 'success');
             }
         }
 
-        /* --- SYNC --- */
+        /* --- CORE HELPERS --- */
+        function switchTab(t) { document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active')); document.querySelectorAll('.nav-btn').forEach(btn => { btn.classList.remove('text-slate-100'); btn.classList.add('text-slate-500'); btn.querySelector('.nav-pill').classList.remove('bg-slate-800'); }); document.getElementById(`tab-${t}`).classList.add('active'); document.getElementById(`nav-${t}`).classList.replace('text-slate-500','text-slate-100'); document.getElementById(`nav-${t}`).querySelector('.nav-pill').classList.add('bg-slate-800'); if(t==='dashboard') updateDashboard(); }
+        function closeSuccessAndGoHome(){ document.getElementById('successOverlay').classList.add('hidden','flex'); document.getElementById('successOverlay').classList.add('hidden'); resetLogForm(); switchTab('dashboard'); }
+        function closeSuccessAndLogAnother(){ document.getElementById('successOverlay').classList.add('hidden','flex'); document.getElementById('successOverlay').classList.add('hidden'); resetLogForm(); }
+        function resetLogForm(){ document.getElementById('txForm').reset(); document.getElementById('txDate').valueAsDate=new Date(); editingTxId=null; currentBase64Receipt=null; document.getElementById('receiptPreview').classList.add('hidden'); document.getElementById('receiptPrompt').classList.remove('hidden'); document.getElementById('btn-submit').innerText="Save Transaction"; document.getElementById('btn-cancel-edit').classList.add('hidden'); updateFormUI(); }
+        function editTx(id){ const tx=transactions.find(t=>t.id===id); if(!tx)return; editingTxId=id; currentBase64Receipt=tx.receipt; document.querySelector(`input[name="txType"][value="${tx.type}"]`).checked=true; updateFormUI(); document.getElementById('txAmount').value=tx.amount; document.getElementById('txDescription').value=tx.description; if(tx.type==='bill'){ document.getElementById('txIsPaid').checked=tx.isPaid; document.getElementById('txIsRecurring').checked=tx.isRecurring; toggleBillPaid(false); updateRecurringUI(); if(tx.isPaid) document.getElementById('txDate').value=tx.date; else document.getElementById('input-due-date').value=tx.dueDate; } else document.getElementById('txDate').value=tx.date; if(tx.receipt){ const p=document.getElementById('receiptPreview'); p.src=tx.receipt; p.classList.remove('hidden'); document.getElementById('receiptPrompt').classList.add('hidden'); } document.getElementById('btn-submit').innerText="Update"; document.getElementById('btn-cancel-edit').classList.remove('hidden'); switchTab('log'); }
+        function cancelEdit(){ editingTxId=null; resetLogForm(); switchTab('dashboard'); }
+        function deleteTx(id){ if(confirm("Delete this?")){ transactions=transactions.filter(t=>t.id!==id); saveDataLocally(); } }
+        async function handleReceiptUpload(e){ const f=e.target.files[0]; if(!f)return; const r=new FileReader(); r.readAsDataURL(f); r.onload=(ev)=>{ const img=new Image(); img.src=ev.target.result; img.onload=()=>{ const c=document.createElement('canvas'); const m=1200; let w=img.width, h=img.height; if(w>h && w>m){ h*=m/w; w=m; } else if(h>m){ w*=m/h; h=m; } c.width=w; c.height=h; c.getContext('2d').drawImage(img,0,0,w,h); currentBase64Receipt=c.toDataURL('image/jpeg',0.8); const p=document.getElementById('receiptPreview'); p.src=currentBase64Receipt; p.classList.remove('hidden'); document.getElementById('receiptPrompt').classList.add('hidden'); }; }; }
+        
+        function toggleBillPaid(shouldFlip = true){ 
+            const c=document.getElementById('txIsPaid'); 
+            if(shouldFlip) c.checked=!c.checked; 
+            const icon = document.getElementById('billPaidIcon');
+            const text = document.getElementById('billPaidText');
+            if(c.checked) {
+                icon.className='ph-fill ph-check-circle text-blue-400 text-3xl';
+                text.innerText = 'Already Paid';
+            } else {
+                icon.className='ph-fill ph-clock text-rose-400 text-3xl';
+                text.innerText = 'Outstanding / Due Soon';
+            }
+            syncBillDateLabel(); 
+        }
+
+        function syncBillDateLabel(){ const p=document.getElementById('txIsPaid').checked; document.getElementById('field-due-date').classList.toggle('hidden',p); document.getElementById('field-date').classList.toggle('hidden',!p); }
+        function toggleRecurring(){ const c=document.getElementById('txIsRecurring'); c.checked=!c.checked; updateRecurringUI(); }
+        function updateRecurringUI(){ const c=document.getElementById('txIsRecurring').checked; document.getElementById('recurringIcon').className=c?'ph-bold ph-arrows-clockwise text-blue-400 text-3xl':'ph-bold ph-arrows-clockwise text-slate-500 text-3xl'; document.getElementById('recurringText').innerText=c?'Repeats Monthly':'Does not repeat'; }
+        async function saveDataLocally(){ await localforage.setItem('tightShipTransactions', transactions); updateDashboard(); syncToDriveBackground(); }
+        function updateFormUI() { const t = document.querySelector('input[name="txType"]:checked').value; document.getElementById('billPaidToggleContainer').classList.toggle('hidden', t!=='bill'); document.getElementById('recurringBillContainer').classList.toggle('hidden', t!=='bill'); document.getElementById('lblDescription').innerText = t==='income'?'Source':t==='spend'?'Vendor':'Biller'; }
+        function handleCSVUpload(e){ const f=e.target.files[0]; if(!f)return; Papa.parse(f, { header:true, skipEmptyLines:true, complete:(r)=>processCSVData(r.data) }); }
+        async function processCSVData(data){ if(!data.length)return; data.forEach(row=>{ const h=Object.keys(row), aK=h.find(k=>k.toLowerCase().includes('amount')), dK=h.find(k=>k.toLowerCase().includes('date')), deK=h.find(k=>k.toLowerCase().includes('desc')); const aV=parseFloat(String(row[aK]).replace(/[^0-9.-]+/g,"")); if(isNaN(aV))return; transactions.push({id:'tx_'+Date.now()+Math.random(), type:aV>0?'income':'spend', amount:Math.abs(aV), description:row[deK]||'Imported', date:new Date(row[dK]).toISOString().split('T')[0], isPaid:true, isRecurring:false, createdAt:new Date().toISOString() }); }); await saveDataLocally(); switchTab('dashboard'); }
+        async function archiveOldData(){ const cut=new Date(); cut.setDate(cut.getDate()-90); const cS=cut.toISOString().split('T')[0]; let ac=[], ar=await localforage.getItem('tightShipArchived')||[], ct=0; transactions.forEach(tx=>{ if(tx.type==='bill'&&!tx.isPaid)ac.push(tx); else if((tx.date||tx.dueDate)<cS){ ar.push(tx); ct++; } else ac.push(tx); }); if(ct>0){ transactions=ac; await localforage.setItem('tightShipTransactions',ac); await localforage.setItem('tightShipArchived',ar); updateDashboard(); showToast(`Archived ${ct} items`, 'success'); } }
+        function promptWipeData(){ document.getElementById('wipeOverlay').classList.remove('hidden'); document.getElementById('wipeOverlay').classList.add('flex'); }
+        function closeWipePrompt(){ document.getElementById('wipeOverlay').classList.add('hidden'); }
+        async function executeWipeData(){ transactions=[]; await localforage.clear(); localStorage.clear(); location.reload(); }
         function gapiLoaded(){ gapi.load('client', ()=>gapi.client.init({discoveryDocs:['https://www.googleapis.com/discovery/v1/apis/drive/v3/rest']})); }
         function gisLoaded(){ tokenClient=google.accounts.oauth2.initTokenClient({client_id:GOOGLE_CLIENT_ID, scope:SCOPES, callback:(r)=>{if(r.access_token){accessToken=r.access_token; updateDriveUI(true); if(!localStorage.getItem('tightShipOnboarded'))finishOnboarding();}}}); }
-        function handleAuthClick(){ if(!tokenClient)return showToast("Loading...","error"); tokenClient.requestAccessToken({prompt:'consent'}); }
+        function handleAuthClick(){ if(!tokenClient) return showToast("Sync services loading...","info"); tokenClient.requestAccessToken({prompt:'consent'}); }
         function handleSignoutClick(){ const t=gapi.client.getToken(); if(t){ google.accounts.oauth2.revoke(t.access_token,()=>{ gapi.client.setToken(''); accessToken=null; updateDriveUI(false); }); } }
         function updateDriveUI(a){ document.getElementById('syncStatusText').innerText=a?'Connected':'Not connected'; document.getElementById('driveUnauthUI').classList.toggle('hidden',a); document.getElementById('driveAuthUI').classList.toggle('hidden',!a); }
         async function findFileId(){ try { const r=await gapi.client.drive.files.list({q:`name='${FILE_NAME}' and spaces='appDataFolder'`, spaces:'appDataFolder', fields:'files(id)'}); return r.result.files.length?r.result.files[0].id:null; } catch(e){ return null; } }
-        async function syncToDrive(){ if(!accessToken)return handleAuthClick(); showToast('Backing up...','info'); const arc=await localforage.getItem('tightShipArchived')||[]; const content=JSON.stringify({version:2, transactions, archived:arc}); try { const id=await findFileId(); const form=new FormData(); form.append('metadata', new Blob([JSON.stringify(id?{}:{name:FILE_NAME, parents:['appDataFolder']})], {type:'application/json'})); form.append('file', new Blob([content], {type:'application/json'})); await fetch(id?`https://www.googleapis.com/upload/drive/v3/files/${id}?uploadType=multipart`:`https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart`, {method:id?'PATCH':'POST', headers:{'Authorization':'Bearer '+accessToken}, body:form}); showToast("Backed up!", "success"); } catch(e){ showToast("Sync error","error"); } }
-        async function syncToDriveBackground(){ if(!accessToken)return; const arc=await localforage.getItem('tightShipArchived')||[]; const content=JSON.stringify({version:2, transactions, archived:arc}); const id=await findFileId(); const form=new FormData(); form.append('metadata', new Blob([JSON.stringify(id?{}:{name:FILE_NAME, parents:['appDataFolder']})], {type:'application/json'})); form.append('file', new Blob([content], {type:'application/json'})); fetch(id?`https://www.googleapis.com/upload/drive/v3/files/${id}?uploadType=multipart`:`https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart`, {method:id?'PATCH':'POST', headers:{'Authorization':'Bearer '+accessToken}, body:form}); }
+        async function syncToDrive(){ if(!accessToken)return handleAuthClick(); showToast('Syncing...','info'); const arc=await localforage.getItem('tightShipArchived')||[]; const content=JSON.stringify({version:2, transactions, archived:arc}); try { const id=await findFileId(); const form=new FormData(); form.append('metadata', new Blob([JSON.stringify(id?{}:{name:FILE_NAME, parents:['appDataFolder']})], {type:'application/json'})); form.append('file', new Blob([content], {type:'application/json'})); await fetch(id?`https://www.googleapis.com/upload/drive/v3/files/${id}?uploadType=multipart`:`https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart`, {method:id?'PATCH':'POST', headers:{'Authorization':'Bearer '+accessToken}, body:form}); showToast("Backed up!", "success"); } catch(e){ showToast("Sync error","error"); } }
+        async function syncToDriveBackground(){ if(!accessToken)return; const arc=await localforage.getItem('tightShipArchived')||[]; const content=JSON.stringify({version:2, transactions, archived:arc}); const id=await findFileId(); if(!id) return; const form=new FormData(); form.append('metadata', new Blob([JSON.stringify({name:FILE_NAME})], {type:'application/json'})); form.append('file', new Blob([content], {type:'application/json'})); fetch(`https://www.googleapis.com/upload/drive/v3/files/${id}?uploadType=multipart`, {method:'PATCH', headers:{'Authorization':'Bearer '+accessToken}, body:form}); }
         async function syncFromDrive(){ if(!accessToken)return handleAuthClick(); const id=await findFileId(); if(!id)return showToast("No backup found","error"); try { const r=await gapi.client.drive.files.get({fileId:id, alt:'media'}); if(r.result){ if(Array.isArray(r.result)) transactions=r.result; else if(r.result.version===2){ transactions=r.result.transactions; await localforage.setItem('tightShipArchived', r.result.archived); } await localforage.setItem('tightShipTransactions', transactions); updateDashboard(); showToast("Restored!","success"); } } catch(e){ showToast("Failed.","error"); } }
         function shareApp() { if(navigator.share) navigator.share({title:'Tight Ship', url:location.href}); else { const i=document.createElement('input'); i.value=location.href; document.body.appendChild(i); i.select(); document.execCommand('copy'); i.remove(); showToast("Link copied!","success"); } }
         function formatDateUI(s){ if(!s)return '--'; const [y,m,d]=s.split('-'); return new Date(y,m-1,d).toLocaleDateString('en-US',{month:'short',day:'numeric'}); }
         function getDaysDifference(d1,d2){ return Math.ceil((new Date(d2.getFullYear(),d2.getMonth(),d2.getDate())-new Date(d1.getFullYear(),d1.getMonth(),d1.getDate()))/86400000); }
         function formatMoney(n){ return (n < 0 ? '-' : '') + '$' + Math.abs(n).toLocaleString('en-US',{minimumFractionDigits:2, maximumFractionDigits:2}); }
         function dismissSyncBanner(){ localStorage.setItem('hideTightShipSyncBanner','true'); document.getElementById('sync-warning-banner').classList.add('hidden'); }
+        function showToast(m,t){ const c=document.getElementById('toast-container'); const e=document.createElement('div'); e.className=`px-4 py-2 rounded-full text-xs font-bold shadow-lg animate-enter pointer-events-auto ${t==='success'?'bg-emerald-600 text-white':'bg-slate-800 text-slate-100 border border-slate-700'}`; e.innerText=m; c.appendChild(e); setTimeout(()=>e.remove(),3000); }
         async function installApp(){ if(deferredPrompt){ deferredPrompt.prompt(); await deferredPrompt.userChoice; deferredPrompt=null; document.getElementById('installAppBtn').classList.add('hidden'); } }
+        let deferredPrompt; window.addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); deferredPrompt = e; document.getElementById('installAppBtn').classList.remove('hidden'); });
     </script>
 </body>
 </html>
