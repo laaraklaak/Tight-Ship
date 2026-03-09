@@ -185,10 +185,10 @@
             
             <ul class="space-y-4 mb-8">
                 <li class="flex items-start gap-3">
-                    <i class="ph-fill ph-file-csv text-emerald-400 text-lg mt-0.5"></i>
+                    <i class="ph-fill ph-magic-wand text-emerald-400 text-lg mt-0.5"></i>
                     <div>
-                        <p class="text-sm font-bold text-slate-200">Zero-Backend Bank Sync</p>
-                        <p class="text-xs text-slate-400">Securely import your bank CSVs offline from the Settings tab.</p>
+                        <p class="text-sm font-bold text-slate-200">Smart Paste Import</p>
+                        <p class="text-xs text-slate-400">Copy transaction text from your bank app and paste it here to bulk log entries instantly.</p>
                     </div>
                 </li>
                 <li class="flex items-start gap-3">
@@ -199,16 +199,40 @@
                     </div>
                 </li>
                 <li class="flex items-start gap-3">
-                    <i class="ph-fill ph-archive text-amber-400 text-lg mt-0.5"></i>
+                    <i class="ph-fill ph-hard-drives text-amber-400 text-lg mt-0.5"></i>
                     <div>
-                        <p class="text-sm font-bold text-slate-200">Data Archiving</p>
-                        <p class="text-xs text-slate-400">Archive old entries from settings to keep the app blazing fast.</p>
+                        <p class="text-sm font-bold text-slate-200">Infinite Storage</p>
+                        <p class="text-xs text-slate-400">Database upgrade allows for unlimited receipt image attachments.</p>
                     </div>
                 </li>
             </ul>
             
             <button onclick="closeWhatsNew()" class="w-full bg-blue-600 text-white font-bold py-4 rounded-xl active:scale-[0.98] transition-transform">
                 Awesome, let's go!
+            </button>
+        </div>
+    </div>
+
+
+    <!-- ========================================== -->
+    <!-- SMART PASTE OVERLAY                        -->
+    <!-- ========================================== -->
+    <div id="smartPasteOverlay" class="fixed inset-0 z-[150] bg-slate-950 hidden flex-col animate-enter">
+        <div class="flex-1 flex flex-col p-6 max-w-lg mx-auto w-full">
+            <header class="flex justify-between items-center mb-6">
+                <h3 class="text-2xl font-black text-slate-100">Smart Paste</h3>
+                <button onclick="closeSmartPaste()" class="text-slate-500 text-2xl p-2"><i class="ph-bold ph-x"></i></button>
+            </header>
+
+            <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 mb-6">
+                <p class="text-xs text-slate-400 uppercase font-bold tracking-widest mb-3">Instructions</p>
+                <p class="text-sm text-slate-300">Open your bank app, select/copy your recent transaction text, and paste it below. Our algorithm will extract the data for you.</p>
+            </div>
+
+            <textarea id="smartPasteInput" class="flex-1 w-full bg-slate-900 border border-slate-700 rounded-3xl p-6 text-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-all placeholder-slate-700 resize-none mb-6" placeholder="Paste bank text here...&#10;&#10;e.g. 03/05/26 AMAZON.COM -$12.99"></textarea>
+
+            <button onclick="processSmartPaste()" class="w-full bg-emerald-600 text-white font-black py-5 rounded-2xl shadow-lg shadow-emerald-900/20 active:scale-[0.95] transition-all flex items-center justify-center gap-2">
+                <i class="ph-bold ph-magic-wand text-xl"></i> Extract Transactions
             </button>
         </div>
     </div>
@@ -472,20 +496,30 @@
                 <h3 class="text-sm font-bold text-slate-500 uppercase tracking-wider mb-3 ml-1">Local Data</h3>
                 <div class="bg-slate-800 rounded-2xl border border-slate-700 shadow-sm overflow-hidden flex flex-col">
                     
-                    <!-- NEW CSV IMPORT BUTTON -->
+                    <!-- NEW SMART PASTE BUTTON -->
+                    <button onclick="openSmartPaste()" class="flex items-center gap-3 p-4 border-b border-slate-700/50 hover:bg-slate-700/50 active:bg-slate-700 transition-colors text-left w-full group">
+                        <div class="bg-slate-900 p-2 rounded-full text-emerald-400 group-hover:text-emerald-300 border border-slate-700">
+                            <i class="ph-bold ph-magic-wand text-lg"></i>
+                        </div>
+                        <div>
+                            <p class="font-bold text-slate-100">Smart Paste Import</p>
+                            <p class="text-xs text-slate-400">Copy text from bank & paste to auto-log</p>
+                        </div>
+                    </button>
+
                     <button onclick="document.getElementById('csvFileInput').click()" class="flex items-center gap-3 p-4 border-b border-slate-700/50 hover:bg-slate-700/50 active:bg-slate-700 transition-colors text-left w-full group">
                         <div class="bg-slate-900 p-2 rounded-full text-blue-400 group-hover:text-blue-300 border border-slate-700">
                             <i class="ph-bold ph-file-csv text-lg"></i>
                         </div>
                         <div>
                             <p class="font-bold text-slate-100">Import Bank CSV</p>
-                            <p class="text-xs text-slate-400">Bulk add 100% securely offline</p>
+                            <p class="text-xs text-slate-400">Bulk add from bank statement files</p>
                         </div>
                     </button>
                     <input type="file" id="csvFileInput" accept=".csv" class="hidden" onchange="handleCSVUpload(event)">
                     
                     <button onclick="archiveOldData()" class="flex items-center gap-3 p-4 border-b border-slate-700/50 hover:bg-slate-700/50 active:bg-slate-700 transition-colors text-left w-full group">
-                        <div class="bg-slate-900 p-2 rounded-full text-emerald-400 group-hover:text-emerald-300 border border-slate-700">
+                        <div class="bg-slate-900 p-2 rounded-full text-amber-400 group-hover:text-amber-300 border border-slate-700">
                             <i class="ph-bold ph-archive text-lg"></i>
                         </div>
                         <div>
@@ -585,7 +619,7 @@
     <!-- JAVASCRIPT LOGIC -->
     <script>
         /* --- CONFIGURATION --- */
-        const APP_VERSION = '3.0'; // Updated to trigger What's New modal for CSV
+        const APP_VERSION = '4.0'; // Updated for Smart Paste feature
         const FILE_NAME = 'tight-ship-ledger.json';
         const GOOGLE_CLIENT_ID = '590906229865-rlo3ap84ngm5rr6hmsov2sg9ko0o24sp.apps.googleusercontent.com'; 
         const SCOPES = 'https://www.googleapis.com/auth/drive.appdata';
@@ -623,11 +657,9 @@
             const isOnboarded = localStorage.getItem('tightShipOnboarded');
 
             if (!isOnboarded) {
-                // Brand new user -> Show Onboarding, silently save current version so they don't see both
                 document.getElementById('onboardingOverlay').classList.remove('hidden');
                 localStorage.setItem('tightShipVersion', APP_VERSION);
             } else if (savedVersion !== APP_VERSION) {
-                // Existing user, new version detected -> Show What's New
                 document.getElementById('whatsNewOverlay').classList.remove('hidden');
                 document.getElementById('whatsNewOverlay').classList.add('flex');
             }
@@ -643,29 +675,19 @@
             document.getElementById('onboardStep1').classList.add('hidden');
             document.getElementById('onboardStep2').classList.add('hidden');
             document.getElementById('onboardStep3').classList.add('hidden');
-            
             document.getElementById(`onboardStep${step}`).classList.remove('hidden');
         }
 
         async function saveStartingBalance() {
             const rawAmount = document.getElementById('onboardBalance').value;
             const amount = parseFloat(rawAmount) || 0;
-            
             if (amount > 0) {
                 const safeId = (typeof crypto !== 'undefined' && crypto.randomUUID) ? crypto.randomUUID() : 'tx_' + Date.now().toString(36) + Math.random().toString(36).substring(2, 9);
-                const newTx = {
-                    id: safeId,
-                    type: 'income',
-                    amount: amount,
-                    description: 'Starting Balance',
-                    date: new Date().toISOString().split('T')[0],
-                    isPaid: true,
-                    dueDate: null,
-                    isRecurring: false,
-                    receipt: null,
-                    createdAt: new Date().toISOString()
-                };
-                transactions.push(newTx);
+                transactions.push({
+                    id: safeId, type: 'income', amount: amount, description: 'Starting Balance',
+                    date: new Date().toISOString().split('T')[0], isPaid: true, dueDate: null, isRecurring: false,
+                    receipt: null, createdAt: new Date().toISOString()
+                });
                 await saveDataLocally();
             }
             goToOnboardStep(3);
@@ -678,6 +700,72 @@
             showToast("Welcome aboard!", "success");
         }
 
+        /* --- SMART PASTE LOGIC --- */
+        function openSmartPaste() {
+            document.getElementById('smartPasteOverlay').classList.remove('hidden');
+            document.getElementById('smartPasteOverlay').classList.add('flex');
+            document.getElementById('smartPasteInput').focus();
+        }
+
+        function closeSmartPaste() {
+            document.getElementById('smartPasteOverlay').classList.add('hidden');
+            document.getElementById('smartPasteOverlay').classList.remove('flex');
+            document.getElementById('smartPasteInput').value = '';
+        }
+
+        async function processSmartPaste() {
+            const rawText = document.getElementById('smartPasteInput').value.trim();
+            if (!rawText) return showToast("Please paste some text first.", "error");
+
+            const lines = rawText.split('\n');
+            let importedCount = 0;
+
+            lines.forEach(line => {
+                // Regex for Currency: Looks for $1,234.56 or -12.34 or 50.00
+                const amountMatch = line.match(/-?\$?\s?\d{1,3}(,?\d{3})*(\.\d{2})?/);
+                if (!amountMatch) return;
+
+                const rawAmount = amountMatch[0];
+                let amountValue = parseFloat(rawAmount.replace(/[$,\s]/g, ''));
+                
+                // Regex for Date: MM/DD, MM-DD-YY, Mar 05, etc.
+                const dateMatch = line.match(/(?:\d{1,2}[\/\-]\d{1,2}(?:[\/\-]\d{2,4})?)|(?:(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s\d{1,2})/i);
+                
+                // Description: Take line, remove amount and date strings
+                let desc = line.replace(rawAmount, '').replace(dateMatch ? dateMatch[0] : '', '').trim();
+                desc = desc.replace(/[\|\-\:\t]/g, ' ').replace(/\s\s+/g, ' ').trim();
+                if (!desc) desc = "Bank Transaction";
+
+                let type = amountValue < 0 ? 'spend' : 'income';
+                let absAmount = Math.abs(amountValue);
+
+                let dateObj = new Date();
+                if (dateMatch) {
+                    const parsedDate = new Date(dateMatch[0]);
+                    if (!isNaN(parsedDate.getTime())) dateObj = parsedDate;
+                }
+                const formattedDate = dateObj.toISOString().split('T')[0];
+
+                const safeId = (typeof crypto !== 'undefined' && crypto.randomUUID) ? crypto.randomUUID() : 'tx_' + Date.now().toString(36) + Math.random().toString(36).substring(2, 9);
+
+                transactions.push({
+                    id: safeId, type: type, amount: absAmount, description: desc.substring(0, 80),
+                    date: formattedDate, isPaid: true, dueDate: null, isRecurring: false,
+                    receipt: null, createdAt: new Date().toISOString()
+                });
+                importedCount++;
+            });
+
+            if (importedCount > 0) {
+                await saveDataLocally();
+                showToast(`Extracted ${importedCount} transactions!`, 'success');
+                closeSmartPaste();
+                switchTab('dashboard');
+            } else {
+                showToast("Could not find any amounts to extract.", "error");
+            }
+        }
+
         /* --- NAVIGATION --- */
         function switchTab(tabId) {
             document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
@@ -686,17 +774,12 @@
                 btn.classList.add('text-slate-500');
                 btn.querySelector('.nav-pill').classList.remove('bg-slate-800');
             });
-
             document.getElementById(`tab-${tabId}`).classList.add('active');
-            
             const activeNav = document.getElementById(`nav-${tabId}`);
             activeNav.classList.remove('text-slate-500');
             activeNav.classList.add('text-slate-100');
             activeNav.querySelector('.nav-pill').classList.add('bg-slate-800');
-
             window.scrollTo(0,0);
-
-            // Ensure dashboard always triggers a fresh update when navigated to
             if (tabId === 'dashboard') updateDashboard();
         }
 
@@ -704,17 +787,13 @@
         function showToast(message, type = 'info') {
             const container = document.getElementById('toast-container');
             const toast = document.createElement('div');
-            
             let bgClass = 'bg-slate-800 text-slate-100 border border-slate-700';
             let icon = '<i class="ph-bold ph-info text-blue-400"></i>';
             if (type === 'success') { icon = '<i class="ph-bold ph-check-circle text-emerald-400"></i>'; }
             if (type === 'error') { bgClass = 'bg-rose-900/90 text-white border border-rose-800'; icon = '<i class="ph-bold ph-warning text-rose-200"></i>'; }
-
             toast.className = `${bgClass} px-5 py-3 rounded-full shadow-lg flex items-center gap-2 text-sm font-bold toast-enter w-auto max-w-sm pointer-events-auto backdrop-blur-sm`;
             toast.innerHTML = `${icon} ${message}`;
-            
             container.appendChild(toast);
-
             setTimeout(() => {
                 toast.style.opacity = '0';
                 toast.style.transform = 'translateY(-20px)';
@@ -723,191 +802,111 @@
             }, 3000);
         }
 
-        /* --- UTILS (FAULT-TOLERANT) --- */
-        function formatDateUI(dateStr) {
-            if (!dateStr || typeof dateStr !== 'string') return '--';
-            const parts = dateStr.split('-');
-            if (parts.length !== 3) return dateStr;
-            const dateObj = new Date(parts[0], parts[1] - 1, parts[2]);
-            if (isNaN(dateObj.getTime())) return dateStr;
-            return dateObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-        }
-
-        function getDaysDifference(date1, date2) {
-            if (!date1 || !date2 || isNaN(date1.getTime()) || isNaN(date2.getTime())) return 0;
-            const d1 = new Date(date1.getFullYear(), date1.getMonth(), date1.getDate());
-            const d2 = new Date(date2.getFullYear(), date2.getMonth(), date2.getDate());
-            const diffTime = d2 - d1;
-            return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-        }
-
-        function formatMoney(num) {
-            const safeNum = parseFloat(num) || 0;
-            const sign = safeNum < 0 ? '-' : '';
-            return sign + '$' + Math.abs(safeNum).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-        }
-
         /* --- MATH & DASHBOARD --- */
         function updateDashboard() {
-            let totalIncome = 0;
-            let totalSpend = 0;
-            let paidBills = 0;
-            let unpaidBillsAmount = 0;
-            const unpaidBillsList = [];
-            const recentLedger = [];
+            let totalIncome = 0; let totalSpend = 0; let paidBills = 0; let unpaidBillsAmount = 0;
+            const unpaidBillsList = []; const recentLedger = [];
 
-            // Process transactions safely
             transactions.forEach(tx => {
-                if (!tx) return; // Skip broken entries entirely
+                if (!tx) return;
                 const amount = parseFloat(tx.amount) || 0;
-                
-                if (tx.type === 'income') {
-                    totalIncome += amount;
-                    recentLedger.push(tx);
-                } else if (tx.type === 'spend') {
-                    totalSpend += amount;
-                    recentLedger.push(tx);
-                } else if (tx.type === 'bill') {
-                    if (tx.isPaid) {
-                        paidBills += amount;
-                        recentLedger.push(tx);
-                    } else {
-                        unpaidBillsAmount += amount;
-                        unpaidBillsList.push(tx);
-                    }
+                if (tx.type === 'income') { totalIncome += amount; recentLedger.push(tx); }
+                else if (tx.type === 'spend') { totalSpend += amount; recentLedger.push(tx); }
+                else if (tx.type === 'bill') {
+                    if (tx.isPaid) { paidBills += amount; recentLedger.push(tx); }
+                    else { unpaidBillsAmount += amount; unpaidBillsList.push(tx); }
                 }
             });
 
             let cashOnHand = totalIncome - totalSpend - paidBills;
-            if (cashOnHand < 0) cashOnHand = 0; // Prevent negative cash on hand
-
+            if (cashOnHand < 0) cashOnHand = 0;
             const safeToSpend = cashOnHand - unpaidBillsAmount;
 
-            // Update UI: Safe to Spend
             const safeCard = document.getElementById('safeToSpendCard');
             const safeText = document.getElementById('safeToSpendAmount');
             const accent = document.getElementById('safeSpendAccent');
             safeText.innerText = formatMoney(safeToSpend);
             
             if (safeToSpend < 0) {
-                safeText.classList.remove('text-emerald-400');
-                safeText.classList.add('text-rose-400');
-                safeCard.classList.add('border-rose-900/50', 'bg-rose-950/20');
-                safeCard.classList.remove('border-slate-700');
+                safeText.classList.remove('text-emerald-400'); safeText.classList.add('text-rose-400');
+                safeCard.classList.add('border-rose-900/50', 'bg-rose-950/20'); safeCard.classList.remove('border-slate-700');
                 accent.className = 'absolute top-0 right-0 w-24 h-24 bg-rose-900/20 rounded-bl-full -z-10';
             } else {
-                safeText.classList.add('text-emerald-400');
-                safeText.classList.remove('text-rose-400');
-                safeCard.classList.remove('border-rose-900/50', 'bg-rose-950/20');
-                safeCard.classList.add('border-slate-700');
+                safeText.classList.add('text-emerald-400'); safeText.classList.remove('text-rose-400');
+                safeCard.classList.remove('border-rose-900/50', 'bg-rose-950/20'); safeCard.classList.add('border-slate-700');
                 accent.className = 'absolute top-0 right-0 w-24 h-24 bg-emerald-900/20 rounded-bl-full -z-10';
             }
 
-            // Update UI: Cash on Hand & Total Owed
             document.getElementById('cashOnHandAmount').innerText = formatMoney(cashOnHand);
             document.getElementById('totalOwedAmount').innerText = formatMoney(unpaidBillsAmount);
 
-            // Update UI: Unpaid Bills Queue
             const billsContainer = document.getElementById('outstandingBillsContainer');
             const billsListEl = document.getElementById('unpaidBillsList');
             billsListEl.innerHTML = '';
-            
             if (unpaidBillsList.length > 0) {
                 billsContainer.classList.remove('hidden');
-                // Sort safely
                 unpaidBillsList.sort((a, b) => new Date(a.dueDate || 0).getTime() - new Date(b.dueDate || 0).getTime());
-                
                 unpaidBillsList.forEach(bill => {
                     const daysAway = getDaysDifference(new Date(), new Date(bill.dueDate));
                     let urgencyClass = 'text-slate-400';
                     let urgencyText = `Due in ${daysAway}d`;
                     if (daysAway < 0) { urgencyClass = 'text-rose-400 font-bold'; urgencyText = `Overdue by ${Math.abs(daysAway)}d`; }
-                    else if (daysAway <= 3) { urgencyClass = 'text-amber-400 font-bold'; }
+                    else if (daysAway <= 3) urgencyClass = 'text-amber-400 font-bold';
                     else if (daysAway === 0) { urgencyClass = 'text-rose-400 font-bold'; urgencyText = 'Due Today'; }
 
                     const el = document.createElement('div');
                     el.className = 'bg-slate-800 p-4 rounded-xl border border-rose-900/50 shadow-sm flex flex-col gap-3';
                     el.innerHTML = `
                         <div class="flex justify-between items-start">
-                            <div>
-                                <p class="font-bold text-slate-100">${bill.description}</p>
-                                <p class="text-xs ${urgencyClass}">${urgencyText} (${formatDateUI(bill.dueDate)})</p>
-                            </div>
+                            <div><p class="font-bold text-slate-100">${bill.description}</p><p class="text-xs ${urgencyClass}">${urgencyText} (${formatDateUI(bill.dueDate)})</p></div>
                             <span class="font-bold text-rose-400 text-lg">${formatMoney(bill.amount)}</span>
                         </div>
                         <div class="flex justify-between items-center pt-2 border-t border-slate-700/50">
                             <div class="flex gap-2">
-                                <button onclick="editTx('${bill.id}')" class="p-2 text-slate-400 hover:text-slate-200 transition-colors"><i class="ph-bold ph-pencil-simple text-lg"></i></button>
-                                <button onclick="deleteTx('${bill.id}')" class="p-2 text-rose-500/80 hover:text-rose-400 transition-colors"><i class="ph-bold ph-trash text-lg"></i></button>
+                                <button onclick="editTx('${bill.id}')" class="p-2 text-slate-400"><i class="ph-bold ph-pencil-simple text-lg"></i></button>
+                                <button onclick="deleteTx('${bill.id}')" class="p-2 text-rose-500/80"><i class="ph-bold ph-trash text-lg"></i></button>
                             </div>
-                            <button onclick="payBill('${bill.id}')" class="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-bold active:bg-blue-700 shadow-sm flex items-center gap-1 transition-colors">
-                                <i class="ph-bold ph-check"></i> Pay
-                            </button>
-                        </div>
-                    `;
+                            <button onclick="payBill('${bill.id}')" class="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-bold shadow-sm flex items-center gap-1 transition-colors"><i class="ph-bold ph-check"></i> Pay</button>
+                        </div>`;
                     billsListEl.appendChild(el);
                 });
-            } else {
-                billsContainer.classList.add('hidden');
-            }
+            } else billsContainer.classList.add('hidden');
 
-            // Update UI: Recent Ledger (Last 20)
             const ledgerEl = document.getElementById('recentLedgerList');
             ledgerEl.innerHTML = '';
-            
-            if (recentLedger.length === 0) {
-                ledgerEl.innerHTML = '<div class="p-8 text-center text-slate-500 text-sm">No transactions logged yet.</div>';
-            } else {
-                // Sort safely
+            if (recentLedger.length === 0) ledgerEl.innerHTML = '<div class="p-8 text-center text-slate-500 text-sm">No transactions logged yet.</div>';
+            else {
                 recentLedger.sort((a, b) => new Date(b.date || b.dueDate || 0).getTime() - new Date(a.date || a.dueDate || 0).getTime());
                 const top20 = recentLedger.slice(0, 20);
-                
                 top20.forEach((tx, index) => {
                     let icon, colorClass, amountPrefix, bgIcon;
-                    if (tx.type === 'income') {
-                        icon = 'ph-trend-up'; colorClass = 'text-emerald-400'; amountPrefix = '+'; bgIcon = 'bg-emerald-900/20 text-emerald-400';
-                    } else if (tx.type === 'spend') {
-                        icon = 'ph-shopping-cart'; colorClass = 'text-slate-100'; amountPrefix = '-'; bgIcon = 'bg-slate-700 text-slate-300';
-                    } else {
-                        icon = 'ph-file-text'; colorClass = 'text-slate-100'; amountPrefix = '-'; bgIcon = 'bg-blue-900/20 text-blue-400';
-                    }
-
+                    if (tx.type === 'income') { icon = 'ph-trend-up'; colorClass = 'text-emerald-400'; amountPrefix = '+'; bgIcon = 'bg-emerald-900/20 text-emerald-400'; }
+                    else if (tx.type === 'spend') { icon = 'ph-shopping-cart'; colorClass = 'text-slate-100'; amountPrefix = '-'; bgIcon = 'bg-slate-700 text-slate-300'; }
+                    else { icon = 'ph-file-text'; colorClass = 'text-slate-100'; amountPrefix = '-'; bgIcon = 'bg-blue-900/20 text-blue-400'; }
                     const isLast = index === top20.length - 1;
                     const borderClass = isLast ? '' : 'border-b border-slate-700/50';
-
                     const el = document.createElement('div');
                     el.className = `p-4 flex flex-col gap-2 ${borderClass}`;
                     el.innerHTML = `
                         <div class="flex justify-between items-center">
                             <div class="flex items-center gap-3">
-                                <div class="${bgIcon} p-2 rounded-full border border-slate-700/50">
-                                    <i class="ph-fill ${icon} text-lg"></i>
-                                </div>
-                                <div>
-                                    <p class="font-bold text-slate-100 leading-tight">${tx.description}</p>
-                                    <p class="text-xs text-slate-400 mt-0.5">${formatDateUI(tx.date || tx.dueDate)} ${tx.receipt ? '• <i class="ph-fill ph-image"></i>' : ''}</p>
-                                </div>
+                                <div class="${bgIcon} p-2 rounded-full border border-slate-700/50"><i class="ph-fill ${icon} text-lg"></i></div>
+                                <div><p class="font-bold text-slate-100 leading-tight">${tx.description}</p><p class="text-xs text-slate-400 mt-0.5">${formatDateUI(tx.date || tx.dueDate)} ${tx.receipt ? '• <i class="ph-fill ph-image"></i>' : ''}</p></div>
                             </div>
                             <span class="font-bold ${colorClass} text-right">${amountPrefix}${formatMoney(tx.amount)}</span>
                         </div>
                         <div class="flex justify-end gap-1 mt-1">
-                            <button onclick="editTx('${tx.id}')" class="p-1.5 text-slate-500 hover:text-slate-300 transition-colors"><i class="ph-bold ph-pencil-simple"></i></button>
-                            <button onclick="deleteTx('${tx.id}')" class="p-1.5 text-rose-500/60 hover:text-rose-400 transition-colors"><i class="ph-bold ph-trash"></i></button>
-                        </div>
-                    `;
+                            <button onclick="editTx('${tx.id}')" class="p-1.5 text-slate-500"><i class="ph-bold ph-pencil-simple"></i></button>
+                            <button onclick="deleteTx('${tx.id}')" class="p-1.5 text-rose-500/60"><i class="ph-bold ph-trash"></i></button>
+                        </div>`;
                     ledgerEl.appendChild(el);
                 });
             }
 
-            // Sync Banner Logic
             const b = document.getElementById('sync-warning-banner');
             const hideBanner = localStorage.getItem('hideTightShipSyncBanner') === 'true';
-            
-            if (!accessToken && !hideBanner) {
-                b.classList.remove('hidden');
-            } else {
-                b.classList.add('hidden');
-            }
+            if (!accessToken && !hideBanner) b.classList.remove('hidden');
+            else b.classList.add('hidden');
         }
 
         /* --- FORM HANDLING --- */
@@ -918,791 +917,203 @@
             const toggleContainer = document.getElementById('billPaidToggleContainer');
             const recurringContainer = document.getElementById('recurringBillContainer');
             const btn = document.getElementById('btn-submit');
-            
-            toggleContainer.classList.add('hidden');
-            recurringContainer.classList.add('hidden');
-            
-            if (type === 'income') {
-                lblDesc.innerText = 'Source';
-                lblDate.innerText = 'Date Received';
-                document.getElementById('txDescription').placeholder = 'e.g. Freelance Client';
-                btn.innerText = editingTxId ? "Update Income" : "Save Income";
-            } else if (type === 'spend') {
-                lblDesc.innerText = 'Vendor';
-                lblDate.innerText = 'Date Spent';
-                document.getElementById('txDescription').placeholder = 'e.g. Grocery Store';
-                btn.innerText = editingTxId ? "Update Spending" : "Save Spending";
-            } else if (type === 'bill') {
-                lblDesc.innerText = 'Biller';
-                document.getElementById('txDescription').placeholder = 'e.g. Electricity Co.';
-                toggleContainer.classList.remove('hidden');
-                recurringContainer.classList.remove('hidden');
-                btn.innerText = editingTxId ? "Update Bill" : "Save Bill";
-                syncBillDateLabel(); 
-            }
-            
-            // Default reset standard fields to required 
-            document.getElementById('txDate').required = true;
-            document.getElementById('field-date').classList.remove('hidden');
-            document.getElementById('field-due-date').classList.add('hidden');
-            document.getElementById('input-due-date').required = false;
+            toggleContainer.classList.add('hidden'); recurringContainer.classList.add('hidden');
+            if (type === 'income') { lblDesc.innerText = 'Source'; lblDate.innerText = 'Date Received'; document.getElementById('txDescription').placeholder = 'e.g. Freelance Client'; btn.innerText = editingTxId ? "Update Income" : "Save Income"; }
+            else if (type === 'spend') { lblDesc.innerText = 'Vendor'; lblDate.innerText = 'Date Spent'; document.getElementById('txDescription').placeholder = 'e.g. Grocery Store'; btn.innerText = editingTxId ? "Update Spending" : "Save Spending"; }
+            else if (type === 'bill') { lblDesc.innerText = 'Biller'; document.getElementById('txDescription').placeholder = 'e.g. Electricity Co.'; toggleContainer.classList.remove('hidden'); recurringContainer.classList.remove('hidden'); btn.innerText = editingTxId ? "Update Bill" : "Save Bill"; syncBillDateLabel(); }
+            document.getElementById('txDate').required = true; document.getElementById('field-date').classList.remove('hidden');
+            document.getElementById('field-due-date').classList.add('hidden'); document.getElementById('input-due-date').required = false;
         }
 
-        function toggleRecurring() {
-            const cb = document.getElementById('txIsRecurring');
-            cb.checked = !cb.checked;
-            updateRecurringUI();
-        }
-
+        function toggleRecurring() { const cb = document.getElementById('txIsRecurring'); cb.checked = !cb.checked; updateRecurringUI(); }
         function updateRecurringUI() {
-            const isChecked = document.getElementById('txIsRecurring').checked;
-            const icon = document.getElementById('recurringIcon');
-            const text = document.getElementById('recurringText');
-            if (isChecked) {
-                icon.className = 'ph-bold ph-arrows-clockwise text-blue-400 text-3xl';
-                text.innerText = 'Repeats Monthly';
-                text.className = 'font-bold text-blue-300';
-            } else {
-                icon.className = 'ph-bold ph-arrows-clockwise text-slate-500 text-3xl';
-                text.innerText = 'Does not repeat';
-                text.className = 'font-bold text-slate-300';
-            }
+            const isChecked = document.getElementById('txIsRecurring').checked; const icon = document.getElementById('recurringIcon'); const text = document.getElementById('recurringText');
+            if (isChecked) { icon.className = 'ph-bold ph-arrows-clockwise text-blue-400 text-3xl'; text.innerText = 'Repeats Monthly'; text.className = 'font-bold text-blue-300'; }
+            else { icon.className = 'ph-bold ph-arrows-clockwise text-slate-500 text-3xl'; text.innerText = 'Does not repeat'; text.className = 'font-bold text-slate-300'; }
         }
 
         function toggleBillPaid() {
-            const checkbox = document.getElementById('txIsPaid');
-            checkbox.checked = !checkbox.checked;
-            
-            const icon = document.getElementById('billPaidIcon');
-            const text = document.getElementById('billPaidText');
-            const subtext = document.getElementById('billPaidSubText');
-            const container = document.getElementById('billPaidToggleContainer');
-            
-            if (checkbox.checked) {
-                icon.className = 'ph-fill ph-check-circle text-blue-400 text-3xl';
-                text.innerText = 'I have already paid this';
-                text.className = 'font-bold text-blue-300';
-                subtext.className = 'text-xs text-blue-400/80';
-                container.className = 'bg-blue-900/20 border border-blue-800/50 rounded-2xl p-4 flex items-center justify-between cursor-pointer';
-            } else {
-                icon.className = 'ph-fill ph-clock text-rose-400 text-3xl';
-                text.innerText = 'This is unpaid / due soon';
-                text.className = 'font-bold text-rose-300';
-                subtext.className = 'text-xs text-rose-400/80';
-                container.className = 'bg-rose-900/20 border border-rose-800/50 rounded-2xl p-4 flex items-center justify-between cursor-pointer';
-            }
+            const checkbox = document.getElementById('txIsPaid'); checkbox.checked = !checkbox.checked;
+            const icon = document.getElementById('billPaidIcon'); const text = document.getElementById('billPaidText'); const subtext = document.getElementById('billPaidSubText'); const container = document.getElementById('billPaidToggleContainer');
+            if (checkbox.checked) { icon.className = 'ph-fill ph-check-circle text-blue-400 text-3xl'; text.innerText = 'I have already paid this'; text.className = 'font-bold text-blue-300'; subtext.className = 'text-xs text-blue-400/80'; container.className = 'bg-blue-900/20 border border-blue-800/50 rounded-2xl p-4 flex items-center justify-between cursor-pointer'; }
+            else { icon.className = 'ph-fill ph-clock text-rose-400 text-3xl'; text.innerText = 'This is unpaid / due soon'; text.className = 'font-bold text-rose-300'; subtext.className = 'text-xs text-rose-400/80'; container.className = 'bg-rose-900/20 border border-rose-800/50 rounded-2xl p-4 flex items-center justify-between cursor-pointer'; }
             syncBillDateLabel();
         }
 
         function syncBillDateLabel() {
-            const isPaid = document.getElementById('txIsPaid').checked;
-            const dueField = document.getElementById('field-due-date');
-            const dateField = document.getElementById('field-date');
-
-            if (isPaid) {
-                dueField.classList.add('hidden');
-                dateField.classList.remove('hidden');
-                document.getElementById('input-due-date').required = false;
-                document.getElementById('txDate').required = true;
-            } else {
-                dueField.classList.remove('hidden');
-                dateField.classList.add('hidden');
-                document.getElementById('input-due-date').required = true;
-                document.getElementById('txDate').required = false;
-            }
+            const isPaid = document.getElementById('txIsPaid').checked; const dueField = document.getElementById('field-due-date'); const dateField = document.getElementById('field-date');
+            if (isPaid) { dueField.classList.add('hidden'); dateField.classList.remove('hidden'); document.getElementById('input-due-date').required = false; document.getElementById('txDate').required = true; }
+            else { dueField.classList.remove('hidden'); dateField.classList.add('hidden'); document.getElementById('input-due-date').required = true; document.getElementById('txDate').required = false; }
         }
 
         async function handleReceiptUpload(event) {
-            const file = event.target.files[0];
-            if (!file) return;
-
-            const preview = document.getElementById('receiptPreview');
-            const prompt = document.getElementById('receiptPrompt');
-            const changeText = document.getElementById('receiptChangeText');
-            
-            preview.src = URL.createObjectURL(file);
-            preview.classList.remove('hidden');
-            prompt.classList.add('hidden');
-            changeText.classList.remove('hidden');
-
+            const file = event.target.files[0]; if (!file) return;
+            const preview = document.getElementById('receiptPreview'); const prompt = document.getElementById('receiptPrompt'); const changeText = document.getElementById('receiptChangeText');
+            preview.src = URL.createObjectURL(file); preview.classList.remove('hidden'); prompt.classList.add('hidden'); changeText.classList.remove('hidden');
             currentBase64Receipt = await compressImage(file);
         }
 
         function compressImage(file) {
             return new Promise((resolve) => {
-                const reader = new FileReader();
-                reader.readAsDataURL(file);
+                const reader = new FileReader(); reader.readAsDataURL(file);
                 reader.onload = (e) => {
-                    const img = new Image();
-                    img.src = e.target.result;
+                    const img = new Image(); img.src = e.target.result;
                     img.onload = () => {
-                        const canvas = document.createElement('canvas');
-                        const MAX_SIZE = 1200;
-                        let width = img.width;
-                        let height = img.height;
-
-                        if (width > height && width > MAX_SIZE) {
-                            height *= MAX_SIZE / width;
-                            width = MAX_SIZE;
-                        } else if (height > MAX_SIZE) {
-                            width *= MAX_SIZE / height;
-                            height = MAX_SIZE;
-                        }
-
-                        canvas.width = width;
-                        canvas.height = height;
-                        const ctx = canvas.getContext('2d');
-                        ctx.drawImage(img, 0, 0, width, height);
-                        resolve(canvas.toDataURL('image/jpeg', 0.8)); 
+                        const canvas = document.createElement('canvas'); const MAX_SIZE = 1200; let width = img.width; let height = img.height;
+                        if (width > height && width > MAX_SIZE) { height *= MAX_SIZE / width; width = MAX_SIZE; } else if (height > MAX_SIZE) { width *= MAX_SIZE / height; height = MAX_SIZE; }
+                        canvas.width = width; canvas.height = height; const ctx = canvas.getContext('2d'); ctx.drawImage(img, 0, 0, width, height); resolve(canvas.toDataURL('image/jpeg', 0.8));
                     };
                 };
             });
         }
 
         function handleLogTransaction(e) {
-            e.preventDefault();
-            
-            const btn = document.getElementById('btn-submit');
-            const originalText = btn.innerText;
-            const originalClasses = btn.className;
-            
-            btn.innerText = editingTxId ? "Updating..." : "Saving...";
-            btn.classList.add('opacity-80', 'pointer-events-none');
-            
+            e.preventDefault(); const btn = document.getElementById('btn-submit'); const originalText = btn.innerText; const originalClasses = btn.className;
+            btn.innerText = editingTxId ? "Updating..." : "Saving..."; btn.classList.add('opacity-80', 'pointer-events-none');
             setTimeout(() => {
-                const type = document.querySelector('input[name="txType"]:checked').value;
-                const rawAmount = document.getElementById('txAmount').value;
-                const amount = parseFloat(rawAmount);
-                const description = document.getElementById('txDescription').value.trim();
-                
-                let date = document.getElementById('txDate').value;
-                let isPaid = true;
-                let dueDate = null;
-                let isRecurring = false;
-
-                if (type === 'bill') {
-                    isPaid = document.getElementById('txIsPaid').checked;
-                    isRecurring = document.getElementById('txIsRecurring').checked;
-                    if (!isPaid) {
-                        dueDate = document.getElementById('input-due-date').value;
-                        date = null; 
-                    }
-                }
-
-                if (isNaN(amount) || amount <= 0) {
-                    showToast('Please enter a valid positive amount.', 'error');
-                    btn.innerText = originalText;
-                    btn.className = originalClasses;
-                    return;
-                }
-                if (!description || (isPaid && !date) || (!isPaid && !dueDate)) {
-                    showToast('Please fill all required fields.', 'error');
-                    btn.innerText = originalText;
-                    btn.className = originalClasses;
-                    return;
-                }
-
+                const type = document.querySelector('input[name="txType"]:checked').value; const rawAmount = document.getElementById('txAmount').value; const amount = parseFloat(rawAmount); const description = document.getElementById('txDescription').value.trim();
+                let date = document.getElementById('txDate').value; let isPaid = true; let dueDate = null; let isRecurring = false;
+                if (type === 'bill') { isPaid = document.getElementById('txIsPaid').checked; isRecurring = document.getElementById('txIsRecurring').checked; if (!isPaid) { dueDate = document.getElementById('input-due-date').value; date = null; } }
+                if (isNaN(amount) || amount <= 0) { showToast('Please enter a valid positive amount.', 'error'); btn.innerText = originalText; btn.className = originalClasses; return; }
+                if (!description || (isPaid && !date) || (!isPaid && !dueDate)) { showToast('Please fill all required fields.', 'error'); btn.innerText = originalText; btn.className = originalClasses; return; }
                 const safeId = (typeof crypto !== 'undefined' && crypto.randomUUID) ? crypto.randomUUID() : 'tx_' + Date.now().toString(36) + Math.random().toString(36).substring(2, 9);
                 const wasEdit = !!editingTxId;
-
                 if (editingTxId) {
                     const txIndex = transactions.findIndex(t => t.id === editingTxId);
-                    if (txIndex > -1) {
-                        transactions[txIndex] = {
-                            ...transactions[txIndex],
-                            type, amount, description, date, isPaid, dueDate, isRecurring,
-                            receipt: currentBase64Receipt || transactions[txIndex].receipt,
-                            updatedAt: new Date().toISOString()
-                        };
-                    }
-                } else {
-                    const newTx = {
-                        id: safeId,
-                        type, amount, description, date, isPaid, dueDate, isRecurring,
-                        receipt: currentBase64Receipt,
-                        createdAt: new Date().toISOString()
-                    };
-                    transactions.push(newTx);
-                }
-
-                try {
-                    saveDataLocally(); 
-                    
-                    document.getElementById('successOverlayTitle').innerText = wasEdit ? "Update Successful" : "Logged Successfully";
-                    document.getElementById('successOverlay').classList.remove('hidden');
-                    document.getElementById('successOverlay').classList.add('flex');
-                    
-                    btn.innerText = originalText;
-                    btn.className = originalClasses;
-                    
-                } catch (error) {
-                    console.error(error);
-                    showToast('Error saving data. Please check connection.', 'error');
-                    btn.innerText = originalText;
-                    btn.className = originalClasses;
-                }
-                
-            }, 150); 
+                    if (txIndex > -1) transactions[txIndex] = { ...transactions[txIndex], type, amount, description, date, isPaid, dueDate, isRecurring, receipt: currentBase64Receipt || transactions[txIndex].receipt, updatedAt: new Date().toISOString() };
+                } else transactions.push({ id: safeId, type, amount, description, date, isPaid, dueDate, isRecurring, receipt: currentBase64Receipt, createdAt: new Date().toISOString() });
+                try { saveDataLocally(); document.getElementById('successOverlayTitle').innerText = wasEdit ? "Update Successful" : "Logged Successfully"; document.getElementById('successOverlay').classList.remove('hidden'); document.getElementById('successOverlay').classList.add('flex'); btn.innerText = originalText; btn.className = originalClasses; }
+                catch (error) { console.error(error); showToast('Error saving data.', 'error'); btn.innerText = originalText; btn.className = originalClasses; }
+            }, 150);
         }
 
-        function closeSuccessAndGoHome() {
-            document.getElementById('successOverlay').classList.add('hidden');
-            document.getElementById('successOverlay').classList.remove('flex');
-            resetLogForm();
-            switchTab('dashboard');
-        }
-
-        function closeSuccessAndLogAnother() {
-            document.getElementById('successOverlay').classList.add('hidden');
-            document.getElementById('successOverlay').classList.remove('flex');
-            resetLogForm();
-            window.scrollTo(0,0);
-        }
+        function closeSuccessAndGoHome() { document.getElementById('successOverlay').classList.add('hidden'); document.getElementById('successOverlay').classList.remove('flex'); resetLogForm(); switchTab('dashboard'); }
+        function closeSuccessAndLogAnother() { document.getElementById('successOverlay').classList.add('hidden'); document.getElementById('successOverlay').classList.remove('flex'); resetLogForm(); window.scrollTo(0,0); }
 
         function editTx(id) {
-            const tx = transactions.find(t => t.id === id);
-            if (!tx) return;
-
-            editingTxId = id;
-            currentBase64Receipt = tx.receipt || null;
-
-            document.querySelector(`input[name="txType"][value="${tx.type}"]`).checked = true;
-            updateFormUI();
-
-            document.getElementById('txAmount').value = tx.amount;
-            document.getElementById('txDescription').value = tx.description;
-
-            if (tx.type === 'bill') {
-                document.getElementById('txIsPaid').checked = tx.isPaid;
-                document.getElementById('txIsRecurring').checked = tx.isRecurring || false;
-                toggleBillPaid();
-                updateRecurringUI();
-                if (tx.isPaid) {
-                    document.getElementById('txDate').value = tx.date;
-                } else {
-                    document.getElementById('input-due-date').value = tx.dueDate;
-                }
-            } else {
-                document.getElementById('txDate').value = tx.date;
-            }
-
-            if (currentBase64Receipt) {
-                const preview = document.getElementById('receiptPreview');
-                preview.src = currentBase64Receipt;
-                preview.classList.remove('hidden');
-                document.getElementById('receiptPrompt').classList.add('hidden');
-                document.getElementById('receiptChangeText').classList.remove('hidden');
-            }
-
-            const btnSubmit = document.getElementById('btn-submit');
-            btnSubmit.innerText = "Update Transaction";
-            btnSubmit.classList.remove('w-full');
-            btnSubmit.classList.add('w-2/3');
-            document.getElementById('btn-cancel-edit').classList.remove('hidden');
-
-            switchTab('log'); 
+            const tx = transactions.find(t => t.id === id); if (!tx) return;
+            editingTxId = id; currentBase64Receipt = tx.receipt || null;
+            document.querySelector(`input[name="txType"][value="${tx.type}"]`).checked = true; updateFormUI();
+            document.getElementById('txAmount').value = tx.amount; document.getElementById('txDescription').value = tx.description;
+            if (tx.type === 'bill') { document.getElementById('txIsPaid').checked = tx.isPaid; document.getElementById('txIsRecurring').checked = tx.isRecurring || false; toggleBillPaid(); updateRecurringUI(); if (tx.isPaid) document.getElementById('txDate').value = tx.date; else document.getElementById('input-due-date').value = tx.dueDate; }
+            else document.getElementById('txDate').value = tx.date;
+            if (currentBase64Receipt) { const preview = document.getElementById('receiptPreview'); preview.src = currentBase64Receipt; preview.classList.remove('hidden'); document.getElementById('receiptPrompt').classList.add('hidden'); document.getElementById('receiptChangeText').classList.remove('hidden'); }
+            const btnSubmit = document.getElementById('btn-submit'); btnSubmit.innerText = "Update Transaction"; btnSubmit.classList.remove('w-full'); btnSubmit.classList.add('w-2/3'); document.getElementById('btn-cancel-edit').classList.remove('hidden');
+            switchTab('log');
         }
 
-        function cancelEdit() {
-            editingTxId = null;
-            resetLogForm();
-            switchTab('dashboard');
-        }
-
-        function deleteTx(id) {
-            if(confirm("Are you sure you want to permanently delete this transaction?")) {
-                transactions = transactions.filter(t => t.id !== id);
-                saveDataLocally();
-                showToast('Transaction deleted', 'info');
-            }
-        }
+        function cancelEdit() { editingTxId = null; resetLogForm(); switchTab('dashboard'); }
+        function deleteTx(id) { if(confirm("Permanently delete this?")) { transactions = transactions.filter(t => t.id !== id); saveDataLocally(); showToast('Transaction deleted', 'info'); } }
 
         function payBill(id) {
             const tx = transactions.find(t => t.id === id);
             if (tx) {
                 const oldDueDate = tx.dueDate || tx.date || new Date().toISOString().split('T')[0];
-
-                tx.isPaid = true;
-                tx.date = new Date().toISOString().split('T')[0]; 
-                tx.dueDate = null; 
-
-                // Handle auto-creating the next monthly bill
+                tx.isPaid = true; tx.date = new Date().toISOString().split('T')[0]; tx.dueDate = null;
                 if (tx.isRecurring) {
-                    let nextDate = new Date(oldDueDate);
-                    nextDate.setMonth(nextDate.getMonth() + 1);
+                    let nextDate = new Date(oldDueDate); nextDate.setMonth(nextDate.getMonth() + 1);
                     const safeId = (typeof crypto !== 'undefined' && crypto.randomUUID) ? crypto.randomUUID() : 'tx_' + Date.now().toString(36) + Math.random().toString(36).substring(2, 9);
-                    
-                    transactions.push({
-                        id: safeId,
-                        type: 'bill',
-                        amount: tx.amount,
-                        description: tx.description,
-                        date: null,
-                        dueDate: nextDate.toISOString().split('T')[0],
-                        isPaid: false,
-                        isRecurring: true,
-                        receipt: null, // Don't duplicate the receipt photo
-                        createdAt: new Date().toISOString()
-                    });
+                    transactions.push({ id: safeId, type: 'bill', amount: tx.amount, description: tx.description, date: null, dueDate: nextDate.toISOString().split('T')[0], isPaid: false, isRecurring: true, receipt: null, createdAt: new Date().toISOString() });
                 }
-
-                saveDataLocally();
-                showToast('Bill marked as paid!', 'success');
+                saveDataLocally(); showToast('Bill marked as paid!', 'success');
             }
         }
 
         function resetLogForm() {
-            document.getElementById('txForm').reset();
-            document.getElementById('txDate').valueAsDate = new Date();
-            document.getElementById('input-due-date').valueAsDate = new Date();
-            currentBase64Receipt = null;
-            editingTxId = null;
-            
-            document.getElementById('receiptPreview').classList.add('hidden');
-            document.getElementById('receiptPreview').src = '';
-            document.getElementById('receiptPrompt').classList.remove('hidden');
-            document.getElementById('receiptChangeText').classList.add('hidden');
-
-            document.getElementById('txIsPaid').checked = true;
-            document.getElementById('billPaidIcon').className = 'ph-fill ph-check-circle text-blue-400 text-3xl';
-            document.getElementById('billPaidText').innerText = 'I have already paid this';
-            document.getElementById('billPaidText').className = 'font-bold text-blue-300';
-            document.getElementById('billPaidSubText').className = 'text-xs text-blue-400/80';
-            document.getElementById('billPaidToggleContainer').className = 'bg-blue-900/20 border border-blue-800/50 rounded-2xl p-4 flex items-center justify-between cursor-pointer';
-
-            document.getElementById('txIsRecurring').checked = false;
-            updateRecurringUI();
-
-            updateFormUI();
-            
-            const btnSubmit = document.getElementById('btn-submit');
-            btnSubmit.classList.remove('w-2/3', 'pointer-events-none');
-            btnSubmit.classList.add('w-full');
-            document.getElementById('btn-cancel-edit').classList.add('hidden');
+            document.getElementById('txForm').reset(); document.getElementById('txDate').valueAsDate = new Date(); document.getElementById('input-due-date').valueAsDate = new Date();
+            currentBase64Receipt = null; editingTxId = null; document.getElementById('receiptPreview').classList.add('hidden'); document.getElementById('receiptPreview').src = ''; document.getElementById('receiptPrompt').classList.remove('hidden'); document.getElementById('receiptChangeText').classList.add('hidden');
+            document.getElementById('txIsPaid').checked = true; document.getElementById('billPaidIcon').className = 'ph-fill ph-check-circle text-blue-400 text-3xl'; document.getElementById('billPaidText').innerText = 'I have already paid this'; document.getElementById('billPaidToggleContainer').className = 'bg-blue-900/20 border border-blue-800/50 rounded-2xl p-4 flex items-center justify-between cursor-pointer';
+            document.getElementById('txIsRecurring').checked = false; updateRecurringUI(); updateFormUI();
+            const btnSubmit = document.getElementById('btn-submit'); btnSubmit.classList.remove('w-2/3', 'pointer-events-none'); btnSubmit.classList.add('w-full'); document.getElementById('btn-cancel-edit').classList.add('hidden');
         }
 
         /* --- PWA INSTALL LOGIC --- */
         let deferredPrompt;
-
-        window.addEventListener('beforeinstallprompt', (e) => {
-            e.preventDefault();
-            deferredPrompt = e;
-            document.getElementById('installAppBtn').classList.remove('hidden');
-        });
-
-        window.addEventListener('appinstalled', (evt) => {
-            document.getElementById('installAppBtn').classList.add('hidden');
-            showToast('App installed successfully!', 'success');
-        });
-
-        async function installApp() {
-            if (deferredPrompt) {
-                deferredPrompt.prompt();
-                const { outcome } = await deferredPrompt.userChoice;
-                deferredPrompt = null;
-                document.getElementById('installAppBtn').classList.add('hidden');
-            }
-        }
-
-        /* --- PROTOTYPE SHARING --- */
-        function shareApp() {
-            if (navigator.share) {
-                navigator.share({
-                    title: 'Tight Ship Command Center',
-                    text: 'Check out this offline-first financial command center prototype!',
-                    url: window.location.href
-                }).catch(console.error);
-            } else {
-                const dummy = document.createElement('input');
-                document.body.appendChild(dummy);
-                dummy.value = window.location.href;
-                dummy.select();
-                document.execCommand('copy');
-                document.body.removeChild(dummy);
-                showToast('Link copied to clipboard!', 'success');
-            }
-        }
-
-        function dismissSyncBanner() {
-            localStorage.setItem('hideTightShipSyncBanner', 'true');
-            document.getElementById('sync-warning-banner').classList.add('hidden');
-        }
+        window.addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); deferredPrompt = e; document.getElementById('installAppBtn').classList.remove('hidden'); });
+        window.addEventListener('appinstalled', (evt) => { document.getElementById('installAppBtn').classList.add('hidden'); showToast('App installed!', 'success'); });
+        async function installApp() { if (deferredPrompt) { deferredPrompt.prompt(); await deferredPrompt.userChoice; deferredPrompt = null; document.getElementById('installAppBtn').classList.add('hidden'); } }
 
         /* --- DATA MANAGEMENT --- */
-        async function saveDataLocally() {
-            await localforage.setItem('tightShipTransactions', transactions);
-            updateDashboard();
-            syncToDriveBackground(); 
-        }
+        async function saveDataLocally() { await localforage.setItem('tightShipTransactions', transactions); updateDashboard(); syncToDriveBackground(); }
 
-        /* --- CSV IMPORT LOGIC --- */
         function handleCSVUpload(event) {
-            const file = event.target.files[0];
-            if (!file) return;
-
-            showToast('Reading bank statement...', 'info');
-
-            Papa.parse(file, {
-                header: true,
-                skipEmptyLines: true,
-                complete: function(results) {
-                    processCSVData(results.data);
-                    event.target.value = ''; // Reset input
-                },
-                error: function(err) {
-                    console.error(err);
-                    showToast('Failed to parse CSV.', 'error');
-                }
-            });
+            const file = event.target.files[0]; if (!file) return;
+            showToast('Reading statement...', 'info');
+            Papa.parse(file, { header: true, skipEmptyLines: true, complete: function(results) { processCSVData(results.data); event.target.value = ''; }, error: function(err) { console.error(err); showToast('Parse error.', 'error'); } });
         }
 
         async function processCSVData(data) {
-            if (data.length === 0) {
-                showToast('The CSV file is empty.', 'error');
-                return;
-            }
-
+            if (data.length === 0) return showToast('CSV is empty.', 'error');
             const origHeaders = Object.keys(data[0]);
-            
-            // Smart auto-detect columns
             let dateKey = origHeaders.find(h => h.toLowerCase().includes('date')) || origHeaders[0];
-            let descKey = origHeaders.find(h => h.toLowerCase().includes('description') || h.toLowerCase().includes('memo') || h.toLowerCase().includes('payee') || h.toLowerCase().includes('name'));
-            let amountKey = origHeaders.find(h => h.toLowerCase().includes('amount') || h.toLowerCase().includes('balance') && !h.toLowerCase().includes('running'));
-            
-            let debitKey = origHeaders.find(h => h.toLowerCase().includes('debit'));
-            let creditKey = origHeaders.find(h => h.toLowerCase().includes('credit'));
-
-            if (!descKey) descKey = origHeaders.length > 2 ? origHeaders[2] : origHeaders[1];
-
+            let descKey = origHeaders.find(h => h.toLowerCase().includes('desc') || h.toLowerCase().includes('memo') || h.toLowerCase().includes('payee'));
+            let amountKey = origHeaders.find(h => h.toLowerCase().includes('amount') || h.toLowerCase().includes('bal'));
             let importedCount = 0;
-
             data.forEach(row => {
-                let rawDate = row[dateKey];
-                let desc = row[descKey] || 'Imported Bank Transaction';
-                let amount = 0;
-                let type = 'spend';
-
-                // Determine amount and type based on bank formatting
-                if (amountKey && row[amountKey]) {
-                    let val = parseFloat(String(row[amountKey]).replace(/[^0-9.-]+/g, ""));
-                    if (!isNaN(val) && val !== 0) {
-                        amount = Math.abs(val);
-                        type = val > 0 ? 'income' : 'spend';
-                    }
-                } else if (debitKey && row[debitKey]) {
-                    let val = parseFloat(String(row[debitKey]).replace(/[^0-9.-]+/g, ""));
-                    if (!isNaN(val) && val !== 0) { amount = Math.abs(val); type = 'spend'; }
-                } else if (creditKey && row[creditKey]) {
-                    let val = parseFloat(String(row[creditKey]).replace(/[^0-9.-]+/g, ""));
-                    if (!isNaN(val) && val !== 0) { amount = Math.abs(val); type = 'income'; }
-                }
-
-                if (!rawDate || amount === 0) return;
-
-                // Standardize date
-                let dateObj = new Date(rawDate);
-                if (isNaN(dateObj.getTime())) dateObj = new Date();
-                const formattedDate = dateObj.toISOString().split('T')[0];
-
+                let amountValue = parseFloat(String(row[amountKey]).replace(/[^0-9.-]+/g, ""));
+                if (!row[dateKey] || isNaN(amountValue)) return;
                 const safeId = (typeof crypto !== 'undefined' && crypto.randomUUID) ? crypto.randomUUID() : 'tx_' + Date.now().toString(36) + Math.random().toString(36).substring(2, 9);
-
-                transactions.push({
-                    id: safeId,
-                    type: type,
-                    amount: amount,
-                    description: desc.substring(0, 80).trim(), 
-                    date: formattedDate,
-                    isPaid: true,
-                    dueDate: null,
-                    isRecurring: false,
-                    receipt: null,
-                    createdAt: new Date().toISOString()
-                });
+                transactions.push({ id: safeId, type: amountValue > 0 ? 'income' : 'spend', amount: Math.abs(amountValue), description: (row[descKey] || 'Imported').substring(0, 80), date: new Date(row[dateKey]).toISOString().split('T')[0], isPaid: true, dueDate: null, isRecurring: false, receipt: null, createdAt: new Date().toISOString() });
                 importedCount++;
             });
-
-            if (importedCount > 0) {
-                await saveDataLocally();
-                showToast(`Successfully imported ${importedCount} transactions!`, 'success');
-                switchTab('dashboard');
-                window.scrollTo(0,0);
-            } else {
-                showToast('Could not auto-detect valid transactions in this file.', 'error');
-            }
+            if (importedCount > 0) { await saveDataLocally(); showToast(`Imported ${importedCount}!`, 'success'); switchTab('dashboard'); }
         }
 
         async function downloadJson() {
             const archived = await localforage.getItem('tightShipArchived') || [];
-            const exportData = {
-                version: 2,
-                transactions: transactions,
-                archived: archived
-            };
-            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(exportData, null, 2));
-            const downloadAnchorNode = document.createElement('a');
-            downloadAnchorNode.setAttribute("href", dataStr);
-            downloadAnchorNode.setAttribute("download", "tight-ship-export.json");
-            document.body.appendChild(downloadAnchorNode);
-            downloadAnchorNode.click();
-            downloadAnchorNode.remove();
-            showToast('Data exported successfully', 'success');
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify({ version: 2, transactions, archived }, null, 2));
+            const dl = document.createElement('a'); dl.setAttribute("href", dataStr); dl.setAttribute("download", "tight-ship-export.json"); document.body.appendChild(dl); dl.click(); dl.remove();
         }
 
         async function archiveOldData() {
-            if(transactions.length === 0) {
-                return showToast('No data to archive.', 'info');
-            }
-
-            const cutoff = new Date();
-            cutoff.setDate(cutoff.getDate() - 90);
-            const cutoffStr = cutoff.toISOString().split('T')[0];
-
-            let active = [];
-            let archived = await localforage.getItem('tightShipArchived') || [];
-            let archiveCount = 0;
-
+            if(transactions.length === 0) return showToast('No data.', 'info');
+            const cutoff = new Date(); cutoff.setDate(cutoff.getDate() - 90); const cutoffStr = cutoff.toISOString().split('T')[0];
+            let active = []; let archived = await localforage.getItem('tightShipArchived') || []; let count = 0;
             transactions.forEach(tx => {
-                // Always keep unpaid bills regardless of age so they aren't lost
-                if (tx.type === 'bill' && !tx.isPaid) {
-                    active.push(tx);
-                    return;
-                }
-                const txDate = tx.date || tx.dueDate;
-                if (txDate && txDate < cutoffStr) {
-                    archived.push(tx);
-                    archiveCount++;
-                } else {
-                    active.push(tx);
-                }
+                if (tx.type === 'bill' && !tx.isPaid) active.push(tx);
+                else if ((tx.date || tx.dueDate) < cutoffStr) { archived.push(tx); count++; }
+                else active.push(tx);
             });
-
-            if (archiveCount > 0) {
-                transactions = active;
-                await localforage.setItem('tightShipTransactions', transactions);
-                await localforage.setItem('tightShipArchived', archived);
-                updateDashboard();
-                showToast(`Archived ${archiveCount} old transactions! App is optimized.`, 'success');
-                syncToDriveBackground();
-            } else {
-                showToast('No items older than 90 days found.', 'info');
-            }
+            if (count > 0) { transactions = active; await localforage.setItem('tightShipTransactions', transactions); await localforage.setItem('tightShipArchived', archived); updateDashboard(); showToast(`Archived ${count}!`, 'success'); syncToDriveBackground(); }
+            else showToast('Nothing old found.', 'info');
         }
 
-        function promptWipeData() {
-            document.getElementById('wipeOverlay').classList.remove('hidden');
-            document.getElementById('wipeOverlay').classList.add('flex');
-        }
+        function promptWipeData() { document.getElementById('wipeOverlay').classList.remove('hidden'); document.getElementById('wipeOverlay').classList.add('flex'); }
+        function closeWipePrompt() { document.getElementById('wipeOverlay').classList.add('hidden'); document.getElementById('wipeOverlay').classList.remove('flex'); }
+        async function executeWipeData() { transactions = []; await localforage.removeItem('tightShipTransactions'); await localforage.removeItem('tightShipArchived'); localStorage.removeItem('tightShipOnboarded'); updateDashboard(); closeWipePrompt(); showToast('Wiped.', 'success'); }
 
-        function closeWipePrompt() {
-            document.getElementById('wipeOverlay').classList.add('hidden');
-            document.getElementById('wipeOverlay').classList.remove('flex');
-        }
-
-        async function executeWipeData() {
-            transactions = [];
-            await localforage.removeItem('tightShipTransactions');
-            await localforage.removeItem('tightShipArchived');
-            localStorage.removeItem('tightShipOnboarded'); // Also resets onboarding screen
-            updateDashboard();
-            closeWipePrompt();
-            showToast('Device memory wiped clean.', 'success');
-        }
-
-        /* --- GOOGLE DRIVE SYNC LOGIC --- */
-        function gapiLoaded() {
-            gapi.load('client', initializeGapiClient);
-        }
-
-        async function initializeGapiClient() {
-            try {
-                await gapi.client.init({
-                    discoveryDocs: ['https://www.googleapis.com/discovery/v1/apis/drive/v3/rest'],
-                });
-            } catch (err) {
-                console.error('Error initializing GAPI client', err);
-            }
-        }
-
-        function gisLoaded() {
-            tokenClient = google.accounts.oauth2.initTokenClient({
-                client_id: GOOGLE_CLIENT_ID,
-                scope: SCOPES,
-                callback: (tokenResponse) => {
-                    if (tokenResponse && tokenResponse.access_token) {
-                        accessToken = tokenResponse.access_token;
-                        updateDriveUI(true);
-                        showToast('Connected to Google Drive', 'success');
-                        
-                        // If they connected during onboarding, finish onboarding
-                        if (!localStorage.getItem('tightShipOnboarded')) {
-                            finishOnboarding();
-                        }
-                    }
-                },
-            });
-        }
-
-        function handleAuthClick() {
-            if (!GOOGLE_CLIENT_ID || GOOGLE_CLIENT_ID === 'YOUR_GOOGLE_CLIENT_ID') {
-                showToast('Developer Error: Missing Client ID in code.', 'error');
-                return;
-            }
-            if (!tokenClient) {
-                showToast('Google services are still loading or blocked by your browser.', 'error');
-                return;
-            }
-            if (typeof gapi === 'undefined' || !gapi.client) {
-                showToast('Google API is not ready. Please check your connection.', 'error');
-                return;
-            }
-            if (gapi.client.getToken() === null) {
-                tokenClient.requestAccessToken({prompt: 'consent'});
-            } else {
-                tokenClient.requestAccessToken({prompt: ''});
-            }
-        }
-
-        function handleSignoutClick() {
-            const token = gapi.client.getToken();
-            if (token !== null) {
-                google.accounts.oauth2.revoke(token.access_token, () => {
-                    gapi.client.setToken('');
-                    accessToken = null;
-                    updateDriveUI(false);
-                    showToast('Disconnected from Drive', 'info');
-                });
-            }
-        }
-
-        function updateDriveUI(isAuthenticated) {
-            const unauthUI = document.getElementById('driveUnauthUI');
-            const authUI = document.getElementById('driveAuthUI');
-            const statusText = document.getElementById('syncStatusText');
-
-            if (isAuthenticated) {
-                unauthUI.classList.add('hidden');
-                authUI.classList.remove('hidden');
-                statusText.innerText = 'Connected & Ready';
-                statusText.className = 'text-sm font-bold text-emerald-400';
-            } else {
-                unauthUI.classList.remove('hidden');
-                authUI.classList.add('hidden');
-                statusText.innerText = 'Not connected';
-                statusText.className = 'text-sm text-slate-500';
-            }
-        }
-
-        async function findFileId() {
-            try {
-                const response = await gapi.client.drive.files.list({
-                    q: `name='${FILE_NAME}' and spaces='appDataFolder'`,
-                    spaces: 'appDataFolder',
-                    fields: 'files(id, name)',
-                });
-                const files = response.result.files;
-                if (files && files.length > 0) {
-                    return files[0].id;
-                }
-                return null;
-            } catch (err) {
-                console.error(err);
-                throw new Error('Error searching Drive');
-            }
-        }
-
+        /* --- GOOGLE DRIVE SYNC --- */
+        function gapiLoaded() { gapi.load('client', async () => { await gapi.client.init({ discoveryDocs: ['https://www.googleapis.com/discovery/v1/apis/drive/v3/rest'] }); }); }
+        function gisLoaded() { tokenClient = google.accounts.oauth2.initTokenClient({ client_id: GOOGLE_CLIENT_ID, scope: SCOPES, callback: (resp) => { if (resp && resp.access_token) { accessToken = resp.access_token; updateDriveUI(true); showToast('Connected!', 'success'); if (!localStorage.getItem('tightShipOnboarded')) finishOnboarding(); } } }); }
+        function handleAuthClick() { if (!tokenClient) return showToast('Loading...', 'error'); tokenClient.requestAccessToken({prompt: 'consent'}); }
+        function handleSignoutClick() { const t = gapi.client.getToken(); if (t) { google.accounts.oauth2.revoke(t.access_token, () => { gapi.client.setToken(''); accessToken = null; updateDriveUI(false); showToast('Disconnected.', 'info'); }); } }
+        function updateDriveUI(auth) { const s = document.getElementById('syncStatusText'); s.innerText = auth ? 'Connected' : 'Not connected'; s.className = auth ? 'text-sm font-bold text-emerald-400' : 'text-sm text-slate-500'; document.getElementById('driveUnauthUI').classList.toggle('hidden', auth); document.getElementById('driveAuthUI').classList.toggle('hidden', !auth); }
+        async function findFileId() { const r = await gapi.client.drive.files.list({ q: `name='${FILE_NAME}' and spaces='appDataFolder'`, spaces: 'appDataFolder', fields: 'files(id)' }); return r.result.files.length > 0 ? r.result.files[0].id : null; }
         async function syncToDrive() {
-            if (!accessToken) return handleAuthClick();
-            
-            showToast('Backing up to Drive...', 'info');
-            const archived = await localforage.getItem('tightShipArchived') || [];
-            const backupData = { version: 2, transactions: transactions, archived: archived };
-            const fileContent = JSON.stringify(backupData);
-            const metadata = { name: FILE_NAME, parents: ['appDataFolder'] };
-
+            if (!accessToken) return handleAuthClick(); showToast('Backing up...', 'info');
+            const arc = await localforage.getItem('tightShipArchived') || []; const content = JSON.stringify({ version: 2, transactions, archived: arc });
             try {
-                const fileId = await findFileId();
-
-                const form = new FormData();
-                form.append('metadata', new Blob([JSON.stringify(fileId ? {} : metadata)], { type: 'application/json' }));
-                form.append('file', new Blob([fileContent], { type: 'application/json' }));
-
-                const url = fileId 
-                    ? `https://www.googleapis.com/upload/drive/v3/files/${fileId}?uploadType=multipart`
-                    : `https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart`;
-
-                const res = await fetch(url, {
-                    method: fileId ? 'PATCH' : 'POST',
-                    headers: { 'Authorization': 'Bearer ' + accessToken },
-                    body: form
-                });
-
-                if (res.ok) {
-                    showToast('Backup successful!', 'success');
-                } else {
-                    throw new Error('Upload failed');
-                }
-            } catch (error) {
-                console.error(error);
-                showToast('Sync failed. Please try again.', 'error');
-            }
+                const id = await findFileId(); const form = new FormData();
+                form.append('metadata', new Blob([JSON.stringify(id ? {} : { name: FILE_NAME, parents: ['appDataFolder'] })], { type: 'application/json' }));
+                form.append('file', new Blob([content], { type: 'application/json' }));
+                const res = await fetch(id ? `https://www.googleapis.com/upload/drive/v3/files/${id}?uploadType=multipart` : `https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart`, { method: id ? 'PATCH' : 'POST', headers: { 'Authorization': 'Bearer ' + accessToken }, body: form });
+                if (res.ok) showToast('Backup successful!', 'success'); else throw new Error();
+            } catch (e) { showToast('Sync failed.', 'error'); }
         }
-        
         async function syncToDriveBackground() {
-            if (!accessToken) return; 
-            
-            const archived = await localforage.getItem('tightShipArchived') || [];
-            const backupData = { version: 2, transactions: transactions, archived: archived };
-            const fileContent = JSON.stringify(backupData);
-            const metadata = { name: FILE_NAME, parents: ['appDataFolder'] };
-            try {
-                const fileId = await findFileId();
-                const form = new FormData();
-                form.append('metadata', new Blob([JSON.stringify(fileId ? {} : metadata)], { type: 'application/json' }));
-                form.append('file', new Blob([fileContent], { type: 'application/json' }));
-                const url = fileId ? `https://www.googleapis.com/upload/drive/v3/files/${fileId}?uploadType=multipart` : `https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart`;
-                await fetch(url, { method: fileId ? 'PATCH' : 'POST', headers: { 'Authorization': 'Bearer ' + accessToken }, body: form });
-            } catch (error) { console.error("Background sync failed", error); }
+            if (!accessToken) return; const arc = await localforage.getItem('tightShipArchived') || []; const content = JSON.stringify({ version: 2, transactions, archived: arc });
+            try { const id = await findFileId(); const form = new FormData(); form.append('metadata', new Blob([JSON.stringify(id ? {} : { name: FILE_NAME, parents: ['appDataFolder'] })], { type: 'application/json' })); form.append('file', new Blob([content], { type: 'application/json' })); fetch(id ? `https://www.googleapis.com/upload/drive/v3/files/${id}?uploadType=multipart` : `https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart`, { method: id ? 'PATCH' : 'POST', headers: { 'Authorization': 'Bearer ' + accessToken }, body: form }); } catch (e) {}
         }
-
         async function syncFromDrive() {
-            if (!accessToken) return handleAuthClick();
-
-            try {
-                showToast('Checking Drive for data...', 'info');
-                const fileId = await findFileId();
-                if (!fileId) {
-                    showToast('No backup found on Drive.', 'error');
-                    return;
-                }
-
-                const response = await gapi.client.drive.files.get({
-                    fileId: fileId,
-                    alt: 'media'
-                });
-
-                if (response.result) {
-                    if (Array.isArray(response.result)) {
-                        // V1 backwards compatibility
-                        transactions = response.result;
-                        await localforage.setItem('tightShipTransactions', transactions);
-                    } else if (response.result.version === 2) {
-                        // V2 data structure including archives
-                        transactions = response.result.transactions || [];
-                        await localforage.setItem('tightShipTransactions', transactions);
-                        await localforage.setItem('tightShipArchived', response.result.archived || []);
-                    } else {
-                        throw new Error('Invalid data format');
-                    }
-                    updateDashboard();
-                    showToast('Data restored successfully!', 'success');
-                } else {
-                    throw new Error('No result returned');
-                }
-            } catch (error) {
-                console.error(error);
-                showToast('Failed to download data.', 'error');
-            }
+            if (!accessToken) return handleAuthClick(); try { showToast('Checking...', 'info'); const id = await findFileId(); if (!id) return showToast('No backup.', 'error');
+            const r = await gapi.client.drive.files.get({ fileId: id, alt: 'media' });
+            if (r.result) { if (Array.isArray(r.result)) transactions = r.result; else if (r.result.version === 2) { transactions = r.result.transactions || []; await localforage.setItem('tightShipArchived', r.result.archived || []); } await localforage.setItem('tightShipTransactions', transactions); updateDashboard(); showToast('Restored!', 'success'); } } catch (e) { showToast('Failed.', 'error'); }
         }
+        function shareApp() { if (navigator.share) navigator.share({ title: 'Tight Ship', url: window.location.href }); else { const d = document.createElement('input'); d.value = window.location.href; document.body.appendChild(d); d.select(); document.execCommand('copy'); document.body.removeChild(d); showToast('Link copied!', 'success'); } }
+        function formatDateUI(s) { if (!s) return '--'; const [y, m, d] = s.split('-'); return new Date(y, m-1, d).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }); }
+        function getDaysDifference(d1, d2) { const a = new Date(d1.getFullYear(), d1.getMonth(), d1.getDate()); const b = new Date(d2.getFullYear(), d2.getMonth(), d2.getDate()); return Math.ceil((b - a) / 86400000); }
+        function formatMoney(n) { return (n < 0 ? '-' : '') + '$' + Math.abs(n).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
+        function dismissSyncBanner() { localStorage.setItem('hideTightShipSyncBanner', 'true'); document.getElementById('sync-warning-banner').classList.add('hidden'); }
     </script>
 </body>
 </html>
