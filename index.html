@@ -18,6 +18,9 @@
     <!-- localForage for IndexedDB (Infinite Storage) -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/localforage/1.10.0/localforage.min.js"></script>
 
+    <!-- PapaParse for Offline CSV Bank Imports -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+
     <!-- Google Identity & Drive APIs -->
     <script src="https://accounts.google.com/gsi/client" onload="gisLoaded()" async defer></script>
     <script src="https://apis.google.com/js/api.js" onload="gapiLoaded()" async defer></script>
@@ -182,17 +185,17 @@
             
             <ul class="space-y-4 mb-8">
                 <li class="flex items-start gap-3">
-                    <i class="ph-fill ph-arrows-clockwise text-emerald-400 text-lg mt-0.5"></i>
+                    <i class="ph-fill ph-file-csv text-emerald-400 text-lg mt-0.5"></i>
                     <div>
-                        <p class="text-sm font-bold text-slate-200">Recurring Bills</p>
-                        <p class="text-xs text-slate-400">Set bills to auto-repeat every month when marked paid.</p>
+                        <p class="text-sm font-bold text-slate-200">Zero-Backend Bank Sync</p>
+                        <p class="text-xs text-slate-400">Securely import your bank CSVs offline from the Settings tab.</p>
                     </div>
                 </li>
                 <li class="flex items-start gap-3">
-                    <i class="ph-fill ph-hard-drives text-blue-400 text-lg mt-0.5"></i>
+                    <i class="ph-fill ph-arrows-clockwise text-blue-400 text-lg mt-0.5"></i>
                     <div>
-                        <p class="text-sm font-bold text-slate-200">Infinite Storage</p>
-                        <p class="text-xs text-slate-400">Upgraded database means you can attach unlimited receipts.</p>
+                        <p class="text-sm font-bold text-slate-200">Recurring Bills</p>
+                        <p class="text-xs text-slate-400">Set bills to auto-repeat every month when marked paid.</p>
                     </div>
                 </li>
                 <li class="flex items-start gap-3">
@@ -468,6 +471,19 @@
             <div>
                 <h3 class="text-sm font-bold text-slate-500 uppercase tracking-wider mb-3 ml-1">Local Data</h3>
                 <div class="bg-slate-800 rounded-2xl border border-slate-700 shadow-sm overflow-hidden flex flex-col">
+                    
+                    <!-- NEW CSV IMPORT BUTTON -->
+                    <button onclick="document.getElementById('csvFileInput').click()" class="flex items-center gap-3 p-4 border-b border-slate-700/50 hover:bg-slate-700/50 active:bg-slate-700 transition-colors text-left w-full group">
+                        <div class="bg-slate-900 p-2 rounded-full text-blue-400 group-hover:text-blue-300 border border-slate-700">
+                            <i class="ph-bold ph-file-csv text-lg"></i>
+                        </div>
+                        <div>
+                            <p class="font-bold text-slate-100">Import Bank CSV</p>
+                            <p class="text-xs text-slate-400">Bulk add 100% securely offline</p>
+                        </div>
+                    </button>
+                    <input type="file" id="csvFileInput" accept=".csv" class="hidden" onchange="handleCSVUpload(event)">
+                    
                     <button onclick="archiveOldData()" class="flex items-center gap-3 p-4 border-b border-slate-700/50 hover:bg-slate-700/50 active:bg-slate-700 transition-colors text-left w-full group">
                         <div class="bg-slate-900 p-2 rounded-full text-emerald-400 group-hover:text-emerald-300 border border-slate-700">
                             <i class="ph-bold ph-archive text-lg"></i>
@@ -569,7 +585,7 @@
     <!-- JAVASCRIPT LOGIC -->
     <script>
         /* --- CONFIGURATION --- */
-        const APP_VERSION = '2.0'; // Update this string whenever you add new features to trigger the modal
+        const APP_VERSION = '3.0'; // Updated to trigger What's New modal for CSV
         const FILE_NAME = 'tight-ship-ledger.json';
         const GOOGLE_CLIENT_ID = '590906229865-rlo3ap84ngm5rr6hmsov2sg9ko0o24sp.apps.googleusercontent.com'; 
         const SCOPES = 'https://www.googleapis.com/auth/drive.appdata';
@@ -1317,6 +1333,102 @@
             await localforage.setItem('tightShipTransactions', transactions);
             updateDashboard();
             syncToDriveBackground(); 
+        }
+
+        /* --- CSV IMPORT LOGIC --- */
+        function handleCSVUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            showToast('Reading bank statement...', 'info');
+
+            Papa.parse(file, {
+                header: true,
+                skipEmptyLines: true,
+                complete: function(results) {
+                    processCSVData(results.data);
+                    event.target.value = ''; // Reset input
+                },
+                error: function(err) {
+                    console.error(err);
+                    showToast('Failed to parse CSV.', 'error');
+                }
+            });
+        }
+
+        async function processCSVData(data) {
+            if (data.length === 0) {
+                showToast('The CSV file is empty.', 'error');
+                return;
+            }
+
+            const origHeaders = Object.keys(data[0]);
+            
+            // Smart auto-detect columns
+            let dateKey = origHeaders.find(h => h.toLowerCase().includes('date')) || origHeaders[0];
+            let descKey = origHeaders.find(h => h.toLowerCase().includes('description') || h.toLowerCase().includes('memo') || h.toLowerCase().includes('payee') || h.toLowerCase().includes('name'));
+            let amountKey = origHeaders.find(h => h.toLowerCase().includes('amount') || h.toLowerCase().includes('balance') && !h.toLowerCase().includes('running'));
+            
+            let debitKey = origHeaders.find(h => h.toLowerCase().includes('debit'));
+            let creditKey = origHeaders.find(h => h.toLowerCase().includes('credit'));
+
+            if (!descKey) descKey = origHeaders.length > 2 ? origHeaders[2] : origHeaders[1];
+
+            let importedCount = 0;
+
+            data.forEach(row => {
+                let rawDate = row[dateKey];
+                let desc = row[descKey] || 'Imported Bank Transaction';
+                let amount = 0;
+                let type = 'spend';
+
+                // Determine amount and type based on bank formatting
+                if (amountKey && row[amountKey]) {
+                    let val = parseFloat(String(row[amountKey]).replace(/[^0-9.-]+/g, ""));
+                    if (!isNaN(val) && val !== 0) {
+                        amount = Math.abs(val);
+                        type = val > 0 ? 'income' : 'spend';
+                    }
+                } else if (debitKey && row[debitKey]) {
+                    let val = parseFloat(String(row[debitKey]).replace(/[^0-9.-]+/g, ""));
+                    if (!isNaN(val) && val !== 0) { amount = Math.abs(val); type = 'spend'; }
+                } else if (creditKey && row[creditKey]) {
+                    let val = parseFloat(String(row[creditKey]).replace(/[^0-9.-]+/g, ""));
+                    if (!isNaN(val) && val !== 0) { amount = Math.abs(val); type = 'income'; }
+                }
+
+                if (!rawDate || amount === 0) return;
+
+                // Standardize date
+                let dateObj = new Date(rawDate);
+                if (isNaN(dateObj.getTime())) dateObj = new Date();
+                const formattedDate = dateObj.toISOString().split('T')[0];
+
+                const safeId = (typeof crypto !== 'undefined' && crypto.randomUUID) ? crypto.randomUUID() : 'tx_' + Date.now().toString(36) + Math.random().toString(36).substring(2, 9);
+
+                transactions.push({
+                    id: safeId,
+                    type: type,
+                    amount: amount,
+                    description: desc.substring(0, 80).trim(), 
+                    date: formattedDate,
+                    isPaid: true,
+                    dueDate: null,
+                    isRecurring: false,
+                    receipt: null,
+                    createdAt: new Date().toISOString()
+                });
+                importedCount++;
+            });
+
+            if (importedCount > 0) {
+                await saveDataLocally();
+                showToast(`Successfully imported ${importedCount} transactions!`, 'success');
+                switchTab('dashboard');
+                window.scrollTo(0,0);
+            } else {
+                showToast('Could not auto-detect valid transactions in this file.', 'error');
+            }
         }
 
         async function downloadJson() {
