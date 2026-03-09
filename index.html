@@ -329,6 +329,25 @@
 
     </main>
 
+    <!-- Success Modal Overlay -->
+    <div id="successOverlay" class="fixed inset-0 z-[100] bg-slate-950/80 backdrop-blur-sm hidden items-center justify-center p-4">
+        <div class="bg-slate-800 border border-slate-700 rounded-3xl p-8 max-w-sm w-full text-center shadow-2xl animate-enter">
+            <div class="mx-auto w-20 h-20 bg-emerald-900/30 rounded-full flex items-center justify-center mb-6 border border-emerald-800/50">
+                <i class="ph-bold ph-check text-4xl text-emerald-400"></i>
+            </div>
+            <h3 id="successOverlayTitle" class="text-2xl font-bold text-slate-100 mb-2">Logged Successfully</h3>
+            <p class="text-slate-400 mb-8 text-sm">Your command center has been updated.</p>
+            <div class="flex flex-col gap-3">
+                <button type="button" onclick="closeSuccessAndGoHome()" class="w-full bg-emerald-600 text-white font-bold py-4 rounded-xl active:scale-[0.98] transition-transform">
+                    Return to Dashboard
+                </button>
+                <button type="button" onclick="closeSuccessAndLogAnother()" class="w-full bg-slate-900 border border-slate-700 text-slate-300 font-bold py-4 rounded-xl hover:bg-slate-800 active:scale-[0.98] transition-all">
+                    Log Another Entry
+                </button>
+            </div>
+        </div>
+    </div>
+
     <!-- Wipe Confirmation Modal -->
     <div id="wipeOverlay" class="fixed inset-0 z-[100] bg-slate-950/80 backdrop-blur-sm hidden items-center justify-center p-4">
         <div class="bg-slate-800 border border-slate-700 rounded-3xl p-8 max-w-sm w-full text-center shadow-2xl animate-enter">
@@ -820,15 +839,15 @@
                 try {
                     saveDataLocally(); // This updates the dashboard logic safely now
                     
-                    // Success Animation & Auto-Redirect
-                    btn.innerText = "Success! ✓";
-                    btn.className = "w-full bg-emerald-500 text-white font-bold text-lg py-4 rounded-2xl shadow-lg shadow-emerald-900/20 transition-all pointer-events-none";
+                    // Show Success Modal instead of auto-redirecting
+                    document.getElementById('successOverlayTitle').innerText = wasEdit ? "Update Successful" : "Logged Successfully";
+                    document.getElementById('successOverlay').classList.remove('hidden');
+                    document.getElementById('successOverlay').classList.add('flex');
                     
-                    setTimeout(() => {
-                        resetLogForm();
-                        switchTab('dashboard');
-                        showToast(wasEdit ? 'Transaction Updated' : 'Logged Successfully', 'success');
-                    }, 800); 
+                    // Reset the save button text/visuals behind the modal
+                    btn.innerText = originalText;
+                    btn.className = originalClasses;
+                    
                 } catch (error) {
                     console.error(error);
                     showToast('Error saving data. Please check connection.', 'error');
@@ -837,6 +856,20 @@
                 }
                 
             }, 150); 
+        }
+
+        function closeSuccessAndGoHome() {
+            document.getElementById('successOverlay').classList.add('hidden');
+            document.getElementById('successOverlay').classList.remove('flex');
+            resetLogForm();
+            switchTab('dashboard');
+        }
+
+        function closeSuccessAndLogAnother() {
+            document.getElementById('successOverlay').classList.add('hidden');
+            document.getElementById('successOverlay').classList.remove('flex');
+            resetLogForm();
+            window.scrollTo(0,0);
         }
 
         function editTx(id) {
