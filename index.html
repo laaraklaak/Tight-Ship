@@ -83,8 +83,12 @@
         <!-- TAB 1: DASHBOARD                           -->
         <!-- ========================================== -->
         <section id="tab-dashboard" class="tab-content active p-4 space-y-6">
-            <header class="pt-4 pb-2">
-                <h1 class="text-xl font-bold text-slate-500 tracking-wide uppercase text-center mb-1">Tight Ship</h1>
+            <header class="pt-4 pb-2 relative flex items-center justify-center">
+                <h1 class="text-xl font-bold text-slate-500 tracking-wide uppercase mb-1">Tight Ship</h1>
+                <!-- PWA Install Button -->
+                <button id="installAppBtn" class="hidden absolute right-0 top-2 p-2 text-emerald-400 hover:text-emerald-300 transition-colors rounded-full bg-emerald-900/20 border border-emerald-800/50 shadow-sm" onclick="installApp()" title="Install App to Home Screen">
+                    <i class="ph-bold ph-download-simple text-lg"></i>
+                </button>
             </header>
 
             <!-- Safe to Spend Card -->
@@ -95,18 +99,32 @@
                 <p class="text-xs text-slate-400 mt-2 bg-slate-900/50 px-3 py-1 rounded-full border border-slate-700/50">Income - Spend - All Bills</p>
             </div>
 
-            <!-- Cash on Hand Card -->
-            <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 flex justify-between items-center shadow-md">
-                <div class="flex items-center gap-3">
-                    <div class="bg-slate-800 p-2 rounded-full border border-slate-700">
-                        <i class="ph ph-wallet text-xl text-blue-400"></i>
+            <!-- Secondary Stats Grid -->
+            <div class="grid grid-cols-2 gap-3">
+                <!-- Cash on Hand Card -->
+                <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 flex flex-col justify-center shadow-md gap-1 relative overflow-hidden">
+                    <div class="flex items-center gap-2 mb-1 z-10">
+                        <div class="bg-slate-800 p-1.5 rounded-full border border-slate-700">
+                            <i class="ph ph-wallet text-blue-400"></i>
+                        </div>
+                        <p class="text-[10px] text-slate-400 font-bold uppercase tracking-wider leading-tight">Cash on<br>Hand</p>
                     </div>
-                    <div>
-                        <p class="text-xs text-slate-300 font-medium uppercase tracking-wider">Cash on Hand</p>
-                        <p class="text-xs text-slate-500">Actual money in bank</p>
-                    </div>
+                    <h3 id="cashOnHandAmount" class="text-xl sm:text-2xl font-bold tracking-tight text-slate-100 z-10">$0.00</h3>
                 </div>
-                <h3 id="cashOnHandAmount" class="text-2xl font-bold tracking-tight text-slate-100">$0.00</h3>
+
+                <!-- Total Owed Card -->
+                <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 flex flex-col justify-center shadow-md gap-1 relative overflow-hidden">
+                    <div class="absolute -right-4 -bottom-4 opacity-10">
+                        <i class="ph-fill ph-warning-circle text-6xl text-rose-500"></i>
+                    </div>
+                    <div class="flex items-center gap-2 mb-1 z-10">
+                        <div class="bg-slate-800 p-1.5 rounded-full border border-slate-700">
+                            <i class="ph ph-file-dashed text-rose-400"></i>
+                        </div>
+                        <p class="text-[10px] text-slate-400 font-bold uppercase tracking-wider leading-tight">Total<br>Owed</p>
+                    </div>
+                    <h3 id="totalOwedAmount" class="text-xl sm:text-2xl font-bold tracking-tight text-rose-400 z-10">$0.00</h3>
+                </div>
             </div>
 
             <!-- Sync Warning Banner -->
@@ -538,8 +556,9 @@
                 accent.className = 'absolute top-0 right-0 w-24 h-24 bg-emerald-900/20 rounded-bl-full -z-10';
             }
 
-            // Update UI: Cash on Hand
+            // Update UI: Cash on Hand & Total Owed
             document.getElementById('cashOnHandAmount').innerText = formatMoney(cashOnHand);
+            document.getElementById('totalOwedAmount').innerText = formatMoney(unpaidBillsAmount);
 
             // Update UI: Unpaid Bills Queue
             const billsContainer = document.getElementById('outstandingBillsContainer');
@@ -1024,6 +1043,37 @@
             updateDashboard();
             closeWipePrompt();
             showToast('Device memory wiped clean.', 'success');
+        }
+
+        /* --- PWA INSTALL LOGIC --- */
+        let deferredPrompt;
+
+        window.addEventListener('beforeinstallprompt', (e) => {
+            // Prevent the mini-infobar from appearing on mobile
+            e.preventDefault();
+            // Stash the event so it can be triggered later.
+            deferredPrompt = e;
+            // Update UI notify the user they can install the PWA
+            document.getElementById('installAppBtn').classList.remove('hidden');
+        });
+
+        window.addEventListener('appinstalled', (evt) => {
+            // Hide the button once installed
+            document.getElementById('installAppBtn').classList.add('hidden');
+            showToast('App installed successfully!', 'success');
+        });
+
+        async function installApp() {
+            if (deferredPrompt) {
+                // Show the native install prompt
+                deferredPrompt.prompt();
+                // Wait for the user to respond to the prompt
+                const { outcome } = await deferredPrompt.userChoice;
+                
+                // We've used the prompt, and can't use it again, throw it away
+                deferredPrompt = null;
+                document.getElementById('installAppBtn').classList.add('hidden');
+            }
         }
 
         /* --- GOOGLE DRIVE SYNC LOGIC --- */
