@@ -495,7 +495,13 @@
                 }
             });
 
-            const cashOnHand = totalIncome - totalSpend - paidBills;
+            let cashOnHand = totalIncome - totalSpend - paidBills;
+            
+            // Ensure Cash on Hand never drops below $0.00
+            if (cashOnHand < 0) {
+                cashOnHand = 0;
+            }
+
             const safeToSpend = cashOnHand - unpaidBillsAmount;
 
             // Update UI: Safe to Spend
@@ -754,66 +760,87 @@
         function handleLogTransaction(e) {
             e.preventDefault();
             
-            const type = document.querySelector('input[name="txType"]:checked').value;
-            const rawAmount = document.getElementById('txAmount').value;
-            const amount = parseFloat(rawAmount);
-            const description = document.getElementById('txDescription').value.trim();
+            // Add visual button feedback
+            const btn = document.getElementById('btn-submit');
+            const originalText = btn.innerText;
+            btn.innerText = "Saving...";
+            btn.classList.add('opacity-80');
             
-            // Grabs correct date or dueDate variables based on bill status
-            let date = document.getElementById('txDate').value;
-            let isPaid = true;
-            let dueDate = null;
+            // Slight delay so the button press feels responsive
+            setTimeout(() => {
+                const type = document.querySelector('input[name="txType"]:checked').value;
+                const rawAmount = document.getElementById('txAmount').value;
+                const amount = parseFloat(rawAmount);
+                const description = document.getElementById('txDescription').value.trim();
+                
+                // Grabs correct date or dueDate variables based on bill status
+                let date = document.getElementById('txDate').value;
+                let isPaid = true;
+                let dueDate = null;
 
-            if (type === 'bill') {
-                isPaid = document.getElementById('txIsPaid').checked;
-                if (!isPaid) {
-                    dueDate = document.getElementById('input-due-date').value;
-                    date = null; // We wipe out regular date so it goes exactly into the queue
+                if (type === 'bill') {
+                    isPaid = document.getElementById('txIsPaid').checked;
+                    if (!isPaid) {
+                        dueDate = document.getElementById('input-due-date').value;
+                        date = null; // We wipe out regular date so it goes exactly into the queue
+                    }
                 }
-            }
 
-            // Fallback validation & Guardrails
-            if (isNaN(amount) || amount <= 0) {
-                showToast('Please enter a valid positive amount.', 'error');
-                return;
-            }
-            if (!description || (isPaid && !date) || (!isPaid && !dueDate)) {
-                showToast('Please fill all required fields.', 'error');
-                return;
-            }
+                // Fallback validation & Guardrails
+                if (isNaN(amount) || amount <= 0) {
+                    showToast('Please enter a valid positive amount.', 'error');
+                    btn.innerText = originalText;
+                    btn.classList.remove('opacity-80');
+                    return;
+                }
+                if (!description || (isPaid && !date) || (!isPaid && !dueDate)) {
+                    showToast('Please fill all required fields.', 'error');
+                    btn.innerText = originalText;
+                    btn.classList.remove('opacity-80');
+                    return;
+                }
 
-            if (editingTxId) {
-                // Update existing transaction
-                const txIndex = transactions.findIndex(t => t.id === editingTxId);
-                if (txIndex > -1) {
-                    transactions[txIndex] = {
-                        ...transactions[txIndex],
-                        type, amount, description, date, isPaid, dueDate,
-                        receipt: currentBase64Receipt || transactions[txIndex].receipt,
-                        updatedAt: new Date().toISOString()
+                // Generate ID safely (works perfectly offline and on local computer files)
+                const safeId = Date.now().toString(36) + Math.random().toString(36).substring(2);
+
+                if (editingTxId) {
+                    // Update existing transaction
+                    const txIndex = transactions.findIndex(t => t.id === editingTxId);
+                    if (txIndex > -1) {
+                        transactions[txIndex] = {
+                            ...transactions[txIndex],
+                            type, amount, description, date, isPaid, dueDate,
+                            receipt: currentBase64Receipt || transactions[txIndex].receipt,
+                            updatedAt: new Date().toISOString()
+                        };
+                    }
+                } else {
+                    // Create new transaction
+                    const newTx = {
+                        id: safeId,
+                        type,
+                        amount,
+                        description,
+                        date,
+                        isPaid,
+                        dueDate,
+                        receipt: currentBase64Receipt,
+                        createdAt: new Date().toISOString()
                     };
+                    transactions.push(newTx);
                 }
-            } else {
-                // Create new transaction
-                const newTx = {
-                    id: crypto.randomUUID(),
-                    type,
-                    amount,
-                    description,
-                    date,
-                    isPaid,
-                    dueDate,
-                    receipt: currentBase64Receipt,
-                    createdAt: new Date().toISOString()
-                };
-                transactions.push(newTx);
-            }
 
-            saveDataLocally();
-            
-            // Show Success Modal
-            document.getElementById('successOverlay').classList.remove('hidden');
-            document.getElementById('successOverlay').classList.add('flex');
+                saveDataLocally();
+                
+                // Show Success Modal
+                document.getElementById('successOverlay').classList.remove('hidden');
+                document.getElementById('successOverlay').classList.add('flex');
+                
+                // Reset button visuals
+                btn.innerText = originalText;
+                btn.classList.remove('opacity-80');
+                
+            }, 150); 
         }
 
         function editTx(id) {
