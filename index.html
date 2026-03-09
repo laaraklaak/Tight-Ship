@@ -16,8 +16,8 @@
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
 
     <!-- Google Identity & Drive APIs -->
-    <script src="https://accounts.google.com/gsi/client" async defer></script>
-    <script src="https://apis.google.com/js/api.js" async defer></script>
+    <script src="https://accounts.google.com/gsi/client" onload="gisLoaded()" async defer></script>
+    <script src="https://apis.google.com/js/api.js" onload="gapiLoaded()" async defer></script>
 
     <style>
         /* Native dark mode inputs (calendar picker) */
@@ -1106,10 +1106,22 @@
         }
 
         function handleAuthClick() {
-            if (GOOGLE_CLIENT_ID === 'YOUR_GOOGLE_CLIENT_ID') {
+            if (!GOOGLE_CLIENT_ID || GOOGLE_CLIENT_ID === 'YOUR_GOOGLE_CLIENT_ID') {
                 showToast('Developer Error: Missing Client ID in code.', 'error');
                 return;
             }
+            
+            // Safety check: Ensure Google scripts actually loaded and weren't blocked
+            if (!tokenClient) {
+                showToast('Google services are still loading or blocked by your browser. Please refresh or disable ad-blockers.', 'error');
+                return;
+            }
+            
+            if (typeof gapi === 'undefined' || !gapi.client) {
+                showToast('Google API is not ready. Please check your connection.', 'error');
+                return;
+            }
+
             if (gapi.client.getToken() === null) {
                 tokenClient.requestAccessToken({prompt: 'consent'});
             } else {
