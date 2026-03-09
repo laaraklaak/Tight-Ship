@@ -90,7 +90,7 @@
             <!-- Safe to Spend Card -->
             <div class="bg-slate-800 rounded-3xl p-6 shadow-lg border border-slate-700 text-center flex flex-col items-center justify-center transition-colors duration-300 relative overflow-hidden" id="safeToSpendCard">
                 <div class="absolute top-0 right-0 w-24 h-24 bg-emerald-900/20 rounded-bl-full -z-10" id="safeSpendAccent"></div>
-                <p class="text-sm font-semibold text-slate-400 uppercase tracking-wider mb-2">True Safe to Spend</p>
+                <p class="text-sm font-semibold text-slate-400 uppercase tracking-wider mb-2">Current Financial Standing</p>
                 <h2 id="safeToSpendAmount" class="text-5xl font-extrabold tracking-tight text-emerald-400 mb-1">$0.00</h2>
                 <p class="text-xs text-slate-400 mt-2 bg-slate-900/50 px-3 py-1 rounded-full border border-slate-700/50">Income - Spend - All Bills</p>
             </div>
@@ -348,9 +348,7 @@
         </div>
     </div>
 
-    <!-- ========================================== -->
-    <!-- BOTTOM NAVIGATION                          -->
-    <!-- ========================================== -->
+    <!-- Navigation -->
     <nav class="fixed bottom-0 w-full max-w-lg mx-auto bg-slate-900/95 backdrop-blur-md border-t border-slate-800 h-20 pb-safe flex justify-around items-center px-2 z-40">
         <button onclick="switchTab('dashboard')" id="nav-dashboard" class="nav-btn flex-1 flex flex-col items-center justify-center py-2 transition-all text-slate-100">
             <div class="nav-pill flex flex-col items-center justify-center w-16 h-12 rounded-full bg-slate-800 transition-colors">
@@ -374,13 +372,10 @@
         </button>
     </nav>
 
-    <!-- ========================================== -->
-    <!-- JAVASCRIPT LOGIC                           -->
-    <!-- ========================================== -->
+    <!-- JAVASCRIPT LOGIC -->
     <script>
         /* --- CONFIGURATION --- */
         const FILE_NAME = 'tight-ship-ledger.json';
-        // IMPORTANT: Replace with your actual Google OAuth 2.0 Client ID
         const GOOGLE_CLIENT_ID = '590906229865-rlo3ap84ngm5rr6hmsov2sg9ko0o24sp.apps.googleusercontent.com'; 
         const SCOPES = 'https://www.googleapis.com/auth/drive.appdata';
 
@@ -393,7 +388,6 @@
 
         /* --- INITIALIZATION --- */
         document.addEventListener('DOMContentLoaded', () => {
-            // Set today's date as default
             document.getElementById('txDate').valueAsDate = new Date();
             document.getElementById('input-due-date').valueAsDate = new Date();
             updateDashboard();
@@ -402,7 +396,6 @@
 
         /* --- NAVIGATION --- */
         function switchTab(tabId) {
-            // Hide all
             document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
             document.querySelectorAll('.nav-btn').forEach(btn => {
                 btn.classList.remove('text-slate-100');
@@ -410,17 +403,17 @@
                 btn.querySelector('.nav-pill').classList.remove('bg-slate-800');
             });
 
-            // Show target
             document.getElementById(`tab-${tabId}`).classList.add('active');
             
-            // Highlight nav
             const activeNav = document.getElementById(`nav-${tabId}`);
             activeNav.classList.remove('text-slate-500');
             activeNav.classList.add('text-slate-100');
             activeNav.querySelector('.nav-pill').classList.add('bg-slate-800');
 
-            // Scroll to top
             window.scrollTo(0,0);
+
+            // Ensure dashboard always triggers a fresh update when navigated to
+            if (tabId === 'dashboard') updateDashboard();
         }
 
         /* --- TOAST NOTIFICATIONS --- */
@@ -446,6 +439,31 @@
             }, 3000);
         }
 
+        /* --- UTILS (FAULT-TOLERANT) --- */
+        // Bulletproof Date Formatter: Ignores broken data from old tests
+        function formatDateUI(dateStr) {
+            if (!dateStr || typeof dateStr !== 'string') return '--';
+            const parts = dateStr.split('-');
+            if (parts.length !== 3) return dateStr;
+            const dateObj = new Date(parts[0], parts[1] - 1, parts[2]);
+            if (isNaN(dateObj.getTime())) return dateStr;
+            return dateObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+        }
+
+        function getDaysDifference(date1, date2) {
+            if (!date1 || !date2 || isNaN(date1.getTime()) || isNaN(date2.getTime())) return 0;
+            const d1 = new Date(date1.getFullYear(), date1.getMonth(), date1.getDate());
+            const d2 = new Date(date2.getFullYear(), date2.getMonth(), date2.getDate());
+            const diffTime = d2 - d1;
+            return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+        }
+
+        function formatMoney(num) {
+            const safeNum = parseFloat(num) || 0;
+            const sign = safeNum < 0 ? '-' : '';
+            return sign + '$' + Math.abs(safeNum).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        }
+
         /* --- MATH & DASHBOARD --- */
         function updateDashboard() {
             let totalIncome = 0;
@@ -455,8 +473,9 @@
             const unpaidBillsList = [];
             const recentLedger = [];
 
-            // Process transactions
+            // Process transactions safely
             transactions.forEach(tx => {
+                if (!tx) return; // Skip broken entries entirely
                 const amount = parseFloat(tx.amount) || 0;
                 
                 if (tx.type === 'income') {
@@ -477,11 +496,7 @@
             });
 
             let cashOnHand = totalIncome - totalSpend - paidBills;
-            
-            // Ensure Cash on Hand never drops below $0.00
-            if (cashOnHand < 0) {
-                cashOnHand = 0;
-            }
+            if (cashOnHand < 0) cashOnHand = 0; // Prevent negative cash on hand
 
             const safeToSpend = cashOnHand - unpaidBillsAmount;
 
@@ -515,11 +530,10 @@
             
             if (unpaidBillsList.length > 0) {
                 billsContainer.classList.remove('hidden');
-                // Sort strictly by due date
-                unpaidBillsList.sort((a, b) => new Date(a.dueDate) - new Date(b.dueDate));
+                // Sort safely
+                unpaidBillsList.sort((a, b) => new Date(a.dueDate || 0).getTime() - new Date(b.dueDate || 0).getTime());
                 
                 unpaidBillsList.forEach(bill => {
-                    // Calculate days from the correct dueDate
                     const daysAway = getDaysDifference(new Date(), new Date(bill.dueDate));
                     let urgencyClass = 'text-slate-400';
                     let urgencyText = `Due in ${daysAway}d`;
@@ -560,8 +574,8 @@
             if (recentLedger.length === 0) {
                 ledgerEl.innerHTML = '<div class="p-8 text-center text-slate-500 text-sm">No transactions logged yet.</div>';
             } else {
-                // Sort by date descending
-                recentLedger.sort((a, b) => new Date(b.date) - new Date(a.date));
+                // Sort safely
+                recentLedger.sort((a, b) => new Date(b.date || b.dueDate || 0).getTime() - new Date(a.date || a.dueDate || 0).getTime());
                 const top20 = recentLedger.slice(0, 20);
                 
                 top20.forEach((tx, index) => {
@@ -693,7 +707,6 @@
             const file = event.target.files[0];
             if (!file) return;
 
-            // Show preview logic
             const preview = document.getElementById('receiptPreview');
             const prompt = document.getElementById('receiptPrompt');
             const changeText = document.getElementById('receiptChangeText');
@@ -703,7 +716,6 @@
             prompt.classList.add('hidden');
             changeText.classList.remove('hidden');
 
-            // Compress to base64
             currentBase64Receipt = await compressImage(file);
         }
 
@@ -741,7 +753,6 @@
         function handleLogTransaction(e) {
             e.preventDefault();
             
-            // Add visual button feedback
             const btn = document.getElementById('btn-submit');
             const originalText = btn.innerText;
             const originalClasses = btn.className;
@@ -749,14 +760,12 @@
             btn.innerText = editingTxId ? "Updating..." : "Saving...";
             btn.classList.add('opacity-80', 'pointer-events-none');
             
-            // Slight delay so the button press feels responsive
             setTimeout(() => {
                 const type = document.querySelector('input[name="txType"]:checked').value;
                 const rawAmount = document.getElementById('txAmount').value;
                 const amount = parseFloat(rawAmount);
                 const description = document.getElementById('txDescription').value.trim();
                 
-                // Grabs correct date or dueDate variables based on bill status
                 let date = document.getElementById('txDate').value;
                 let isPaid = true;
                 let dueDate = null;
@@ -765,11 +774,10 @@
                     isPaid = document.getElementById('txIsPaid').checked;
                     if (!isPaid) {
                         dueDate = document.getElementById('input-due-date').value;
-                        date = null; // We wipe out regular date so it goes exactly into the queue
+                        date = null; 
                     }
                 }
 
-                // Fallback validation & Guardrails
                 if (isNaN(amount) || amount <= 0) {
                     showToast('Please enter a valid positive amount.', 'error');
                     btn.innerText = originalText;
@@ -783,12 +791,10 @@
                     return;
                 }
 
-                // Generate ID safely (works perfectly offline and on local computer files)
                 const safeId = Date.now().toString(36) + Math.random().toString(36).substring(2);
                 const wasEdit = !!editingTxId;
 
                 if (editingTxId) {
-                    // Update existing transaction
                     const txIndex = transactions.findIndex(t => t.id === editingTxId);
                     if (txIndex > -1) {
                         transactions[txIndex] = {
@@ -799,32 +805,34 @@
                         };
                     }
                 } else {
-                    // Create new transaction
                     const newTx = {
                         id: safeId,
-                        type,
-                        amount,
-                        description,
-                        date,
-                        isPaid,
-                        dueDate,
+                        type, amount, description, date, isPaid, dueDate,
                         receipt: currentBase64Receipt,
                         createdAt: new Date().toISOString()
                     };
                     transactions.push(newTx);
                 }
 
-                saveDataLocally();
-                
-                // Success Animation & Auto-Redirect
-                btn.innerText = "Success! ✓";
-                btn.className = "w-full bg-emerald-500 text-white font-bold text-lg py-4 rounded-2xl shadow-lg shadow-emerald-900/20 transition-all pointer-events-none";
-                
-                setTimeout(() => {
-                    resetLogForm();
-                    switchTab('dashboard');
-                    showToast(wasEdit ? 'Transaction Updated' : 'Logged Successfully', 'success');
-                }, 800); // Waits just under a second so you can see "Success!" before redirecting
+                // Robust Error Catching Block
+                try {
+                    saveDataLocally(); // This updates the dashboard logic safely now
+                    
+                    // Success Animation & Auto-Redirect
+                    btn.innerText = "Success! ✓";
+                    btn.className = "w-full bg-emerald-500 text-white font-bold text-lg py-4 rounded-2xl shadow-lg shadow-emerald-900/20 transition-all pointer-events-none";
+                    
+                    setTimeout(() => {
+                        resetLogForm();
+                        switchTab('dashboard');
+                        showToast(wasEdit ? 'Transaction Updated' : 'Logged Successfully', 'success');
+                    }, 800); 
+                } catch (error) {
+                    console.error(error);
+                    showToast('Error saving data. Please check connection.', 'error');
+                    btn.innerText = originalText;
+                    btn.className = originalClasses;
+                }
                 
             }, 150); 
         }
@@ -836,18 +844,15 @@
             editingTxId = id;
             currentBase64Receipt = tx.receipt || null;
 
-            // Select the right radio button
             document.querySelector(`input[name="txType"][value="${tx.type}"]`).checked = true;
-            updateFormUI(); // Triggers UI changes based on type
+            updateFormUI();
 
-            // Populate text/number fields
             document.getElementById('txAmount').value = tx.amount;
             document.getElementById('txDescription').value = tx.description;
 
-            // Handle date logic carefully
             if (tx.type === 'bill') {
                 document.getElementById('txIsPaid').checked = tx.isPaid;
-                toggleBillPaid(); // Force UI update for the checkbox state
+                toggleBillPaid();
                 if (tx.isPaid) {
                     document.getElementById('txDate').value = tx.date;
                 } else {
@@ -857,7 +862,6 @@
                 document.getElementById('txDate').value = tx.date;
             }
 
-            // Restore preview if there is a receipt
             if (currentBase64Receipt) {
                 const preview = document.getElementById('receiptPreview');
                 preview.src = currentBase64Receipt;
@@ -866,13 +870,13 @@
                 document.getElementById('receiptChangeText').classList.remove('hidden');
             }
 
-            // Update UI Buttons for Editing
             const btnSubmit = document.getElementById('btn-submit');
+            btnSubmit.innerText = "Update Transaction";
             btnSubmit.classList.remove('w-full');
             btnSubmit.classList.add('w-2/3');
             document.getElementById('btn-cancel-edit').classList.remove('hidden');
 
-            switchTab('log'); // Send user to the form tab
+            switchTab('log'); 
         }
 
         function cancelEdit() {
@@ -893,7 +897,6 @@
             const tx = transactions.find(t => t.id === id);
             if (tx) {
                 tx.isPaid = true;
-                // Replace dueDate with today's date when marking paid
                 tx.date = new Date().toISOString().split('T')[0]; 
                 tx.dueDate = null; 
                 saveDataLocally();
@@ -901,7 +904,6 @@
             }
         }
 
-        /* --- SUCCESS MODAL ACTIONS --- */
         function resetLogForm() {
             document.getElementById('txForm').reset();
             document.getElementById('txDate').valueAsDate = new Date();
@@ -909,13 +911,11 @@
             currentBase64Receipt = null;
             editingTxId = null;
             
-            // Reset image preview
             document.getElementById('receiptPreview').classList.add('hidden');
             document.getElementById('receiptPreview').src = '';
             document.getElementById('receiptPrompt').classList.remove('hidden');
             document.getElementById('receiptChangeText').classList.add('hidden');
 
-            // Reset Bill toggle UI
             document.getElementById('txIsPaid').checked = true;
             document.getElementById('billPaidIcon').className = 'ph-fill ph-check-circle text-blue-400 text-3xl';
             document.getElementById('billPaidText').innerText = 'I have already paid this';
@@ -923,9 +923,8 @@
             document.getElementById('billPaidSubText').className = 'text-xs text-blue-400/80';
             document.getElementById('billPaidToggleContainer').className = 'bg-blue-900/20 border border-blue-800/50 rounded-2xl p-4 flex items-center justify-between cursor-pointer';
 
-            updateFormUI(); // This automatically resets the Save button's colors back to normal
+            updateFormUI();
             
-            // Revert Edit UI Buttons
             const btnSubmit = document.getElementById('btn-submit');
             btnSubmit.classList.remove('w-2/3', 'pointer-events-none');
             btnSubmit.classList.add('w-full');
@@ -941,7 +940,6 @@
                     url: window.location.href
                 }).catch(console.error);
             } else {
-                // Fallback to copy to clipboard for unsupported browsers
                 const dummy = document.createElement('input');
                 document.body.appendChild(dummy);
                 dummy.value = window.location.href;
@@ -961,7 +959,7 @@
         function saveDataLocally() {
             localStorage.setItem('tightShipTransactions', JSON.stringify(transactions));
             updateDashboard();
-            syncToDriveBackground(); // Auto sync
+            syncToDriveBackground(); 
         }
 
         function downloadJson() {
@@ -993,26 +991,6 @@
             showToast('Device memory wiped clean.', 'success');
         }
 
-        /* --- UTILS --- */
-        function formatMoney(num) {
-            const sign = num < 0 ? '-' : '';
-            return sign + '$' + Math.abs(num).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-        }
-
-        function formatDateUI(dateStr) {
-            // Fixes timezone shift issues
-            const [y, m, d] = dateStr.split('-');
-            const dateObj = new Date(y, m - 1, d);
-            return dateObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-        }
-
-        function getDaysDifference(date1, date2) {
-            const d1 = new Date(date1.getFullYear(), date1.getMonth(), date1.getDate());
-            const d2 = new Date(date2.getFullYear(), date2.getMonth(), date2.getDate());
-            const diffTime = d2 - d1;
-            return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-        }
-
         /* --- GOOGLE DRIVE SYNC LOGIC --- */
         function gapiLoaded() {
             gapi.load('client', initializeGapiClient);
@@ -1040,12 +1018,6 @@
                     }
                 },
             });
-        }
-
-        // Wait for APIs to load
-        window.onload = function() {
-            if(typeof gapi !== 'undefined') gapiLoaded();
-            if(typeof google !== 'undefined') gisLoaded();
         }
 
         function handleAuthClick() {
@@ -1112,10 +1084,7 @@
             if (!accessToken) return handleAuthClick();
             
             const fileContent = JSON.stringify(transactions);
-            const metadata = {
-                name: FILE_NAME,
-                parents: ['appDataFolder']
-            };
+            const metadata = { name: FILE_NAME, parents: ['appDataFolder'] };
 
             try {
                 showToast('Backing up to Drive...', 'info');
@@ -1129,10 +1098,8 @@
                     ? `https://www.googleapis.com/upload/drive/v3/files/${fileId}?uploadType=multipart`
                     : `https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart`;
 
-                const method = fileId ? 'PATCH' : 'POST';
-
                 const res = await fetch(url, {
-                    method: method,
+                    method: fileId ? 'PATCH' : 'POST',
                     headers: { 'Authorization': 'Bearer ' + accessToken },
                     body: form
                 });
@@ -1149,7 +1116,7 @@
         }
         
         async function syncToDriveBackground() {
-            if (!accessToken) return; // Silent fail if not connected
+            if (!accessToken) return; 
             const fileContent = JSON.stringify(transactions);
             const metadata = { name: FILE_NAME, parents: ['appDataFolder'] };
             try {
