@@ -15,6 +15,9 @@
     <!-- Phosphor Icons -->
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
 
+    <!-- localForage for IndexedDB (Infinite Storage) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/localforage/1.10.0/localforage.min.js"></script>
+
     <!-- Google Identity & Drive APIs -->
     <script src="https://accounts.google.com/gsi/client" onload="gisLoaded()" async defer></script>
     <script src="https://apis.google.com/js/api.js" onload="gapiLoaded()" async defer></script>
@@ -163,6 +166,50 @@
         </div>
     </div>
 
+    <!-- ========================================== -->
+    <!-- WHAT'S NEW (UPDATE) OVERLAY                -->
+    <!-- ========================================== -->
+    <div id="whatsNewOverlay" class="fixed inset-0 z-[150] bg-slate-950/80 backdrop-blur-sm hidden items-center justify-center p-4 animate-enter">
+        <div class="bg-slate-800 border border-slate-700 rounded-3xl p-8 max-w-sm w-full shadow-2xl relative overflow-hidden">
+            <div class="absolute top-0 right-0 w-32 h-32 bg-blue-900/20 rounded-bl-full -z-10"></div>
+            
+            <div class="w-16 h-16 bg-blue-900/30 rounded-full flex items-center justify-center mb-6 border border-blue-800/50 text-blue-400">
+                <i class="ph-fill ph-sparkle text-3xl"></i>
+            </div>
+            
+            <h3 class="text-2xl font-extrabold text-slate-100 mb-2">App Updated!</h3>
+            <p class="text-slate-400 mb-6 text-sm">Tight Ship just got some massive upgrades to keep your finances flowing smoothly.</p>
+            
+            <ul class="space-y-4 mb-8">
+                <li class="flex items-start gap-3">
+                    <i class="ph-fill ph-arrows-clockwise text-emerald-400 text-lg mt-0.5"></i>
+                    <div>
+                        <p class="text-sm font-bold text-slate-200">Recurring Bills</p>
+                        <p class="text-xs text-slate-400">Set bills to auto-repeat every month when marked paid.</p>
+                    </div>
+                </li>
+                <li class="flex items-start gap-3">
+                    <i class="ph-fill ph-hard-drives text-blue-400 text-lg mt-0.5"></i>
+                    <div>
+                        <p class="text-sm font-bold text-slate-200">Infinite Storage</p>
+                        <p class="text-xs text-slate-400">Upgraded database means you can attach unlimited receipts.</p>
+                    </div>
+                </li>
+                <li class="flex items-start gap-3">
+                    <i class="ph-fill ph-archive text-amber-400 text-lg mt-0.5"></i>
+                    <div>
+                        <p class="text-sm font-bold text-slate-200">Data Archiving</p>
+                        <p class="text-xs text-slate-400">Archive old entries from settings to keep the app blazing fast.</p>
+                    </div>
+                </li>
+            </ul>
+            
+            <button onclick="closeWhatsNew()" class="w-full bg-blue-600 text-white font-bold py-4 rounded-xl active:scale-[0.98] transition-transform">
+                Awesome, let's go!
+            </button>
+        </div>
+    </div>
+
 
     <!-- Main Application Area -->
     <main class="flex-1 overflow-y-auto pb-24 w-full max-w-lg mx-auto relative bg-slate-950">
@@ -308,6 +355,18 @@
                     <input type="checkbox" id="txIsPaid" checked class="w-6 h-6 accent-blue-500 cursor-pointer pointer-events-none opacity-0 absolute">
                 </div>
 
+                <!-- Recurring Bill Toggle -->
+                <div id="recurringBillContainer" class="hidden mt-2 bg-slate-900 border border-slate-700 rounded-2xl p-4 flex items-center justify-between cursor-pointer" onclick="toggleRecurring()">
+                    <div class="flex items-center gap-3">
+                        <i id="recurringIcon" class="ph-bold ph-arrows-clockwise text-slate-500 text-3xl"></i>
+                        <div>
+                            <p class="font-bold text-slate-300" id="recurringText">Does not repeat</p>
+                            <p class="text-xs text-slate-500" id="recurringSubText">Tap to auto-create next month's bill</p>
+                        </div>
+                    </div>
+                    <input type="checkbox" id="txIsRecurring" class="w-6 h-6 accent-blue-500 cursor-pointer pointer-events-none opacity-0 absolute">
+                </div>
+
                 <!-- Date / Due Date -->
                 <div id="field-date">
                     <label id="lblDate" class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Date Received</label>
@@ -409,6 +468,16 @@
             <div>
                 <h3 class="text-sm font-bold text-slate-500 uppercase tracking-wider mb-3 ml-1">Local Data</h3>
                 <div class="bg-slate-800 rounded-2xl border border-slate-700 shadow-sm overflow-hidden flex flex-col">
+                    <button onclick="archiveOldData()" class="flex items-center gap-3 p-4 border-b border-slate-700/50 hover:bg-slate-700/50 active:bg-slate-700 transition-colors text-left w-full group">
+                        <div class="bg-slate-900 p-2 rounded-full text-emerald-400 group-hover:text-emerald-300 border border-slate-700">
+                            <i class="ph-bold ph-archive text-lg"></i>
+                        </div>
+                        <div>
+                            <p class="font-bold text-slate-100">Archive Old Data</p>
+                            <p class="text-xs text-slate-400">Keep app fast by archiving items > 90 days old</p>
+                        </div>
+                    </button>
+                    
                     <button onclick="downloadJson()" class="flex items-center gap-3 p-4 border-b border-slate-700/50 hover:bg-slate-700/50 active:bg-slate-700 transition-colors text-left w-full group">
                         <div class="bg-slate-900 p-2 rounded-full text-slate-400 group-hover:text-slate-300 border border-slate-700">
                             <i class="ph-bold ph-download-simple text-lg"></i>
@@ -500,31 +569,58 @@
     <!-- JAVASCRIPT LOGIC -->
     <script>
         /* --- CONFIGURATION --- */
+        const APP_VERSION = '2.0'; // Update this string whenever you add new features to trigger the modal
         const FILE_NAME = 'tight-ship-ledger.json';
         const GOOGLE_CLIENT_ID = '590906229865-rlo3ap84ngm5rr6hmsov2sg9ko0o24sp.apps.googleusercontent.com'; 
         const SCOPES = 'https://www.googleapis.com/auth/drive.appdata';
 
         /* --- STATE --- */
-        let transactions = JSON.parse(localStorage.getItem('tightShipTransactions')) || [];
+        let transactions = [];
         let currentBase64Receipt = null;
         let editingTxId = null;
         let tokenClient;
         let accessToken = null;
 
         /* --- INITIALIZATION --- */
-        document.addEventListener('DOMContentLoaded', () => {
+        document.addEventListener('DOMContentLoaded', async () => {
             document.getElementById('txDate').valueAsDate = new Date();
             document.getElementById('input-due-date').valueAsDate = new Date();
+            
+            // Migrate legacy localStorage data to IndexedDB if present
+            const oldLocalData = localStorage.getItem('tightShipTransactions');
+            if (oldLocalData) {
+                transactions = JSON.parse(oldLocalData);
+                await localforage.setItem('tightShipTransactions', transactions);
+                localStorage.removeItem('tightShipTransactions'); 
+            } else {
+                transactions = await localforage.getItem('tightShipTransactions') || [];
+            }
+            
             updateDashboard();
             updateFormUI();
-            checkOnboarding();
+            checkAppStates();
         });
 
-        /* --- ONBOARDING LOGIC --- */
-        function checkOnboarding() {
-            if (!localStorage.getItem('tightShipOnboarded')) {
+        /* --- ONBOARDING & UPDATES LOGIC --- */
+        function checkAppStates() {
+            const savedVersion = localStorage.getItem('tightShipVersion');
+            const isOnboarded = localStorage.getItem('tightShipOnboarded');
+
+            if (!isOnboarded) {
+                // Brand new user -> Show Onboarding, silently save current version so they don't see both
                 document.getElementById('onboardingOverlay').classList.remove('hidden');
+                localStorage.setItem('tightShipVersion', APP_VERSION);
+            } else if (savedVersion !== APP_VERSION) {
+                // Existing user, new version detected -> Show What's New
+                document.getElementById('whatsNewOverlay').classList.remove('hidden');
+                document.getElementById('whatsNewOverlay').classList.add('flex');
             }
+        }
+
+        function closeWhatsNew() {
+            localStorage.setItem('tightShipVersion', APP_VERSION);
+            document.getElementById('whatsNewOverlay').classList.add('hidden');
+            document.getElementById('whatsNewOverlay').classList.remove('flex');
         }
 
         function goToOnboardStep(step) {
@@ -535,7 +631,7 @@
             document.getElementById(`onboardStep${step}`).classList.remove('hidden');
         }
 
-        function saveStartingBalance() {
+        async function saveStartingBalance() {
             const rawAmount = document.getElementById('onboardBalance').value;
             const amount = parseFloat(rawAmount) || 0;
             
@@ -549,11 +645,12 @@
                     date: new Date().toISOString().split('T')[0],
                     isPaid: true,
                     dueDate: null,
+                    isRecurring: false,
                     receipt: null,
                     createdAt: new Date().toISOString()
                 };
                 transactions.push(newTx);
-                saveDataLocally();
+                await saveDataLocally();
             }
             goToOnboardStep(3);
         }
@@ -803,9 +900,11 @@
             const lblDesc = document.getElementById('lblDescription');
             const lblDate = document.getElementById('lblDate');
             const toggleContainer = document.getElementById('billPaidToggleContainer');
+            const recurringContainer = document.getElementById('recurringBillContainer');
             const btn = document.getElementById('btn-submit');
             
             toggleContainer.classList.add('hidden');
+            recurringContainer.classList.add('hidden');
             
             if (type === 'income') {
                 lblDesc.innerText = 'Source';
@@ -821,6 +920,7 @@
                 lblDesc.innerText = 'Biller';
                 document.getElementById('txDescription').placeholder = 'e.g. Electricity Co.';
                 toggleContainer.classList.remove('hidden');
+                recurringContainer.classList.remove('hidden');
                 btn.innerText = editingTxId ? "Update Bill" : "Save Bill";
                 syncBillDateLabel(); 
             }
@@ -830,6 +930,27 @@
             document.getElementById('field-date').classList.remove('hidden');
             document.getElementById('field-due-date').classList.add('hidden');
             document.getElementById('input-due-date').required = false;
+        }
+
+        function toggleRecurring() {
+            const cb = document.getElementById('txIsRecurring');
+            cb.checked = !cb.checked;
+            updateRecurringUI();
+        }
+
+        function updateRecurringUI() {
+            const isChecked = document.getElementById('txIsRecurring').checked;
+            const icon = document.getElementById('recurringIcon');
+            const text = document.getElementById('recurringText');
+            if (isChecked) {
+                icon.className = 'ph-bold ph-arrows-clockwise text-blue-400 text-3xl';
+                text.innerText = 'Repeats Monthly';
+                text.className = 'font-bold text-blue-300';
+            } else {
+                icon.className = 'ph-bold ph-arrows-clockwise text-slate-500 text-3xl';
+                text.innerText = 'Does not repeat';
+                text.className = 'font-bold text-slate-300';
+            }
         }
 
         function toggleBillPaid() {
@@ -941,9 +1062,11 @@
                 let date = document.getElementById('txDate').value;
                 let isPaid = true;
                 let dueDate = null;
+                let isRecurring = false;
 
                 if (type === 'bill') {
                     isPaid = document.getElementById('txIsPaid').checked;
+                    isRecurring = document.getElementById('txIsRecurring').checked;
                     if (!isPaid) {
                         dueDate = document.getElementById('input-due-date').value;
                         date = null; 
@@ -971,7 +1094,7 @@
                     if (txIndex > -1) {
                         transactions[txIndex] = {
                             ...transactions[txIndex],
-                            type, amount, description, date, isPaid, dueDate,
+                            type, amount, description, date, isPaid, dueDate, isRecurring,
                             receipt: currentBase64Receipt || transactions[txIndex].receipt,
                             updatedAt: new Date().toISOString()
                         };
@@ -979,7 +1102,7 @@
                 } else {
                     const newTx = {
                         id: safeId,
-                        type, amount, description, date, isPaid, dueDate,
+                        type, amount, description, date, isPaid, dueDate, isRecurring,
                         receipt: currentBase64Receipt,
                         createdAt: new Date().toISOString()
                     };
@@ -1035,7 +1158,9 @@
 
             if (tx.type === 'bill') {
                 document.getElementById('txIsPaid').checked = tx.isPaid;
+                document.getElementById('txIsRecurring').checked = tx.isRecurring || false;
                 toggleBillPaid();
+                updateRecurringUI();
                 if (tx.isPaid) {
                     document.getElementById('txDate').value = tx.date;
                 } else {
@@ -1079,9 +1204,32 @@
         function payBill(id) {
             const tx = transactions.find(t => t.id === id);
             if (tx) {
+                const oldDueDate = tx.dueDate || tx.date || new Date().toISOString().split('T')[0];
+
                 tx.isPaid = true;
                 tx.date = new Date().toISOString().split('T')[0]; 
                 tx.dueDate = null; 
+
+                // Handle auto-creating the next monthly bill
+                if (tx.isRecurring) {
+                    let nextDate = new Date(oldDueDate);
+                    nextDate.setMonth(nextDate.getMonth() + 1);
+                    const safeId = (typeof crypto !== 'undefined' && crypto.randomUUID) ? crypto.randomUUID() : 'tx_' + Date.now().toString(36) + Math.random().toString(36).substring(2, 9);
+                    
+                    transactions.push({
+                        id: safeId,
+                        type: 'bill',
+                        amount: tx.amount,
+                        description: tx.description,
+                        date: null,
+                        dueDate: nextDate.toISOString().split('T')[0],
+                        isPaid: false,
+                        isRecurring: true,
+                        receipt: null, // Don't duplicate the receipt photo
+                        createdAt: new Date().toISOString()
+                    });
+                }
+
                 saveDataLocally();
                 showToast('Bill marked as paid!', 'success');
             }
@@ -1105,6 +1253,9 @@
             document.getElementById('billPaidText').className = 'font-bold text-blue-300';
             document.getElementById('billPaidSubText').className = 'text-xs text-blue-400/80';
             document.getElementById('billPaidToggleContainer').className = 'bg-blue-900/20 border border-blue-800/50 rounded-2xl p-4 flex items-center justify-between cursor-pointer';
+
+            document.getElementById('txIsRecurring').checked = false;
+            updateRecurringUI();
 
             updateFormUI();
             
@@ -1162,14 +1313,20 @@
         }
 
         /* --- DATA MANAGEMENT --- */
-        function saveDataLocally() {
-            localStorage.setItem('tightShipTransactions', JSON.stringify(transactions));
+        async function saveDataLocally() {
+            await localforage.setItem('tightShipTransactions', transactions);
             updateDashboard();
             syncToDriveBackground(); 
         }
 
-        function downloadJson() {
-            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(transactions, null, 2));
+        async function downloadJson() {
+            const archived = await localforage.getItem('tightShipArchived') || [];
+            const exportData = {
+                version: 2,
+                transactions: transactions,
+                archived: archived
+            };
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(exportData, null, 2));
             const downloadAnchorNode = document.createElement('a');
             downloadAnchorNode.setAttribute("href", dataStr);
             downloadAnchorNode.setAttribute("download", "tight-ship-export.json");
@@ -1177,6 +1334,46 @@
             downloadAnchorNode.click();
             downloadAnchorNode.remove();
             showToast('Data exported successfully', 'success');
+        }
+
+        async function archiveOldData() {
+            if(transactions.length === 0) {
+                return showToast('No data to archive.', 'info');
+            }
+
+            const cutoff = new Date();
+            cutoff.setDate(cutoff.getDate() - 90);
+            const cutoffStr = cutoff.toISOString().split('T')[0];
+
+            let active = [];
+            let archived = await localforage.getItem('tightShipArchived') || [];
+            let archiveCount = 0;
+
+            transactions.forEach(tx => {
+                // Always keep unpaid bills regardless of age so they aren't lost
+                if (tx.type === 'bill' && !tx.isPaid) {
+                    active.push(tx);
+                    return;
+                }
+                const txDate = tx.date || tx.dueDate;
+                if (txDate && txDate < cutoffStr) {
+                    archived.push(tx);
+                    archiveCount++;
+                } else {
+                    active.push(tx);
+                }
+            });
+
+            if (archiveCount > 0) {
+                transactions = active;
+                await localforage.setItem('tightShipTransactions', transactions);
+                await localforage.setItem('tightShipArchived', archived);
+                updateDashboard();
+                showToast(`Archived ${archiveCount} old transactions! App is optimized.`, 'success');
+                syncToDriveBackground();
+            } else {
+                showToast('No items older than 90 days found.', 'info');
+            }
         }
 
         function promptWipeData() {
@@ -1189,9 +1386,11 @@
             document.getElementById('wipeOverlay').classList.remove('flex');
         }
 
-        function executeWipeData() {
+        async function executeWipeData() {
             transactions = [];
-            localStorage.removeItem('tightShipTransactions');
+            await localforage.removeItem('tightShipTransactions');
+            await localforage.removeItem('tightShipArchived');
+            localStorage.removeItem('tightShipOnboarded'); // Also resets onboarding screen
             updateDashboard();
             closeWipePrompt();
             showToast('Device memory wiped clean.', 'success');
@@ -1302,11 +1501,13 @@
         async function syncToDrive() {
             if (!accessToken) return handleAuthClick();
             
-            const fileContent = JSON.stringify(transactions);
+            showToast('Backing up to Drive...', 'info');
+            const archived = await localforage.getItem('tightShipArchived') || [];
+            const backupData = { version: 2, transactions: transactions, archived: archived };
+            const fileContent = JSON.stringify(backupData);
             const metadata = { name: FILE_NAME, parents: ['appDataFolder'] };
 
             try {
-                showToast('Backing up to Drive...', 'info');
                 const fileId = await findFileId();
 
                 const form = new FormData();
@@ -1336,7 +1537,10 @@
         
         async function syncToDriveBackground() {
             if (!accessToken) return; 
-            const fileContent = JSON.stringify(transactions);
+            
+            const archived = await localforage.getItem('tightShipArchived') || [];
+            const backupData = { version: 2, transactions: transactions, archived: archived };
+            const fileContent = JSON.stringify(backupData);
             const metadata = { name: FILE_NAME, parents: ['appDataFolder'] };
             try {
                 const fileId = await findFileId();
@@ -1364,12 +1568,23 @@
                     alt: 'media'
                 });
 
-                if (response.result && Array.isArray(response.result)) {
-                    transactions = response.result;
-                    saveDataLocally();
+                if (response.result) {
+                    if (Array.isArray(response.result)) {
+                        // V1 backwards compatibility
+                        transactions = response.result;
+                        await localforage.setItem('tightShipTransactions', transactions);
+                    } else if (response.result.version === 2) {
+                        // V2 data structure including archives
+                        transactions = response.result.transactions || [];
+                        await localforage.setItem('tightShipTransactions', transactions);
+                        await localforage.setItem('tightShipArchived', response.result.archived || []);
+                    } else {
+                        throw new Error('Invalid data format');
+                    }
+                    updateDashboard();
                     showToast('Data restored successfully!', 'success');
                 } else {
-                    throw new Error('Invalid data format');
+                    throw new Error('No result returned');
                 }
             } catch (error) {
                 console.error(error);
