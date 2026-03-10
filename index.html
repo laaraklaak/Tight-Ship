@@ -42,65 +42,100 @@
     <div id="toast-container" class="fixed top-4 left-0 right-0 z-[600] flex flex-col items-center gap-2 pointer-events-none px-4"></div>
 
     <!-- ========================================== -->
-    <!-- ONBOARDING OVERLAY (Optional Setup Guide)  -->
+    <!-- ONBOARDING OVERLAY (Enhanced Guide)        -->
     <!-- ========================================== -->
     <div id="onboardingOverlay" class="fixed inset-0 z-[450] bg-slate-950 flex flex-col hidden animate-enter">
         <div class="flex-1 overflow-y-auto px-6 py-12 flex flex-col justify-center max-w-lg mx-auto w-full relative">
             
+            <!-- Step 1: The Philosophy -->
             <div id="onboardStep1" class="flex flex-col items-center text-center space-y-6 animate-enter">
                 <div class="w-24 h-24 bg-emerald-900/30 rounded-full flex items-center justify-center border border-emerald-800/50 shadow-[0_0_40px_rgba(52,211,153,0.15)]">
                     <i class="ph-fill ph-anchor text-5xl text-emerald-400"></i>
                 </div>
                 <div>
                     <h2 class="text-3xl font-extrabold text-slate-100 mb-3">Welcome to<br><span class="text-emerald-400">Tight Ship</span></h2>
-                    <p class="text-slate-400 text-lg leading-relaxed">The anti-budget ledger. We focus on one number: your <strong>True Safe to Spend</strong>.</p>
+                    <p class="text-slate-400 text-lg leading-relaxed">The anti-budget ledger. We focus on one single number to keep you safe: your <strong>True Safe to Spend</strong>.</p>
                 </div>
-                <div class="bg-slate-900 border border-slate-800 rounded-3xl p-6 text-left w-full space-y-4">
+                <div class="bg-slate-900 border border-slate-800 rounded-3xl p-6 text-left w-full space-y-4 shadow-lg">
                     <div class="flex gap-4">
                         <div class="bg-emerald-500/20 p-2 h-fit rounded-lg text-emerald-400"><i class="ph-bold ph-plus"></i></div>
-                        <div><p class="font-bold text-slate-100 text-sm">Income</p><p class="text-xs text-slate-500">Add any money coming in.</p></div>
+                        <div><p class="font-bold text-slate-100 text-sm">1. Add Income</p><p class="text-xs text-slate-500">Log every dollar you receive.</p></div>
                     </div>
                     <div class="flex gap-4">
                         <div class="bg-rose-500/20 p-2 h-fit rounded-lg text-rose-400"><i class="ph-bold ph-minus"></i></div>
-                        <div><p class="font-bold text-slate-100 text-sm">Bills</p><p class="text-xs text-slate-500">Log upcoming bills to "reserve" that cash.</p></div>
+                        <div><p class="font-bold text-slate-100 text-sm">2. Reserve Bills</p><p class="text-xs text-slate-500">Log upcoming bills to "hide" that cash.</p></div>
+                    </div>
+                    <div class="flex gap-4">
+                        <div class="bg-blue-500/20 p-2 h-fit rounded-lg text-blue-400"><i class="ph-bold ph-equals"></i></div>
+                        <div><p class="font-bold text-slate-100 text-sm">3. Safe to Spend</p><p class="text-xs text-slate-500">What's left is yours to spend guilt-free.</p></div>
                     </div>
                 </div>
-                <button onclick="goToOnboardStep(2)" class="w-full bg-emerald-600 text-white font-bold text-lg py-5 rounded-2xl shadow-lg active:scale-[0.98]">
-                    Get Started <i class="ph-bold ph-arrow-right ml-1"></i>
+                <button onclick="goToOnboardStep(2)" class="w-full bg-emerald-600 text-white font-bold text-lg py-4 rounded-2xl shadow-lg active:scale-[0.98] transition-all flex items-center justify-center gap-2 mt-4">
+                    Next <i class="ph-bold ph-arrow-right"></i>
                 </button>
             </div>
 
+            <!-- Step 2: Privacy Guarantee -->
             <div id="onboardStep2" class="flex flex-col items-center text-center space-y-6 hidden animate-enter">
-                <div class="w-24 h-24 bg-blue-900/30 rounded-full flex items-center justify-center border border-blue-800/50">
-                    <i class="ph-fill ph-piggy-bank text-5xl text-blue-400"></i>
+                <div class="w-24 h-24 bg-blue-900/30 rounded-full flex items-center justify-center border border-blue-800/50 shadow-[0_0_40px_rgba(59,130,246,0.15)]">
+                    <i class="ph-fill ph-shield-check text-5xl text-blue-400"></i>
+                </div>
+                <div>
+                    <h2 class="text-3xl font-extrabold text-slate-100 mb-3">Absolute Privacy</h2>
+                    <p class="text-slate-400 text-lg leading-relaxed">Your financial data is your business. We built this app to be 100% offline-first.</p>
+                </div>
+                <div class="bg-slate-900 border border-slate-800 rounded-3xl p-6 text-left w-full space-y-4 shadow-lg">
+                    <div class="flex gap-4">
+                        <div class="bg-slate-800 p-2 h-fit rounded-lg text-slate-300"><i class="ph-bold ph-database"></i></div>
+                        <div><p class="font-bold text-slate-100 text-sm">Local Storage</p><p class="text-xs text-slate-500">Your ledger lives entirely on your phone's internal memory.</p></div>
+                    </div>
+                    <div class="flex gap-4">
+                        <div class="bg-slate-800 p-2 h-fit rounded-lg text-slate-300"><i class="ph-bold ph-user-focus"></i></div>
+                        <div><p class="font-bold text-slate-100 text-sm">Zero Tracking</p><p class="text-xs text-slate-500">No servers. No tracking. We don't require an email to start.</p></div>
+                    </div>
+                    <div class="flex gap-4">
+                        <div class="bg-slate-800 p-2 h-fit rounded-lg text-slate-300"><i class="ph-bold ph-export"></i></div>
+                        <div><p class="font-bold text-slate-100 text-sm">Full Control</p><p class="text-xs text-slate-500">You can permanently wipe your data at any time from the Settings tab.</p></div>
+                    </div>
+                </div>
+                <button onclick="goToOnboardStep(3)" class="w-full bg-blue-600 text-white font-bold text-lg py-4 rounded-2xl shadow-lg active:scale-[0.98] transition-all mt-4">
+                    I Understand
+                </button>
+            </div>
+
+            <!-- Step 3: Starting Balance (Optional) -->
+            <div id="onboardStep3" class="flex flex-col items-center text-center space-y-6 hidden animate-enter">
+                <div class="w-24 h-24 bg-indigo-900/30 rounded-full flex items-center justify-center border border-indigo-800/50">
+                    <i class="ph-fill ph-piggy-bank text-5xl text-indigo-400"></i>
                 </div>
                 <div>
                     <h2 class="text-3xl font-extrabold text-slate-100 mb-3">Starting Point</h2>
                     <p class="text-slate-400 text-lg">What is your current bank account balance right now?</p>
                 </div>
-                <div class="w-full relative">
+                <div class="w-full relative mt-4">
                     <span class="absolute left-6 top-1/2 -translate-y-1/2 text-slate-500 font-bold text-3xl">$</span>
-                    <input type="number" id="onboardBalance" step="0.01" class="w-full bg-slate-900 border border-slate-700 rounded-3xl py-7 pl-14 pr-6 text-4xl font-black text-center focus:ring-2 focus:ring-blue-500 outline-none" placeholder="0.00">
+                    <input type="number" id="onboardBalance" step="0.01" class="w-full bg-slate-900 border border-slate-700 rounded-3xl py-7 pl-14 pr-6 text-4xl font-black text-center focus:ring-2 focus:ring-indigo-500 outline-none" placeholder="0.00">
                 </div>
-                <div class="w-full space-y-3">
-                    <button onclick="saveStartingBalance()" class="w-full bg-blue-600 text-white font-bold text-lg py-5 rounded-2xl shadow-lg active:scale-[0.98]">Log Balance</button>
-                    <button onclick="goToOnboardStep(3)" class="w-full py-4 text-slate-500 font-bold text-sm hover:text-slate-300">Skip / Start at $0.00</button>
+                <div class="w-full space-y-3 mt-8">
+                    <button onclick="saveStartingBalance()" class="w-full bg-indigo-600 text-white font-bold text-lg py-5 rounded-2xl shadow-lg active:scale-[0.98] transition-all">Log Initial Balance</button>
+                    <button onclick="goToOnboardStep(4)" class="w-full py-4 text-slate-500 font-bold text-sm hover:text-slate-300 transition-colors">Skip / Start at $0.00</button>
                 </div>
             </div>
 
-            <div id="onboardStep3" class="flex flex-col items-center text-center space-y-6 hidden animate-enter">
+            <!-- Step 4: Backup (Optional) -->
+            <div id="onboardStep4" class="flex flex-col items-center text-center space-y-6 hidden animate-enter">
                 <div class="w-24 h-24 bg-amber-900/30 rounded-full flex items-center justify-center border border-amber-800/50 text-amber-400">
                     <i class="ph-fill ph-google-drive-logo text-5xl"></i>
                 </div>
                 <div>
                     <h2 class="text-3xl font-extrabold text-slate-100 mb-3 text-balance">Cloud Backup (Optional)</h2>
-                    <p class="text-slate-400 text-lg leading-relaxed">Secure your data. Link Google Drive to keep a private backup of your ledger.</p>
+                    <p class="text-slate-400 text-lg leading-relaxed">Don't lose your ledger if you lose your phone. Link Google Drive to keep a private, encrypted sync folder.</p>
                 </div>
-                <div class="w-full space-y-3">
-                    <button id="btnOnboardDrive" onclick="handleAuthClick()" class="w-full bg-slate-100 text-slate-950 font-black text-lg py-5 rounded-2xl shadow-lg flex items-center justify-center gap-2 active:scale-[0.98]">
+                <div class="w-full space-y-3 mt-8">
+                    <button id="btnOnboardDrive" onclick="handleAuthClick()" class="w-full bg-slate-100 text-slate-950 font-black text-lg py-5 rounded-2xl shadow-lg flex items-center justify-center gap-2 active:scale-[0.98] transition-all">
                         <i class="ph-bold ph-link text-xl"></i> Connect Google Drive
                     </button>
-                    <button onclick="finishOnboarding()" class="w-full py-5 text-slate-500 font-bold text-sm hover:text-slate-300">Skip & Start Tracking</button>
+                    <button onclick="finishOnboarding()" class="w-full py-4 text-slate-500 font-bold text-sm hover:text-slate-300 transition-colors">Skip & Go to Dashboard</button>
                 </div>
             </div>
         </div>
@@ -256,32 +291,11 @@
     <!-- Wipe Confirmation Modal -->
     <div id="wipeOverlay" class="fixed inset-0 z-[550] bg-slate-950/90 hidden items-center justify-center p-4">
         <div class="bg-slate-800 border border-slate-700 rounded-3xl p-8 max-w-sm w-full text-center shadow-2xl">
-            <h3 class="text-2xl font-bold text-slate-100 mb-2">Wipe Memory?</h3><p class="text-slate-400 mb-8 text-sm">This deletes all local data. Backups on Drive remain safe.</p>
-            <div class="flex gap-3"><button onclick="closeWipePrompt()" class="flex-1 bg-slate-900 border border-slate-700 py-3 rounded-xl font-bold">Cancel</button><button onclick="executeWipeData()" class="flex-1 bg-rose-600 py-3 rounded-xl font-bold">Delete All</button></div>
-        </div>
-    </div>
-
-    <script>
-        const APP_VERSION = '7.4'; 
-        const FILE_NAME = 'tight-ship-ledger.json';
-        const GOOGLE_CLIENT_ID = '590906229865-rlo3ap84ngm5rr6hmsov2sg9ko0o24sp.apps.googleusercontent.com';
-        const SCOPES = 'https://www.googleapis.com/auth/drive.appdata';
-        let transactions = []; let currentBase64Receipt = null; let editingTxId = null; let tokenClient; let accessToken = null;
-
-        document.addEventListener('DOMContentLoaded', async () => {
-            document.getElementById('txDate').valueAsDate = new Date();
-            document.getElementById('input-due-date').valueAsDate = new Date();
-            try {
-                const legacy = await localforage.getItem('tightShipTransactions');
-                transactions = legacy || [];
-            } catch(e) { transactions = []; }
-            updateDashboard(); updateFormUI(); checkAppStates();
-        });
-
-        /* --- ONBOARDING & UPDATES --- */
+        /* --- ONBOARDING LOGIC --- */
         function checkAppStates() {
             const v = localStorage.getItem('tightShipVersion');
-            if (!localStorage.getItem('tightShipOnboarded')) { 
+            const isOnboarded = localStorage.getItem('tightShipOnboarded');
+            if (!isOnboarded) { 
                 document.getElementById('onboardingOverlay').classList.remove('hidden'); 
                 localStorage.setItem('tightShipVersion', APP_VERSION); 
             } else if (v !== APP_VERSION) { 
@@ -290,13 +304,34 @@
             }
         }
         function closeWhatsNew() { localStorage.setItem('tightShipVersion', APP_VERSION); document.getElementById('whatsNewOverlay').classList.add('hidden'); }
-        function goToOnboardStep(s) { ['onboardStep1','onboardStep2','onboardStep3'].forEach(id => document.getElementById(id).classList.add('hidden')); document.getElementById(`onboardStep${s}`).classList.remove('hidden'); }
+        
+        function goToOnboardStep(s) { 
+            ['onboardStep1','onboardStep2','onboardStep3','onboardStep4'].forEach(id => {
+                const el = document.getElementById(id);
+                if(el) el.classList.add('hidden');
+            }); 
+            document.getElementById(`onboardStep${s}`).classList.remove('hidden'); 
+        }
+        
         async function saveStartingBalance() {
             const val = parseFloat(document.getElementById('onboardBalance').value) || 0;
-            if (val > 0) { transactions.push({ id: 'tx_'+Date.now(), type: 'income', amount: val, description: 'Starting Balance', date: new Date().toISOString().split('T')[0], isPaid: true, dueDate: null, isRecurring: false, receipt: null, createdAt: new Date().toISOString() }); await saveDataLocally(); }
-            goToOnboardStep(3);
+            if (val > 0) { 
+                transactions.push({ 
+                    id: 'tx_'+Date.now(), type: 'income', amount: val, description: 'Starting Balance', 
+                    date: new Date().toISOString().split('T')[0], isPaid: true, dueDate: null, 
+                    isRecurring: false, receipt: null, createdAt: new Date().toISOString() 
+                }); 
+                await saveDataLocally(); 
+            }
+            goToOnboardStep(4);
         }
-        function finishOnboarding() { localStorage.setItem('tightShipOnboarded', 'true'); document.getElementById('onboardingOverlay').classList.add('hidden'); updateDashboard(); showToast("Welcome!", "success"); }
+
+        function finishOnboarding() { 
+            localStorage.setItem('tightShipOnboarded', 'true'); 
+            document.getElementById('onboardingOverlay').classList.add('hidden'); 
+            updateDashboard(); 
+            showToast("Welcome Aboard!", "success"); 
+        }
 
         /* --- SMART PASTE REFINED --- */
         function openSmartPaste() { 
