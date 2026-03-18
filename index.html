@@ -1,495 +1,847 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="bg-slate-950 text-slate-100">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Tight Ship</title>
+    <link rel="manifest" href="./manifest.json">
     
-    <!-- PWA Manifest -->
-    <link rel="manifest" href="manifest.json">
-    <meta name="theme-color" content="#020617">
-    
-    <!-- Tailwind CSS -->
+    <!-- Dependencies -->
     <script src="https://cdn.tailwindcss.com"></script>
-    
-    <!-- Phosphor Icons -->
-    <script src="https://unpkg.com/@phosphor-icons/web"></script>
-
-    <!-- localForage for IndexedDB (Infinite Storage) -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/localforage/1.10.0/localforage.min.js"></script>
-
-    <!-- PapaParse for Offline CSV -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
-
-    <!-- Google Identity & Drive APIs -->
-    <script src="https://accounts.google.com/gsi/client" onload="gisLoaded()" async defer></script>
-    <script src="https://apis.google.com/js/api.js" onload="gapiLoaded()" async defer></script>
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
 
     <style>
-        :root { color-scheme: dark; }
-        @keyframes slideInUp { from { transform: translateY(100%); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-        .animate-enter { animation: fadeIn 0.3s ease-out forwards; }
-        .toast-enter { animation: slideInUp 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
-        ::-webkit-scrollbar { width: 0px; background: transparent; }
-        .tab-content { display: none; }
-        .tab-content.active { display: block; animation: fadeIn 0.2s ease-out forwards; }
-        input[type="date"]::-webkit-calendar-picker-indicator { background: transparent; bottom: 0; color: transparent; cursor: pointer; height: auto; left: 0; position: absolute; right: 0; top: 0; width: auto; }
+        /* Base Animations & Utilities */
+        * { -webkit-tap-highlight-color: transparent; }
+        .tab-content { display: none; opacity: 0; transition: opacity 0.3s ease; }
+        .tab-content.active { display: block; opacity: 1; animation: fadeIn 0.3s forwards; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        
+        /* Custom Toast System */
+        #toast-container { position: fixed; top: 1rem; left: 50%; transform: translateX(-50%); z-index: 100; display: flex; flex-direction: column; gap: 0.5rem; width: 90%; max-width: 400px; pointer-events: none; }
+        .toast { padding: 1rem; border-radius: 0.5rem; display: flex; align-items: center; gap: 0.5rem; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.5); font-weight: 500; animation: slideIn 0.3s ease, fadeOut 0.3s ease 2.7s forwards; pointer-events: auto; }
+        @keyframes slideIn { from { transform: translateY(-100%); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+        @keyframes fadeOut { from { opacity: 1; } to { opacity: 0; } }
+        
+        /* Hide Scrollbar */
+        ::-webkit-scrollbar { display: none; }
     </style>
 </head>
-<body class="bg-slate-950 text-slate-100 h-screen flex flex-col font-sans overflow-hidden antialiased selection:bg-blue-900">
+<body class="antialiased h-screen flex flex-col overflow-hidden pb-16">
 
-    <div id="toast-container" class="fixed top-4 left-0 right-0 z-[600] flex flex-col items-center gap-2 pointer-events-none px-4"></div>
+    <!-- Toast Container -->
+    <div id="toast-container"></div>
 
-    <!-- ========================================== -->
-    <!-- ONBOARDING OVERLAY (Enhanced Guide)        -->
-    <!-- ========================================== -->
-    <div id="onboardingOverlay" class="fixed inset-0 z-[450] bg-slate-950 flex flex-col hidden animate-enter">
-        <div class="flex-1 overflow-y-auto px-6 py-12 flex flex-col justify-center max-w-lg mx-auto w-full relative">
-            
-            <!-- Step 1: The Philosophy -->
-            <div id="onboardStep1" class="flex flex-col items-center text-center space-y-6 animate-enter">
-                <div class="w-24 h-24 bg-emerald-900/30 rounded-full flex items-center justify-center border border-emerald-800/50 shadow-[0_0_40px_rgba(52,211,153,0.15)]">
-                    <i class="ph-fill ph-anchor text-5xl text-emerald-400"></i>
-                </div>
-                <div>
-                    <h2 class="text-3xl font-extrabold text-slate-100 mb-3">Welcome to<br><span class="text-emerald-400">Tight Ship</span></h2>
-                    <p class="text-slate-400 text-lg leading-relaxed">The anti-budget ledger. We focus on one single number to keep you safe: your <strong>True Safe to Spend</strong>.</p>
-                </div>
-                <div class="bg-slate-900 border border-slate-800 rounded-3xl p-6 text-left w-full space-y-4 shadow-lg">
-                    <div class="flex gap-4">
-                        <div class="bg-emerald-500/20 p-2 h-fit rounded-lg text-emerald-400"><i class="ph-bold ph-plus"></i></div>
-                        <div><p class="font-bold text-slate-100 text-sm">1. Add Income</p><p class="text-xs text-slate-500">Log every dollar you receive.</p></div>
-                    </div>
-                    <div class="flex gap-4">
-                        <div class="bg-rose-500/20 p-2 h-fit rounded-lg text-rose-400"><i class="ph-bold ph-minus"></i></div>
-                        <div><p class="font-bold text-slate-100 text-sm">2. Reserve Bills</p><p class="text-xs text-slate-500">Log upcoming bills to "hide" that cash.</p></div>
-                    </div>
-                    <div class="flex gap-4">
-                        <div class="bg-blue-500/20 p-2 h-fit rounded-lg text-blue-400"><i class="ph-bold ph-equals"></i></div>
-                        <div><p class="font-bold text-slate-100 text-sm">3. Safe to Spend</p><p class="text-xs text-slate-500">What's left is yours to spend guilt-free.</p></div>
-                    </div>
-                </div>
-                <button onclick="goToOnboardStep(2)" class="w-full bg-emerald-600 text-white font-bold text-lg py-4 rounded-2xl shadow-lg active:scale-[0.98] transition-all flex items-center justify-center gap-2 mt-4">
-                    Next <i class="ph-bold ph-arrow-right"></i>
-                </button>
+    <!-- Main Content Area -->
+    <main class="flex-1 overflow-y-auto w-full max-w-2xl mx-auto">
+        
+        <!-- TAB 1: DASHBOARD -->
+        <div id="tab-dashboard" class="tab-content active p-4 space-y-6">
+            <!-- Hero Math Engine -->
+            <div class="text-center pt-6 pb-4">
+                <p class="text-slate-400 text-sm font-semibold uppercase tracking-widest mb-1">Safe to Spend</p>
+                <h1 id="hero-safe" class="text-6xl font-bold tracking-tight text-emerald-400">$0.00</h1>
             </div>
 
-            <!-- Step 2: Privacy Guarantee -->
-            <div id="onboardStep2" class="flex flex-col items-center text-center space-y-6 hidden animate-enter">
-                <div class="w-24 h-24 bg-blue-900/30 rounded-full flex items-center justify-center border border-blue-800/50 shadow-[0_0_40px_rgba(59,130,246,0.15)]">
-                    <i class="ph-fill ph-shield-check text-5xl text-blue-400"></i>
+            <div class="grid grid-cols-2 gap-4">
+                <div class="bg-slate-900 rounded-2xl p-4 border border-slate-800">
+                    <p class="text-slate-400 text-xs font-medium uppercase mb-1">Cash on Hand</p>
+                    <p id="hero-cash" class="text-2xl font-semibold">$0.00</p>
                 </div>
-                <div>
-                    <h2 class="text-3xl font-extrabold text-slate-100 mb-3">Absolute Privacy</h2>
-                    <p class="text-slate-400 text-lg leading-relaxed">Your financial data is your business. We built this app to be 100% offline-first.</p>
-                </div>
-                <div class="bg-slate-900 border border-slate-800 rounded-3xl p-6 text-left w-full space-y-4 shadow-lg">
-                    <div class="flex gap-4">
-                        <div class="bg-slate-800 p-2 h-fit rounded-lg text-slate-300"><i class="ph-bold ph-database"></i></div>
-                        <div><p class="font-bold text-slate-100 text-sm">Local Storage</p><p class="text-xs text-slate-500">Your ledger lives entirely on your phone's internal memory.</p></div>
-                    </div>
-                    <div class="flex gap-4">
-                        <div class="bg-slate-800 p-2 h-fit rounded-lg text-slate-300"><i class="ph-bold ph-user-focus"></i></div>
-                        <div><p class="font-bold text-slate-100 text-sm">Zero Tracking</p><p class="text-xs text-slate-500">No servers. No tracking. We don't require an email to start.</p></div>
-                    </div>
-                    <div class="flex gap-4">
-                        <div class="bg-slate-800 p-2 h-fit rounded-lg text-slate-300"><i class="ph-bold ph-export"></i></div>
-                        <div><p class="font-bold text-slate-100 text-sm">Full Control</p><p class="text-xs text-slate-500">You can permanently wipe your data at any time from the Settings tab.</p></div>
-                    </div>
-                </div>
-                <button onclick="goToOnboardStep(3)" class="w-full bg-blue-600 text-white font-bold text-lg py-4 rounded-2xl shadow-lg active:scale-[0.98] transition-all mt-4">
-                    I Understand
-                </button>
-            </div>
-
-            <!-- Step 3: Starting Balance (Optional) -->
-            <div id="onboardStep3" class="flex flex-col items-center text-center space-y-6 hidden animate-enter">
-                <div class="w-24 h-24 bg-indigo-900/30 rounded-full flex items-center justify-center border border-indigo-800/50">
-                    <i class="ph-fill ph-piggy-bank text-5xl text-indigo-400"></i>
-                </div>
-                <div>
-                    <h2 class="text-3xl font-extrabold text-slate-100 mb-3">Starting Point</h2>
-                    <p class="text-slate-400 text-lg">What is your current bank account balance right now?</p>
-                </div>
-                <div class="w-full relative mt-4">
-                    <span class="absolute left-6 top-1/2 -translate-y-1/2 text-slate-500 font-bold text-3xl">$</span>
-                    <input type="number" id="onboardBalance" step="0.01" class="w-full bg-slate-900 border border-slate-700 rounded-3xl py-7 pl-14 pr-6 text-4xl font-black text-center focus:ring-2 focus:ring-indigo-500 outline-none" placeholder="0.00">
-                </div>
-                <div class="w-full space-y-3 mt-8">
-                    <button onclick="saveStartingBalance()" class="w-full bg-indigo-600 text-white font-bold text-lg py-5 rounded-2xl shadow-lg active:scale-[0.98] transition-all">Log Initial Balance</button>
-                    <button onclick="goToOnboardStep(4)" class="w-full py-4 text-slate-500 font-bold text-sm hover:text-slate-300 transition-colors">Skip / Start at $0.00</button>
+                <div class="bg-slate-900 rounded-2xl p-4 border border-slate-800">
+                    <p class="text-slate-400 text-xs font-medium uppercase mb-1">Total Owed</p>
+                    <p id="hero-owed" class="text-2xl font-semibold">$0.00</p>
                 </div>
             </div>
 
-            <!-- Step 4: Backup (Optional) -->
-            <div id="onboardStep4" class="flex flex-col items-center text-center space-y-6 hidden animate-enter">
-                <div class="w-24 h-24 bg-amber-900/30 rounded-full flex items-center justify-center border border-amber-800/50 text-amber-400">
-                    <i class="ph-fill ph-google-drive-logo text-5xl"></i>
-                </div>
-                <div>
-                    <h2 class="text-3xl font-extrabold text-slate-100 mb-3 text-balance">Cloud Backup (Optional)</h2>
-                    <p class="text-slate-400 text-lg leading-relaxed">Don't lose your ledger if you lose your phone. Link Google Drive to keep a private, encrypted sync folder.</p>
-                </div>
-                <div class="w-full space-y-3 mt-8">
-                    <button id="btnOnboardDrive" onclick="handleAuthClick()" class="w-full bg-slate-100 text-slate-950 font-black text-lg py-5 rounded-2xl shadow-lg flex items-center justify-center gap-2 active:scale-[0.98] transition-all">
-                        <i class="ph-bold ph-link text-xl"></i> Connect Google Drive
-                    </button>
-                    <p class="text-[10px] text-slate-500 text-center mt-2 px-4">Ensure your Google Cloud Console allows this site's URL as an authorized origin.</p>
-                    <button onclick="finishOnboarding()" class="w-full py-4 text-slate-500 font-bold text-sm hover:text-slate-300 transition-colors">Skip & Go to Dashboard</button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- What's New Overlay -->
-    <div id="whatsNewOverlay" class="fixed inset-0 z-[150] bg-slate-950/80 backdrop-blur-sm hidden items-center justify-center p-4 animate-enter">
-        <div class="bg-slate-800 border border-slate-700 rounded-3xl p-8 max-w-sm w-full shadow-2xl relative">
-            <h3 class="text-2xl font-extrabold text-slate-100 mb-4">App Updated!</h3>
-            <ul class="space-y-4 mb-8">
-                <li class="flex items-start gap-3"><i class="ph-fill ph-shield-check text-emerald-400 text-xl"></i><div><p class="text-sm font-bold">Troubleshooting Support</p><p class="text-xs text-slate-400">Added visual help for Google Drive Auth issues directly in the settings tab.</p></div></li>
-                <li class="flex items-start gap-3"><i class="ph-fill ph-arrows-clockwise text-blue-400 text-xl"></i><div><p class="text-sm font-bold">Auto-Recurring Bills</p><p class="text-xs text-slate-400">Correctly logs current bills before generating next month's.</p></div></li>
-            </ul>
-            <button onclick="closeWhatsNew()" class="w-full bg-blue-600 text-white font-bold py-4 rounded-xl">Awesome!</button>
-        </div>
-    </div>
-
-    <!-- Smart Paste Overlay -->
-    <div id="smartPasteOverlay" class="fixed inset-0 z-[450] bg-slate-950 hidden flex-col animate-enter">
-        <div class="flex-1 flex flex-col p-6 max-w-lg mx-auto w-full">
-            <header class="flex justify-between items-center mb-6">
-                <h3 class="text-2xl font-black text-slate-100">Smart Paste</h3>
-                <button onclick="closeSmartPaste()" class="text-slate-500 text-2xl p-2"><i class="ph-bold ph-x"></i></button>
-            </header>
-            <p class="text-xs text-slate-500 mb-4 uppercase font-bold tracking-widest">Paste bank transaction text here</p>
-            <textarea id="smartPasteInput" class="flex-1 w-full bg-slate-900 border border-slate-700 rounded-3xl p-6 text-slate-200 text-sm focus:ring-2 focus:ring-emerald-500 transition-all placeholder-slate-700 resize-none mb-6" placeholder="e.g. 03/05/2026 AMAZON $45.99"></textarea>
-            <button id="btnSmartPasteProcess" onclick="processSmartPaste()" class="w-full bg-emerald-600 text-white font-black py-5 rounded-2xl shadow-lg flex items-center justify-center gap-2">
-                <i class="ph-bold ph-magic-wand text-xl"></i> Extract Transactions
-            </button>
-        </div>
-    </div>
-
-    <!-- Main App Content -->
-    <main class="flex-1 overflow-y-auto pb-24 w-full max-w-lg mx-auto relative bg-slate-950">
-        <!-- Dashboard -->
-        <section id="tab-dashboard" class="tab-content active p-4 space-y-6">
-            <header class="pt-4 pb-2 relative flex items-center justify-center">
-                <h1 class="text-xl font-bold text-slate-500 uppercase tracking-wide flex items-center gap-2"><i class="ph-fill ph-anchor"></i> Tight Ship</h1>
-                <button id="installAppBtn" class="hidden absolute right-0 top-2 p-2 text-emerald-400 rounded-full bg-emerald-900/20 border border-emerald-800/50 shadow-sm" onclick="installApp()"><i class="ph-bold ph-download-simple text-lg"></i></button>
-            </header>
-            
-            <div class="bg-slate-800 rounded-3xl p-6 shadow-lg border border-slate-700 text-center relative overflow-hidden" id="safeToSpendCard">
-                <div class="absolute top-0 right-0 w-24 h-24 bg-emerald-900/20 rounded-bl-full -z-10" id="safeSpendAccent"></div>
-                <p class="text-sm font-semibold text-slate-400 uppercase tracking-wider mb-2">Safe to Spend</p>
-                <h2 id="safeToSpendAmount" class="text-5xl font-extrabold tracking-tight text-emerald-400 mb-1">$0.00</h2>
-                <p class="text-[10px] text-slate-500 mt-2 bg-slate-950/40 px-3 py-1 rounded-full border border-slate-700/50 w-fit mx-auto uppercase font-bold tracking-widest">Cash - Unpaid Bills</p>
+            <!-- Action Required: Unpaid Bills -->
+            <div id="action-required-container" class="hidden">
+                <h2 class="text-sm font-semibold text-rose-400 uppercase tracking-wider mb-3 flex items-center gap-2">
+                    <i class="ph-fill ph-warning-circle text-lg"></i> Action Required
+                </h2>
+                <div id="unpaid-bills-list" class="space-y-3"></div>
             </div>
 
-            <div class="grid grid-cols-2 gap-3">
-                <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 flex flex-col justify-center shadow-md">
-                    <p class="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Cash on Hand</p>
-                    <h3 id="cashOnHandAmount" class="text-xl sm:text-2xl font-bold text-slate-100">$0.00</h3>
-                </div>
-                <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 flex flex-col justify-center shadow-md">
-                    <p class="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Total Owed</p>
-                    <h3 id="totalOwedAmount" class="text-xl sm:text-2xl font-bold text-rose-400">$0.00</h3>
-                </div>
-            </div>
-
-            <div id="sync-warning-banner" class="hidden bg-amber-900/20 border border-amber-900/50 p-4 rounded-2xl flex flex-col gap-3 shadow-md animate-enter">
-                <div class="flex items-center gap-3 text-amber-400">
-                    <i class="ph-fill ph-warning-circle text-xl"></i>
-                    <p class="text-sm font-bold">Cloud Sync Disconnected</p>
-                </div>
-                <button onclick="switchTab('settings')" class="bg-amber-600 text-white text-xs font-bold py-2.5 rounded-xl shadow-lg">Connect Google Drive</button>
-            </div>
-
-            <div id="outstandingBillsContainer" class="hidden">
-                <h3 class="text-sm font-bold text-rose-400 uppercase tracking-wider mb-3 flex items-center gap-2"><i class="ph-fill ph-warning-circle"></i> Unpaid Bills</h3>
-                <div id="unpaidBillsList" class="space-y-2"></div>
-            </div>
-
+            <!-- Recent Ledger -->
             <div>
-                <h3 class="text-sm font-bold text-slate-500 uppercase tracking-wider mb-3 ml-1">Recent Ledger</h3>
-                <div id="recentLedgerList" class="bg-slate-800 rounded-2xl border border-slate-700 overflow-hidden shadow-sm"></div>
+                <h2 class="text-sm font-semibold text-slate-400 uppercase tracking-wider mb-3">Recent Ledger</h2>
+                <div id="recent-ledger" class="space-y-2"></div>
             </div>
-        </section>
+        </div>
 
-        <!-- Log Transaction -->
-        <section id="tab-log" class="tab-content p-4">
-            <h2 class="text-2xl font-bold text-slate-100 mb-6 pt-2">Log Transaction</h2>
-            <div class="grid grid-cols-3 gap-2 mb-8 bg-slate-900 p-1.5 rounded-2xl border border-slate-800">
-                <label class="cursor-pointer"><input type="radio" name="txType" value="income" class="peer sr-only" checked onchange="updateFormUI()"><div class="text-center py-3 rounded-xl text-sm font-semibold text-slate-500 peer-checked:bg-slate-800 peer-checked:text-emerald-400 transition-all flex flex-col items-center gap-1"><i class="ph-fill ph-money text-xl"></i> Income</div></label>
-                <label class="cursor-pointer"><input type="radio" name="txType" value="spend" class="peer sr-only" onchange="updateFormUI()"><div class="text-center py-3 rounded-xl text-sm font-semibold text-slate-500 peer-checked:bg-slate-800 peer-checked:text-rose-400 transition-all flex flex-col items-center gap-1"><i class="ph-fill ph-credit-card text-xl"></i> Spend</div></label>
-                <label class="cursor-pointer"><input type="radio" name="txType" value="bill" class="peer sr-only" onchange="updateFormUI()"><div class="text-center py-3 rounded-xl text-sm font-semibold text-slate-500 peer-checked:bg-slate-800 peer-checked:text-blue-400 transition-all flex flex-col items-center gap-1"><i class="ph-fill ph-file-text text-xl"></i> Bill</div></label>
-            </div>
-            <form id="txForm" class="space-y-5" onsubmit="handleLogTransaction(event); return false;">
-                <div><label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Amount</label><div class="relative"><span class="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 font-bold text-xl">$</span><input type="number" id="txAmount" step="0.01" min="0.01" required class="w-full bg-slate-900 border border-slate-700 rounded-2xl py-4 pl-10 pr-4 text-xl font-bold outline-none focus:ring-2 focus:ring-slate-500"></div></div>
-                <div><label id="lblDescription" class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Source</label><input type="text" id="txDescription" required class="w-full bg-slate-900 border border-slate-700 rounded-2xl py-4 px-4 text-lg outline-none focus:ring-2 focus:ring-slate-500" placeholder="e.g. Rent, Client Payment"></div>
-                
-                <div id="billPaidToggleContainer" class="hidden bg-blue-900/20 border border-blue-800/50 rounded-2xl p-4 flex items-center justify-between cursor-pointer" onclick="toggleBillPaid()"><div class="flex items-center gap-3"><i id="billPaidIcon" class="ph-fill ph-check-circle text-blue-400 text-3xl"></i><div><p class="font-bold text-blue-300" id="billPaidText">Already Paid</p></div></div><input type="checkbox" id="txIsPaid" checked class="sr-only"></div>
-                <div id="recurringBillContainer" class="hidden bg-slate-900 border border-slate-700 rounded-2xl p-4 flex items-center justify-between cursor-pointer" onclick="toggleRecurring()"><div class="flex items-center gap-3"><i id="recurringIcon" class="ph-bold ph-arrows-clockwise text-slate-500 text-3xl"></i><div><p class="font-bold text-slate-300" id="recurringText">Does not repeat</p></div></div><input type="checkbox" id="txIsRecurring" class="sr-only"></div>
-                
-                <div id="field-date"><label id="lblDate" class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Date</label><div class="relative"><input type="date" id="txDate" required class="w-full bg-slate-900 border border-slate-700 rounded-2xl py-4 px-4 text-lg relative z-10 bg-transparent"><i class="ph ph-calendar-blank absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 text-xl z-0"></i></div></div>
-                <div id="field-due-date" class="hidden"><label class="block text-xs font-bold text-rose-400 uppercase tracking-wider mb-1">Due Date</label><div class="relative"><input type="date" id="input-due-date" class="w-full bg-slate-900 border border-rose-900/50 rounded-2xl py-4 px-4 text-lg relative z-10 bg-transparent"><i class="ph ph-calendar-blank absolute right-4 top-1/2 -translate-y-1/2 text-rose-500 text-xl z-0"></i></div></div>
-                
-                <div><label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Receipt (Optional)</label><label class="flex flex-col items-center justify-center w-full h-32 bg-slate-900 border-2 border-dashed border-slate-700 rounded-2xl cursor-pointer overflow-hidden relative group"><div id="receiptPrompt" class="text-center"><i class="ph ph-camera text-3xl text-slate-600 mb-1"></i><p class="text-xs text-slate-500">Snap Photo</p></div><img id="receiptPreview" class="hidden absolute inset-0 w-full h-full object-cover opacity-50"><input type="file" id="txReceipt" accept="image/*" class="hidden" onchange="handleReceiptUpload(event)"></label></div>
-                <div class="pt-4 flex gap-3"><button type="button" id="btn-cancel-edit" onclick="cancelEdit()" class="hidden w-1/3 bg-slate-800 border border-slate-700 text-slate-300 font-bold py-4 rounded-2xl">Cancel</button><button type="submit" id="btn-submit" class="w-full bg-emerald-600 text-white font-bold py-4 rounded-xl shadow-lg active:scale-[0.98]">Save Transaction</button></div>
+        <!-- TAB 2: LOG TRANSACTION -->
+        <div id="tab-log" class="tab-content p-4">
+            <h1 class="text-2xl font-bold mb-6" id="log-title">Log Entry</h1>
+            
+            <form id="log-form" class="space-y-5">
+                <!-- Type Toggles -->
+                <div class="grid grid-cols-3 gap-2 bg-slate-900 p-1 rounded-xl border border-slate-800">
+                    <label class="cursor-pointer">
+                        <input type="radio" name="type" value="Income" class="peer hidden" checked>
+                        <div class="text-center py-2 rounded-lg text-sm font-medium peer-checked:bg-emerald-500/20 peer-checked:text-emerald-400 transition-colors">Income</div>
+                    </label>
+                    <label class="cursor-pointer">
+                        <input type="radio" name="type" value="Spend" class="peer hidden">
+                        <div class="text-center py-2 rounded-lg text-sm font-medium peer-checked:bg-rose-500/20 peer-checked:text-rose-400 transition-colors">Spend</div>
+                    </label>
+                    <label class="cursor-pointer">
+                        <input type="radio" name="type" value="Bill" class="peer hidden">
+                        <div class="text-center py-2 rounded-lg text-sm font-medium peer-checked:bg-blue-500/20 peer-checked:text-blue-400 transition-colors">Bill</div>
+                    </label>
+                </div>
+
+                <!-- Core Inputs -->
+                <div>
+                    <label class="block text-xs text-slate-400 mb-1">Amount</label>
+                    <div class="relative">
+                        <span class="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 text-xl">$</span>
+                        <input type="number" id="input-amount" step="0.01" min="0.01" required class="w-full bg-slate-900 border border-slate-800 rounded-xl py-3 pl-8 pr-4 text-xl focus:outline-none focus:border-slate-500 transition-colors" placeholder="0.00">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs text-slate-400 mb-1">Description</label>
+                    <input type="text" id="input-desc" required class="w-full bg-slate-900 border border-slate-800 rounded-xl py-3 px-4 focus:outline-none focus:border-slate-500 transition-colors" placeholder="e.g. Target, Paycheck, Rent">
+                </div>
+
+                <!-- Dynamic Date / Bill Options -->
+                <div id="bill-options" class="hidden space-y-4 p-4 bg-slate-900/50 rounded-xl border border-slate-800">
+                    <div class="flex items-center justify-between">
+                        <span class="text-sm">Already Paid?</span>
+                        <label class="relative inline-flex items-center cursor-pointer">
+                            <input type="checkbox" id="input-ispaid" class="sr-only peer">
+                            <div class="w-11 h-6 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-500"></div>
+                        </label>
+                    </div>
+                    <div class="flex items-center justify-between">
+                        <span class="text-sm">Repeats Monthly?</span>
+                        <label class="relative inline-flex items-center cursor-pointer">
+                            <input type="checkbox" id="input-recurring" class="sr-only peer">
+                            <div class="w-11 h-6 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-500"></div>
+                        </label>
+                    </div>
+                </div>
+
+                <div>
+                    <label id="date-label" class="block text-xs text-slate-400 mb-1">Date</label>
+                    <input type="date" id="input-date" required class="w-full bg-slate-900 border border-slate-800 rounded-xl py-3 px-4 focus:outline-none focus:border-slate-500 block">
+                </div>
+
+                <!-- Receipt Capture -->
+                <div>
+                    <label class="block text-xs text-slate-400 mb-1">Receipt (Optional)</label>
+                    <input type="file" id="input-receipt" accept="image/*" class="block w-full text-sm text-slate-400 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-slate-800 file:text-slate-300 hover:file:bg-slate-700 transition-colors">
+                    <img id="receipt-preview" class="hidden mt-3 max-h-32 rounded-lg border border-slate-700 object-cover">
+                    <canvas id="receipt-canvas" class="hidden"></canvas>
+                </div>
+
+                <button type="submit" id="btn-save" class="w-full bg-slate-100 text-slate-900 font-bold text-lg py-4 rounded-xl active:scale-[0.98] transition-transform">Save Transaction</button>
             </form>
-        </section>
+        </div>
 
-        <!-- Setup -->
-        <section id="tab-settings" class="tab-content p-4 space-y-8">
-            <h2 class="text-2xl font-bold text-slate-100 mb-2 pt-2">Setup & Sync</h2>
-            <div class="bg-slate-800 rounded-3xl p-5 border border-slate-700 shadow-sm">
-                <div class="flex items-center gap-4 mb-4">
-                    <div class="bg-blue-900/30 p-3 rounded-2xl text-blue-400 border border-blue-800/50"><i class="ph-fill ph-google-drive-logo text-3xl"></i></div>
-                    <div><h3 class="font-bold text-slate-100 text-lg">Google Drive</h3><p class="text-sm text-slate-400" id="syncStatusText">Not connected</p></div>
+        <!-- TAB 3: SETUP & DATA -->
+        <div id="tab-setup" class="tab-content p-4 space-y-8">
+            <h1 class="text-2xl font-bold mb-2">Setup & Sync</h1>
+
+            <!-- Google Drive Section -->
+            <div class="bg-slate-900 p-5 rounded-2xl border border-slate-800 space-y-4">
+                <div class="flex items-center gap-3 text-blue-400">
+                    <i class="ph ph-google-drive-logo text-3xl"></i>
+                    <h2 class="text-lg font-semibold">Cloud Sync</h2>
                 </div>
-                <div id="driveUnauthUI" class="space-y-3">
-                    <button onclick="handleAuthClick()" class="w-full bg-slate-900 border border-slate-700 text-slate-100 font-bold py-3 rounded-xl active:scale-[0.98]">Connect Google Account</button>
-                    <p class="text-[10px] text-slate-500 mt-2 text-center">If you see an "Authorization Error", you must add this website's URL to your Google Cloud Console Origins.</p>
+                <p class="text-sm text-slate-400">Securely back up your ledger directly to your private Google Drive appData folder.</p>
+                <div class="grid grid-cols-2 gap-2">
+                    <button id="btn-gauth" class="col-span-2 bg-slate-800 py-3 rounded-lg font-medium hover:bg-slate-700 transition">Authenticate</button>
+                    <button id="btn-gbackup" class="bg-slate-800 py-3 rounded-lg font-medium hover:bg-slate-700 transition opacity-50 pointer-events-none">Force Backup</button>
+                    <button id="btn-grestore" class="bg-slate-800 py-3 rounded-lg font-medium hover:bg-slate-700 transition opacity-50 pointer-events-none">Restore Data</button>
                 </div>
-                <div id="driveAuthUI" class="hidden space-y-3"><button onclick="syncToDrive()" class="w-full bg-emerald-600 text-white font-bold py-3 rounded-xl active:scale-[0.98]">Backup Now</button><button onclick="syncFromDrive()" class="w-full bg-slate-900 border border-slate-700 text-slate-100 font-bold py-3 rounded-xl active:scale-[0.98]">Restore Backup</button><button onclick="handleSignoutClick()" class="w-full text-xs text-slate-500 py-2 underline">Disconnect</button></div>
+                <p id="sync-status" class="text-xs text-center text-slate-500 mt-2">Not connected</p>
             </div>
 
-            <div>
-                <h3 class="text-sm font-bold text-slate-500 uppercase tracking-wider mb-3 ml-1">Data Management</h3>
-                <div class="bg-slate-800 rounded-2xl border border-slate-700 overflow-hidden flex flex-col shadow-sm">
-                    <div class="p-4 border-b border-slate-700/50 flex items-center justify-between">
-                        <div class="flex items-center gap-3">
-                            <div class="bg-emerald-900/30 p-2 rounded-full text-emerald-400"><i class="ph-bold ph-hard-drive"></i></div>
-                            <div><p class="font-bold text-slate-100 text-sm">Safe-Save Active</p><p class="text-[10px] text-slate-500 uppercase font-bold">Auto-Saving to Local Memory</p></div>
-                        </div>
-                        <i class="ph-fill ph-check-circle text-emerald-400 text-xl"></i>
-                    </div>
-                    <button onclick="openSmartPaste()" class="flex items-center gap-3 p-4 border-b border-slate-700/50 text-left w-full hover:bg-slate-700/30"><div class="bg-slate-900 p-2 rounded-full text-emerald-400 border border-slate-700"><i class="ph-bold ph-magic-wand text-lg"></i></div><div><p class="font-bold text-slate-100 text-sm">Smart Paste Import</p><p class="text-[10px] text-slate-400 uppercase font-bold tracking-widest">Extract bank text</p></div></button>
-                    <button onclick="document.getElementById('csvFileInput').click()" class="flex items-center gap-3 p-4 border-b border-slate-700/50 text-left w-full hover:bg-slate-700/30"><div class="bg-slate-900 p-2 rounded-full text-blue-400 border border-slate-700"><i class="ph-bold ph-file-csv text-lg"></i></div><div><p class="font-bold text-slate-100 text-sm">Import CSV Statement</p><p class="text-[10px] text-slate-400 uppercase font-bold tracking-widest">Add from bank file</p></div></button>
-                    <input type="file" id="csvFileInput" accept=".csv" class="hidden" onchange="handleCSVUpload(event)">
-                    <button onclick="archiveOldData()" class="flex items-center gap-3 p-4 border-b border-slate-700/50 text-left w-full hover:bg-slate-700/30"><div class="bg-slate-900 p-2 rounded-full text-amber-400 border border-slate-700"><i class="ph-bold ph-archive text-lg"></i></div><div><p class="font-bold text-slate-100 text-sm">Prune Ledger</p><p class="text-[10px] text-slate-400 uppercase font-bold tracking-widest">Archive items > 90 days</p></div></button>
-                    <button onclick="promptWipeData()" class="flex items-center gap-3 p-4 text-left w-full hover:bg-rose-900/10 group"><div class="bg-rose-900/20 group-hover:bg-rose-900/40 p-2 rounded-full text-rose-400 border border-rose-900/50 transition-colors"><i class="ph-bold ph-trash text-lg"></i></div><div><p class="font-bold text-rose-400 text-sm">Wipe Phone Memory</p><p class="text-[10px] text-rose-500/60 font-bold uppercase tracking-widest">Delete local data</p></div></button>
-                </div>
+            <!-- Smart Paste -->
+            <div class="bg-slate-900 p-5 rounded-2xl border border-slate-800 space-y-3">
+                <h2 class="text-lg font-semibold flex items-center gap-2"><i class="ph ph-clipboard-text"></i> Smart Paste</h2>
+                <p class="text-xs text-slate-400">Paste raw text from your banking app. We'll automatically extract Spend transactions.</p>
+                <textarea id="smart-paste-area" class="w-full bg-slate-950 border border-slate-800 rounded-lg p-3 text-sm h-24 focus:outline-none focus:border-slate-500" placeholder="e.g. 10/24 Target Corp $45.20..."></textarea>
+                <button id="btn-smart-paste" class="w-full bg-slate-800 py-2 rounded-lg font-medium hover:bg-slate-700 transition">Process Text</button>
             </div>
-        </section>
+
+            <!-- CSV Import -->
+            <div class="bg-slate-900 p-5 rounded-2xl border border-slate-800 space-y-3">
+                <h2 class="text-lg font-semibold flex items-center gap-2"><i class="ph ph-file-csv"></i> CSV Bulk Import</h2>
+                <input type="file" id="input-csv" accept=".csv" class="block w-full text-sm text-slate-400 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:bg-slate-800 file:text-slate-300">
+                <button id="btn-import-csv" class="w-full bg-slate-800 py-2 rounded-lg font-medium hover:bg-slate-700 transition">Import File</button>
+            </div>
+
+            <!-- Danger Zone -->
+            <div class="pt-4 border-t border-slate-800 space-y-3">
+                <button id="btn-prune" class="w-full bg-slate-900 border border-slate-800 text-slate-300 py-3 rounded-lg font-medium flex items-center justify-center gap-2 hover:bg-slate-800 transition">
+                    <i class="ph ph-scissors"></i> Prune Old Ledger (>90 Days)
+                </button>
+                <button id="btn-wipe" class="w-full bg-rose-500/10 text-rose-500 py-3 rounded-lg font-medium flex items-center justify-center gap-2 hover:bg-rose-500/20 transition">
+                    <i class="ph ph-skull"></i> Wipe Memory
+                </button>
+            </div>
+        </div>
+
     </main>
 
-    <!-- Navigation -->
-    <nav class="fixed bottom-0 w-full max-w-lg mx-auto bg-slate-900/95 backdrop-blur-md border-t border-slate-800 h-20 flex justify-around items-center z-40">
-        <button onclick="switchTab('dashboard')" id="nav-dashboard" class="nav-btn flex-1 flex flex-col items-center py-2 text-slate-100"><div class="nav-pill flex items-center justify-center w-16 h-12 rounded-full bg-slate-800"><i class="ph-fill ph-squares-four text-2xl"></i></div><span class="text-[10px] font-bold mt-1 uppercase">Dash</span></button>
-        <button onclick="switchTab('log')" id="nav-log" class="nav-btn flex-1 flex flex-col items-center py-2 text-slate-500"><div class="nav-pill flex items-center justify-center w-16 h-12 rounded-full"><i class="ph-fill ph-plus-circle text-2xl"></i></div><span class="text-[10px] font-bold mt-1 uppercase">Log</span></button>
-        <button onclick="switchTab('settings')" id="nav-settings" class="nav-btn flex-1 flex flex-col items-center py-2 text-slate-500"><div class="nav-pill flex items-center justify-center w-16 h-12 rounded-full"><i class="ph-fill ph-gear text-2xl"></i></div><span class="text-[10px] font-bold mt-1 uppercase">Setup</span></button>
+    <!-- Bottom Navigation -->
+    <nav class="fixed bottom-0 w-full max-w-2xl mx-auto bg-slate-950/90 backdrop-blur-md border-t border-slate-900 flex justify-around p-3 pb-6 z-50">
+        <button class="nav-btn flex flex-col items-center gap-1 text-emerald-400 w-16" data-target="tab-dashboard">
+            <i class="ph-fill ph-squares-four text-2xl"></i>
+            <span class="text-[10px] font-medium">Home</span>
+        </button>
+        <button class="nav-btn flex flex-col items-center gap-1 text-slate-500 hover:text-slate-300 w-16 transition-colors" data-target="tab-log">
+            <i class="ph-fill ph-plus-circle text-2xl"></i>
+            <span class="text-[10px] font-medium">Log</span>
+        </button>
+        <button class="nav-btn flex flex-col items-center gap-1 text-slate-500 hover:text-slate-300 w-16 transition-colors" data-target="tab-setup">
+            <i class="ph-fill ph-gear text-2xl"></i>
+            <span class="text-[10px] font-medium">Setup</span>
+        </button>
     </nav>
 
-    <!-- Success Modal Overlay -->
-    <div id="successOverlay" class="fixed inset-0 z-[550] bg-slate-950/90 backdrop-blur-sm hidden items-center justify-center p-4">
-        <div class="bg-slate-800 border border-slate-700 rounded-3xl p-8 max-w-sm w-full text-center shadow-2xl animate-enter">
-            <div class="mx-auto w-20 h-20 bg-emerald-900/30 rounded-full flex items-center justify-center mb-6 text-emerald-400 border border-emerald-800/50"><i class="ph-bold ph-check text-4xl"></i></div>
-            <h3 id="successOverlayTitle" class="text-2xl font-bold text-slate-100 mb-2">Success</h3>
-            <div class="flex flex-col gap-3 mt-8">
-                <button onclick="closeSuccessAndGoHome()" class="w-full bg-emerald-600 text-white font-bold py-4 rounded-xl active:scale-[0.98]">Return to Dashboard</button>
-                <button onclick="closeSuccessAndLogAnother()" class="w-full bg-slate-900 border border-slate-700 text-slate-300 font-bold py-4 rounded-xl active:scale-[0.98]">Log Another Entry</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Wipe Confirmation Modal -->
-    <div id="wipeOverlay" class="fixed inset-0 z-[550] bg-slate-950/90 hidden items-center justify-center p-4">
-        <div class="bg-slate-800 border border-slate-700 rounded-3xl p-8 max-w-sm w-full text-center shadow-2xl">
-            <h3 class="text-2xl font-bold text-slate-100 mb-2">Wipe Memory?</h3><p class="text-slate-400 mb-8 text-sm">This deletes all local data. Backups on Drive remain safe.</p>
-            <div class="flex gap-3"><button onclick="closeWipePrompt()" class="flex-1 bg-slate-900 border border-slate-700 py-3 rounded-xl font-bold">Cancel</button><button onclick="executeWipeData()" class="flex-1 bg-rose-600 py-3 rounded-xl font-bold">Delete All</button></div>
-        </div>
-    </div>
-
+    <!-- Vanilla Javascript Logic -->
     <script>
-        const APP_VERSION = '7.5'; 
-        
-        // --- YOU MUST UPDATE THIS CLIENT ID ---
-        const GOOGLE_CLIENT_ID = '590906229865-rlo3ap84ngm5rr6hmsov2sg9ko0o24sp.apps.googleusercontent.com';
-        
-        const FILE_NAME = 'tight-ship-ledger.json';
-        const SCOPES = 'https://www.googleapis.com/auth/drive.appdata';
-        let transactions = []; let currentBase64Receipt = null; let editingTxId = null; let tokenClient; let accessToken = null;
+        // --- Service Worker Registration ---
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('./sw.js').catch(err => console.log('SW setup failed:', err));
+        }
 
-        document.addEventListener('DOMContentLoaded', async () => {
-            document.getElementById('txDate').valueAsDate = new Date();
-            document.getElementById('input-due-date').valueAsDate = new Date();
-            try {
-                const legacy = await localforage.getItem('tightShipTransactions');
-                transactions = legacy || [];
-            } catch(e) { transactions = []; }
-            updateDashboard(); updateFormUI(); checkAppStates();
+        // --- Core State ---
+        let transactions =[];
+        let editingId = null;
+        let receiptBase64 = null;
+        
+        // --- UI & Utility Functions ---
+        const fmtCur = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' });
+        const $ = id => document.getElementById(id);
+        
+        function showToast(msg, type = 'info') {
+            const container = $('toast-container');
+            const toast = document.createElement('div');
+            toast.className = `toast ${type === 'error' ? 'bg-rose-900 text-rose-100' : type === 'success' ? 'bg-emerald-900 text-emerald-100' : 'bg-slate-800 text-white'}`;
+            toast.innerHTML = `<i class="ph-fill ${type === 'error' ? 'ph-warning-circle' : type === 'success' ? 'ph-check-circle' : 'ph-info'} text-xl"></i> <span>${msg}</span>`;
+            container.appendChild(toast);
+            setTimeout(() => toast.remove(), 3000);
+        }
+
+        // --- Navigation ---
+        document.querySelectorAll('.nav-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                // Update tabs
+                document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
+                $(btn.dataset.target).classList.add('active');
+                
+                // Update Nav Icons
+                document.querySelectorAll('.nav-btn').forEach(b => {
+                    b.classList.remove('text-emerald-400');
+                    b.classList.add('text-slate-500');
+                });
+                btn.classList.add('text-emerald-400');
+                btn.classList.remove('text-slate-500');
+
+                // Clear form if leaving Log tab
+                if(btn.dataset.target !== 'tab-log') clearLogForm();
+                
+                // Render dashboard if going there
+                if(btn.dataset.target === 'tab-dashboard') renderDashboard();
+            });
         });
 
-        /* --- ONBOARDING LOGIC --- */
-        function checkAppStates() {
-            const v = localStorage.getItem('tightShipVersion');
-            const isOnboarded = localStorage.getItem('tightShipOnboarded');
-            if (!isOnboarded) { 
-                document.getElementById('onboardingOverlay').classList.remove('hidden'); 
-                localStorage.setItem('tightShipVersion', APP_VERSION); 
-            } else if (v !== APP_VERSION) { 
-                document.getElementById('whatsNewOverlay').classList.remove('hidden','flex'); 
-                document.getElementById('whatsNewOverlay').classList.add('flex'); 
+        function navigateTo(tabId) {
+            const targetBtn = document.querySelector(`.nav-btn[data-target="${tabId}"]`);
+            if (targetBtn) targetBtn.click();
+        }
+
+        // --- Data Persistence ---
+        async function loadData() {
+            try {
+                const stored = await localforage.getItem('ts-transactions');
+                transactions = stored ||[];
+                renderDashboard();
+            } catch (err) {
+                showToast("Failed to load local data", "error");
             }
         }
-        function closeWhatsNew() { localStorage.setItem('tightShipVersion', APP_VERSION); document.getElementById('whatsNewOverlay').classList.add('hidden'); }
-        function goToOnboardStep(s) { ['onboardStep1','onboardStep2','onboardStep3','onboardStep4'].forEach(id => { const el = document.getElementById(id); if(el) el.classList.add('hidden'); }); document.getElementById(`onboardStep${s}`).classList.remove('hidden'); }
-        async function saveStartingBalance() {
-            const val = parseFloat(document.getElementById('onboardBalance').value) || 0;
-            if (val > 0) { transactions.push({ id: 'tx_'+Date.now(), type: 'income', amount: val, description: 'Starting Balance', date: new Date().toISOString().split('T')[0], isPaid: true, dueDate: null, isRecurring: false, receipt: null, createdAt: new Date().toISOString() }); await saveDataLocally(); }
-            goToOnboardStep(4);
-        }
-        function finishOnboarding() { localStorage.setItem('tightShipOnboarded', 'true'); document.getElementById('onboardingOverlay').classList.add('hidden'); updateDashboard(); showToast("Welcome Aboard!", "success"); }
 
-        /* --- SMART PASTE REFINED --- */
-        function openSmartPaste() { const overlay = document.getElementById('smartPasteOverlay'); overlay.classList.remove('hidden'); overlay.classList.add('flex'); document.getElementById('smartPasteInput').focus(); }
-        function closeSmartPaste() { const overlay = document.getElementById('smartPasteOverlay'); overlay.classList.remove('flex'); overlay.classList.add('hidden'); document.getElementById('smartPasteInput').value = ''; }
-        async function processSmartPaste() {
-            const rawText = document.getElementById('smartPasteInput').value.trim();
-            if (!rawText) return;
-            const btn = document.getElementById('btnSmartPasteProcess');
-            btn.classList.add('opacity-50', 'pointer-events-none');
-            const lines = rawText.split('\n'); let count = 0;
-            lines.forEach(line => {
-                if (line.match(/balance|account|available|statement|total/i)) return; 
-                // Regex for Selective Extraction: Numbers with EXACTLY two decimals (e.g. .00, .99)
-                const amtM = line.match(/[-+]?\s?\$?\d{1,3}(?:[.,]\d{3})*[.,]\d{2}(?!\d)/g);
-                if (!amtM) return;
-                const dtM = line.match(/(?:\d{1,2}[\/\-]\d{1,2}(?:[\/\-]\d{2,4})?)|(?:(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s\d{1,2})/i);
-                let rawA = amtM.find(m => m.includes('-') || m.includes('$')) || amtM[0];
-                if (dtM && rawA.replace(/[^\d]/g, '') === dtM[0].replace(/[^\d]/g, '') && amtM.length > 1) rawA = amtM.find(m => m !== rawA) || rawA;
-                const val = parseFloat(rawA.replace(/[$,\s]/g, ''));
-                if (isNaN(val) || val === 0) return;
-                let desc = line.replace(rawA, '').replace(dtM ? dtM[0] : '', '').replace(/[\|\-\:\t\$\+]/g, ' ').replace(/\s\s+/g, ' ').trim();
-                transactions.push({ id: 'tx_'+Date.now()+Math.random(), type: (rawA.includes('-')||line.toLowerCase().includes('debit'))?'spend':'income', amount: Math.abs(val), description: (desc||"Bank Item").substring(0,60), date: (dtM ? new Date(dtM[0]) : new Date()).toISOString().split('T')[0], isPaid: true, isRecurring: false, createdAt: new Date().toISOString() });
-                count++;
+        async function saveData() {
+            try {
+                await localforage.setItem('ts-transactions', transactions);
+                if(gToken) syncWithDrive(true); // Quiet background sync
+            } catch (err) {
+                showToast("Failed to save data locally", "error");
+            }
+        }
+
+        // --- The Math Engine & Dashboard ---
+        function calculateFinances() {
+            let income = 0, spend = 0, paidBills = 0, totalOwed = 0;
+            
+            transactions.forEach(t => {
+                try {
+                    const amt = parseFloat(t.amount);
+                    if (isNaN(amt) || amt <= 0) return; // Fault tolerance: ignore corrupted
+                    
+                    if (t.type === 'Income') income += amt;
+                    if (t.type === 'Spend') spend += amt;
+                    if (t.type === 'Bill') {
+                        if (t.isPaid) paidBills += amt;
+                        else totalOwed += amt;
+                    }
+                } catch(e) {}
             });
-            btn.classList.remove('opacity-50', 'pointer-events-none');
-            if (count > 0) { closeSmartPaste(); document.getElementById('successOverlayTitle').innerText = `Imported ${count} Items`; document.getElementById('successOverlay').classList.remove('hidden'); document.getElementById('successOverlay').classList.add('flex'); saveDataLocally(); } 
-            else showToast("No valid amounts found", "error");
+
+            // Math rules: Cash floor is $0
+            const cashOnHand = Math.max(0, income - spend - paidBills);
+            const safeToSpend = cashOnHand - totalOwed;
+            
+            return { cashOnHand, totalOwed, safeToSpend };
         }
 
-        /* --- DASHBOARD UPDATE --- */
-        function updateDashboard() {
-            let inc=0, spd=0, pdB=0, unpd=0; const bills=[], ledger=[];
-            transactions.forEach(tx => {
-                const a = parseFloat(tx.amount)||0;
-                if (tx.type==='income'){ inc+=a; ledger.push(tx); }
-                else if (tx.type==='spend'){ spd+=a; ledger.push(tx); }
-                else { if(tx.isPaid){ pdB+=a; ledger.push(tx); } else { unpd+=a; bills.push(tx); } }
-            });
-            const cash = Math.max(0, inc - spd - pdB); const safe = cash - unpd;
-            document.getElementById('safeToSpendAmount').innerText = formatMoney(safe);
-            document.getElementById('safeToSpendAmount').className = safe < 0 ? 'text-5xl font-extrabold text-rose-400 mb-1' : 'text-5xl font-extrabold text-emerald-400 mb-1';
-            document.getElementById('safeToSpendCard').classList.toggle('border-rose-900/50', safe < 0);
-            document.getElementById('cashOnHandAmount').innerText = formatMoney(cash);
-            document.getElementById('totalOwedAmount').innerText = formatMoney(unpd);
-            const bL = document.getElementById('unpaidBillsList'); bL.innerHTML = '';
-            if(bills.length > 0){
-                document.getElementById('outstandingBillsContainer').classList.remove('hidden');
-                bills.sort((a,b) => new Date(a.dueDate)-new Date(b.dueDate)).forEach(b => {
-                    const d = getDaysDifference(new Date(), new Date(b.dueDate));
-                    let cl = d<0?'text-rose-400 font-bold':d<=3?'text-amber-400 font-bold':'text-slate-400';
-                    const el = document.createElement('div'); el.className='bg-slate-800 p-4 rounded-xl border border-rose-900/50 flex flex-col gap-3 animate-enter shadow-sm';
-                    el.innerHTML = `<div class="flex justify-between items-start"><div><p class="font-bold">${b.description}</p><p class="text-xs ${cl}">${d<0?`Overdue ${Math.abs(d)}d`:`Due in ${d}d`}</p></div><span class="font-bold text-rose-400">${formatMoney(b.amount)}</span></div><div class="flex justify-between items-center"><div class="flex gap-2"><button onclick="editTx('${b.id}')" class="p-2 text-slate-400"><i class="ph-bold ph-pencil-simple"></i></button><button onclick="deleteTx('${b.id}')" class="p-2 text-rose-500/80"><i class="ph-bold ph-trash"></i></button></div><button onclick="payBill('${b.id}')" class="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-bold shadow-lg">Pay Bill</button></div>`;
-                    bL.appendChild(el);
-                });
-            } else document.getElementById('outstandingBillsContainer').classList.add('hidden');
-            const lL = document.getElementById('recentLedgerList'); lL.innerHTML = '';
-            if(!ledger.length) lL.innerHTML = '<div class="p-8 text-center text-slate-500 text-sm">No ledger entries.</div>';
-            else ledger.sort((a,b) => new Date(b.date||b.dueDate)-new Date(a.date||a.dueDate)).slice(0,20).forEach(tx => {
-                const el = document.createElement('div'); el.className='p-4 flex flex-col border-b border-slate-700/50';
-                el.innerHTML = `<div class="flex justify-between items-center"><div><p class="font-bold leading-tight">${tx.description}</p><p class="text-xs text-slate-500">${formatDateUI(tx.date||tx.dueDate)}</p></div><span class="font-bold ${tx.type==='income'?'text-emerald-400':'text-slate-100'}">${tx.type==='income'?'+':'-'}${formatMoney(tx.amount)}</span></div><div class="flex justify-end gap-1 mt-1"><button onclick="editTx('${tx.id}')" class="p-1 text-slate-500"><i class="ph-bold ph-pencil-simple"></i></button><button onclick="deleteTx('${tx.id}')" class="p-1 text-rose-500/60"><i class="ph-bold ph-trash"></i></button></div>`;
-                lL.appendChild(el);
-            });
-            document.getElementById('sync-warning-banner').classList.toggle('hidden', accessToken || localStorage.getItem('hideTightShipSyncBanner')==='true');
+        function renderDashboard() {
+            const stats = calculateFinances();
+            
+            $('hero-cash').textContent = fmtCur.format(stats.cashOnHand);
+            $('hero-owed').textContent = fmtCur.format(stats.totalOwed);
+            
+            const safeEl = $('hero-safe');
+            safeEl.textContent = fmtCur.format(stats.safeToSpend);
+            safeEl.className = `text-6xl font-bold tracking-tight ${stats.safeToSpend >= 0 ? 'text-emerald-400' : 'text-rose-500'}`;
+
+            renderUnpaidBills();
+            renderLedger();
         }
 
-        /* --- LOGGING HANDLERS --- */
-        async function handleLogTransaction(e){
-            e.preventDefault();
-            const type=document.querySelector('input[name="txType"]:checked').value, amt=parseFloat(document.getElementById('txAmount').value), desc=document.getElementById('txDescription').value.trim();
-            if(!amt || !desc) return showToast("Amount & Description required", "error");
-            let date=document.getElementById('txDate').value, isP=true, due=null, isR=false;
-            if(type==='bill'){ isP=document.getElementById('txIsPaid').checked; isR=document.getElementById('txIsRecurring').checked; if(!isP){ due=document.getElementById('input-due-date').value; date=null; } }
-            const txData = { id: editingTxId||'tx_'+Date.now(), type, amount:amt, description:desc, date, isPaid:isP, dueDate:due, isRecurring:isR, receipt:currentBase64Receipt, updatedAt:new Date().toISOString() };
-            if(editingTxId){ const idx=transactions.findIndex(t=>t.id===editingTxId); transactions[idx]={...transactions[idx], ...txData}; }
-            else { txData.createdAt=new Date().toISOString(); transactions.push(txData); }
-            document.getElementById('successOverlayTitle').innerText=editingTxId?"Updated":"Logged Successfully"; document.getElementById('successOverlay').classList.remove('hidden'); document.getElementById('successOverlay').classList.add('flex'); saveDataLocally();
-        }
+        function renderUnpaidBills() {
+            const container = $('action-required-container');
+            const list = $('unpaid-bills-list');
+            list.innerHTML = '';
 
-        function payBill(id){
-            const tx = transactions.find(t=>t.id===id);
-            if(tx){
-                const oldRef = tx.dueDate || tx.date || new Date().toISOString().split('T')[0];
-                tx.isPaid = true; tx.date = new Date().toISOString().split('T')[0]; tx.dueDate = null;
-                if (tx.isRecurring) {
-                    let nextM = new Date(oldRef); nextM.setMonth(nextM.getMonth() + 1);
-                    transactions.push({ id: 'tx_'+Date.now(), type: 'bill', amount: tx.amount, description: tx.description, date: null, dueDate: nextM.toISOString().split('T')[0], isPaid: false, isRecurring: true, receipt: null, createdAt: new Date().toISOString() });
+            const unpaid = transactions.filter(t => t.type === 'Bill' && t.isPaid === false);
+            if (unpaid.length === 0) {
+                container.classList.add('hidden');
+                return;
+            }
+            
+            container.classList.remove('hidden');
+            unpaid.sort((a, b) => new Date(a.dueDate) - new Date(b.dueDate));
+
+            const today = new Date();
+            today.setHours(0,0,0,0);
+
+            unpaid.forEach(bill => {
+                const due = new Date(bill.dueDate);
+                // Adjust for local timezone diffs securely
+                due.setMinutes(due.getMinutes() + due.getTimezoneOffset());
+                
+                const diffTime = due - today;
+                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                
+                let dueText = `Due in ${diffDays}d`;
+                let dueColor = 'text-slate-400';
+                
+                if (diffDays < 0) {
+                    dueText = `Overdue ${Math.abs(diffDays)}d`;
+                    dueColor = 'text-rose-500 font-bold';
+                } else if (diffDays === 0) {
+                    dueText = 'Due Today';
+                    dueColor = 'text-rose-400 font-bold';
+                } else if (diffDays <= 3) {
+                    dueColor = 'text-amber-400';
                 }
-                saveDataLocally(); showToast('Paid!', 'success');
-            }
+
+                list.innerHTML += `
+                    <div class="flex items-center justify-between bg-slate-900 border border-slate-800 p-3 rounded-xl">
+                        <div>
+                            <p class="font-medium text-slate-200">${bill.description}</p>
+                            <p class="text-xs ${dueColor}">${dueText} &bull; ${bill.isRecurring ? '<i class="ph ph-arrows-clockwise"></i> Repeating' : 'One-time'}</p>
+                        </div>
+                        <div class="flex items-center gap-3">
+                            <span class="font-bold text-rose-300">${fmtCur.format(bill.amount)}</span>
+                            <button onclick="payBill('${bill.id}')" class="bg-emerald-500/10 text-emerald-400 p-2 rounded-lg hover:bg-emerald-500/20 active:scale-95 transition">
+                                <i class="ph-bold ph-check text-xl"></i>
+                            </button>
+                        </div>
+                    </div>
+                `;
+            });
         }
 
-        /* --- UI UTILS --- */
-        function switchTab(t) { document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active')); document.querySelectorAll('.nav-btn').forEach(btn => { btn.classList.remove('text-slate-100'); btn.classList.add('text-slate-500'); btn.querySelector('.nav-pill').classList.remove('bg-slate-800'); }); document.getElementById(`tab-${t}`).classList.add('active'); document.getElementById(`nav-${t}`).classList.replace('text-slate-500','text-slate-100'); document.getElementById(`nav-${t}`).querySelector('.nav-pill').classList.add('bg-slate-800'); if(t==='dashboard') updateDashboard(); }
-        function closeSuccessAndGoHome(){ document.getElementById('successOverlay').classList.add('hidden','flex'); document.getElementById('successOverlay').classList.add('hidden'); resetLogForm(); switchTab('dashboard'); }
-        function closeSuccessAndLogAnother(){ document.getElementById('successOverlay').classList.add('hidden','flex'); document.getElementById('successOverlay').classList.add('hidden'); resetLogForm(); }
-        function resetLogForm(){ document.getElementById('txForm').reset(); document.getElementById('txDate').valueAsDate=new Date(); editingTxId=null; currentBase64Receipt=null; document.getElementById('receiptPreview').classList.add('hidden'); document.getElementById('receiptPrompt').classList.remove('hidden'); document.getElementById('btn-submit').innerText="Save Transaction"; document.getElementById('btn-cancel-edit').classList.add('hidden'); updateFormUI(); }
-        function editTx(id){ const tx=transactions.find(t=>t.id===id); if(!tx)return; editingTxId=id; currentBase64Receipt=tx.receipt; document.querySelector(`input[name="txType"][value="${tx.type}"]`).checked=true; updateFormUI(); document.getElementById('txAmount').value=tx.amount; document.getElementById('txDescription').value=tx.description; if(tx.type==='bill'){ document.getElementById('txIsPaid').checked=tx.isPaid; document.getElementById('txIsRecurring').checked=tx.isRecurring; toggleBillPaid(false); updateRecurringUI(); if(tx.isPaid) document.getElementById('txDate').value=tx.date; else document.getElementById('input-due-date').value=tx.dueDate; } else document.getElementById('txDate').value=tx.date; if(tx.receipt){ const p=document.getElementById('receiptPreview'); p.src=tx.receipt; p.classList.remove('hidden'); document.getElementById('receiptPrompt').classList.add('hidden'); } document.getElementById('btn-submit').innerText="Update"; document.getElementById('btn-cancel-edit').classList.remove('hidden'); switchTab('log'); }
-        function cancelEdit(){ editingTxId=null; resetLogForm(); switchTab('dashboard'); }
-        function deleteTx(id){ if(confirm("Permanently delete?")){ transactions=transactions.filter(t=>t.id!==id); saveDataLocally(); } }
-        async function handleReceiptUpload(e){ const f=e.target.files[0]; if(!f)return; const r=new FileReader(); r.readAsDataURL(f); r.onload=(ev)=>{ const img=new Image(); img.src=ev.target.result; img.onload=()=>{ const c=document.createElement('canvas'); const m=1200; let w=img.width, h=img.height; if(w>h && w>m){ h*=m/w; w=m; } else if(h>m){ w*=m/h; h=m; } c.width=w; c.height=h; c.getContext('2d').drawImage(img,0,0,w,h); currentBase64Receipt=c.toDataURL('image/jpeg',0.8); const p=document.getElementById('receiptPreview'); p.src=currentBase64Receipt; p.classList.remove('hidden'); document.getElementById('receiptPrompt').classList.add('hidden'); }; }; }
-        
-        function toggleBillPaid(shouldFlip = true){ 
-            const c=document.getElementById('txIsPaid'); 
-            if(shouldFlip) c.checked=!c.checked; 
-            const icon = document.getElementById('billPaidIcon');
-            const text = document.getElementById('billPaidText');
-            if(c.checked) {
-                icon.className='ph-fill ph-check-circle text-blue-400 text-3xl';
-                text.innerText = 'Already Paid';
+        function renderLedger() {
+            const list = $('recent-ledger');
+            list.innerHTML = '';
+            
+            // Sort by created or date descending, grab top 20
+            const recent = [...transactions].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)).slice(0, 20);
+            
+            if (recent.length === 0) {
+                list.innerHTML = `<p class="text-slate-500 text-sm italic">No transactions yet.</p>`;
+                return;
+            }
+
+            recent.forEach(t => {
+                let icon = 'ph-wallet';
+                let iconColor = 'text-slate-400';
+                let amtColor = 'text-slate-300';
+                let sign = '';
+
+                if (t.type === 'Income') {
+                    icon = 'ph-trend-up'; iconColor = 'text-emerald-400'; amtColor = 'text-emerald-400'; sign = '+';
+                } else if (t.type === 'Spend') {
+                    icon = 'ph-shopping-cart'; iconColor = 'text-rose-400'; amtColor = 'text-slate-300'; sign = '-';
+                } else if (t.type === 'Bill') {
+                    icon = 'ph-receipt'; 
+                    iconColor = t.isPaid ? 'text-slate-500' : 'text-amber-400'; 
+                    amtColor = t.isPaid ? 'text-slate-500' : 'text-slate-300';
+                    sign = '-';
+                }
+
+                const dateStr = t.type === 'Bill' && !t.isPaid ? `Due: ${t.dueDate}` : `Date: ${t.date}`;
+
+                list.innerHTML += `
+                    <div class="flex items-center justify-between bg-slate-900/50 border border-slate-800/50 p-3 rounded-xl group">
+                        <div class="flex items-center gap-3">
+                            <div class="p-2 bg-slate-800 rounded-lg"><i class="ph-fill ${icon} ${iconColor} text-lg"></i></div>
+                            <div>
+                                <p class="font-medium text-sm text-slate-200">${t.description}</p>
+                                <p class="text-[10px] text-slate-500">${dateStr}</p>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-3">
+                            <span class="font-semibold text-sm ${amtColor}">${sign}${fmtCur.format(t.amount)}</span>
+                            <div class="flex flex-col gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
+                                <button onclick="editTransaction('${t.id}')" class="text-slate-500 hover:text-blue-400"><i class="ph-fill ph-pencil-simple"></i></button>
+                                <button onclick="deleteTransaction('${t.id}')" class="text-slate-500 hover:text-rose-400"><i class="ph-fill ph-trash"></i></button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+        }
+
+        // --- Action Logic ---
+        function payBill(id) {
+            const bill = transactions.find(t => t.id === id);
+            if (!bill) return;
+
+            bill.isPaid = true;
+            bill.date = new Date().toISOString().split('T')[0];
+            
+            // Crucial Logic: Spawn Recurring Clone
+            if (bill.isRecurring) {
+                let d = new Date(bill.dueDate);
+                d.setMinutes(d.getMinutes() + d.getTimezoneOffset());
+                d.setMonth(d.getMonth() + 1); // Exact 1 month jump
+                
+                const newBill = {
+                    ...bill,
+                    id: crypto.randomUUID(),
+                    isPaid: false,
+                    dueDate: d.toISOString().split('T')[0],
+                    createdAt: new Date().toISOString()
+                };
+                delete newBill.date;
+                transactions.push(newBill);
+                showToast("Bill marked paid. Next month's bill created.", "success");
             } else {
-                icon.className='ph-fill ph-clock text-rose-400 text-3xl';
-                text.innerText = 'Outstanding / Due Soon';
+                showToast("Bill marked paid.", "success");
             }
-            syncBillDateLabel(); 
+            
+            saveData().then(() => renderDashboard());
         }
 
-        function syncBillDateLabel(){ const p=document.getElementById('txIsPaid').checked; document.getElementById('field-due-date').classList.toggle('hidden',p); document.getElementById('field-date').classList.toggle('hidden',!p); }
-        function toggleRecurring(){ const c=document.getElementById('txIsRecurring'); c.checked=!c.checked; updateRecurringUI(); }
-        function updateRecurringUI(){ const c=document.getElementById('txIsRecurring').checked; document.getElementById('recurringIcon').className=c?'ph-bold ph-arrows-clockwise text-blue-400 text-3xl':'ph-bold ph-arrows-clockwise text-slate-500 text-3xl'; document.getElementById('recurringText').innerText=c?'Repeats Monthly':'Does not repeat'; }
-        async function saveDataLocally(){ await localforage.setItem('tightShipTransactions', transactions); updateDashboard(); syncToDriveBackground(); }
-        function updateFormUI() { const t = document.querySelector('input[name="txType"]:checked').value; document.getElementById('billPaidToggleContainer').classList.toggle('hidden', t!=='bill'); document.getElementById('recurringBillContainer').classList.toggle('hidden', t!=='bill'); document.getElementById('lblDescription').innerText = t==='income'?'Source':t==='spend'?'Vendor':'Biller'; }
-        function handleCSVUpload(e){ const f=e.target.files[0]; if(!f)return; Papa.parse(f, { header:true, skipEmptyLines:true, complete:(r)=>processCSVData(r.data) }); }
-        async function processCSVData(data){ if(!data.length)return; data.forEach(row=>{ const h=Object.keys(row), aK=h.find(k=>k.toLowerCase().includes('amount')), dK=h.find(k=>k.toLowerCase().includes('date')), deK=h.find(k=>k.toLowerCase().includes('desc')); const aV=parseFloat(String(row[aK]).replace(/[^0-9.-]+/g,"")); if(isNaN(aV))return; transactions.push({id:'tx_'+Date.now()+Math.random(), type:aV>0?'income':'spend', amount:Math.abs(aV), description:row[deK]||'Imported', date:new Date(row[dK]).toISOString().split('T')[0], isPaid:true, isRecurring:false, createdAt:new Date().toISOString() }); }); await saveDataLocally(); switchTab('dashboard'); }
-        async function archiveOldData(){ const cut=new Date(); cut.setDate(cut.getDate()-90); const cS=cut.toISOString().split('T')[0]; let ac=[], ar=await localforage.getItem('tightShipArchived')||[], ct=0; transactions.forEach(tx=>{ if(tx.type==='bill'&&!tx.isPaid)ac.push(tx); else if((tx.date||tx.dueDate)<cS){ ar.push(tx); ct++; } else ac.push(tx); }); if(ct>0){ transactions=ac; await localforage.setItem('tightShipTransactions',ac); await localforage.setItem('tightShipArchived',ar); updateDashboard(); showToast(`Archived ${ct} items`, 'success'); } }
-        function promptWipeData(){ document.getElementById('wipeOverlay').classList.remove('hidden'); document.getElementById('wipeOverlay').classList.add('flex'); }
-        function closeWipePrompt(){ document.getElementById('wipeOverlay').classList.remove('flex'); document.getElementById('wipeOverlay').classList.add('hidden'); }
-        async function executeWipeData(){ transactions=[]; await localforage.clear(); localStorage.clear(); location.reload(); }
-        
-        /* --- GOOGLE DRIVE SYNC --- */
-        function gapiLoaded(){ gapi.load('client', ()=>gapi.client.init({discoveryDocs:['https://www.googleapis.com/discovery/v1/apis/drive/v3/rest']})); }
-        function gisLoaded(){ tokenClient=google.accounts.oauth2.initTokenClient({client_id:GOOGLE_CLIENT_ID, scope:SCOPES, callback:(r)=>{if(r.access_token){accessToken=r.access_token; updateDriveUI(true); if(!localStorage.getItem('tightShipOnboarded'))finishOnboarding();}}}); }
-        function handleAuthClick(){ 
-            if(GOOGLE_CLIENT_ID === 'YOUR_CLIENT_ID_HERE') return showToast("Developer Error: Please add a Google Client ID in the code.","error");
-            if(!tokenClient) return showToast("Sync services loading...","info"); 
-            tokenClient.requestAccessToken({prompt:'consent'}); 
+        function deleteTransaction(id) {
+            transactions = transactions.filter(t => t.id !== id);
+            saveData().then(() => renderDashboard());
+            showToast("Transaction deleted.");
         }
-        function handleSignoutClick(){ const t=gapi.client.getToken(); if(t){ google.accounts.oauth2.revoke(t.access_token,()=>{ gapi.client.setToken(''); accessToken=null; updateDriveUI(false); }); } }
-        function updateDriveUI(a){ document.getElementById('syncStatusText').innerText=a?'Connected':'Not connected'; document.getElementById('driveUnauthUI').classList.toggle('hidden',a); document.getElementById('driveAuthUI').classList.toggle('hidden',!a); }
-        async function findFileId(){ try { const r=await gapi.client.drive.files.list({q:`name='${FILE_NAME}' and spaces='appDataFolder'`, spaces:'appDataFolder', fields:'files(id)'}); return r.result.files.length?r.result.files[0].id:null; } catch(e){ return null; } }
-        async function syncToDrive(){ if(!accessToken)return handleAuthClick(); showToast('Syncing...','info'); const arc=await localforage.getItem('tightShipArchived')||[]; const content=JSON.stringify({version:2, transactions, archived:arc}); try { const id=await findFileId(); const form=new FormData(); form.append('metadata', new Blob([JSON.stringify(id?{}:{name:FILE_NAME, parents:['appDataFolder']})], {type:'application/json'})); form.append('file', new Blob([content], {type:'application/json'})); await fetch(id?`https://www.googleapis.com/upload/drive/v3/files/${id}?uploadType=multipart`:`https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart`, {method:id?'PATCH':'POST', headers:{'Authorization':'Bearer '+accessToken}, body:form}); showToast("Backed up!", "success"); } catch(e){ showToast("Sync error","error"); } }
-        async function syncToDriveBackground(){ if(!accessToken)return; const arc=await localforage.getItem('tightShipArchived')||[]; const content=JSON.stringify({version:2, transactions, archived:arc}); const id=await findFileId(); if(!id) return; const form=new FormData(); form.append('metadata', new Blob([JSON.stringify({name:FILE_NAME})], {type:'application/json'})); form.append('file', new Blob([content], {type:'application/json'})); fetch(`https://www.googleapis.com/upload/drive/v3/files/${id}?uploadType=multipart`, {method:'PATCH', headers:{'Authorization':'Bearer '+accessToken}, body:form}); }
-        async function syncFromDrive(){ if(!accessToken)return handleAuthClick(); const id=await findFileId(); if(!id)return showToast("No backup found","error"); try { const r=await gapi.client.drive.files.get({fileId:id, alt:'media'}); if(r.result){ if(Array.isArray(r.result)) transactions=r.result; else if(r.result.version===2){ transactions=r.result.transactions; await localforage.setItem('tightShipArchived', r.result.archived); } await localforage.setItem('tightShipTransactions', transactions); updateDashboard(); showToast("Restored!","success"); } } catch(e){ showToast("Failed.","error"); } }
-        
-        function formatDateUI(s){ if(!s)return '--'; const [y,m,d]=s.split('-'); return new Date(y,m-1,d).toLocaleDateString('en-US',{month:'short',day:'numeric'}); }
-        function getDaysDifference(d1,d2){ return Math.ceil((new Date(d2.getFullYear(),d2.getMonth(),d2.getDate())-new Date(d1.getFullYear(),d1.getMonth(),d1.getDate()))/86400000); }
-        function formatMoney(n){ return (n < 0 ? '-' : '') + '$' + Math.abs(n).toLocaleString('en-US',{minimumFractionDigits:2, maximumFractionDigits:2}); }
-        function dismissSyncBanner(){ localStorage.setItem('hideTightShipSyncBanner','true'); document.getElementById('sync-warning-banner').classList.add('hidden'); }
-        function showToast(m,t){ const c=document.getElementById('toast-container'); const e=document.createElement('div'); e.className=`px-4 py-2 rounded-full text-xs font-bold shadow-lg animate-enter pointer-events-auto ${t==='success'?'bg-emerald-600 text-white':'bg-slate-800 text-slate-100 border border-slate-700'}`; e.innerText=m; c.appendChild(e); setTimeout(()=>e.remove(),3000); }
-        async function installApp(){ if(deferredPrompt){ deferredPrompt.prompt(); await deferredPrompt.userChoice; deferredPrompt=null; document.getElementById('installAppBtn').classList.add('hidden'); } }
-        let deferredPrompt; window.addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); deferredPrompt = e; document.getElementById('installAppBtn').classList.remove('hidden'); });
+
+        function editTransaction(id) {
+            const t = transactions.find(x => x.id === id);
+            if (!t) return;
+
+            editingId = id;
+            $('log-title').textContent = "Edit Transaction";
+            $('btn-save').textContent = "Update Transaction";
+
+            // Populate Form
+            document.querySelector(`input[name="type"][value="${t.type}"]`).checked = true;
+            $('input-amount').value = t.amount;
+            $('input-desc').value = t.description;
+            
+            if (t.type === 'Bill') {
+                $('input-ispaid').checked = t.isPaid;
+                $('input-recurring').checked = t.isRecurring;
+                $('input-date').value = t.isPaid ? t.date : t.dueDate;
+            } else {
+                $('input-date').value = t.date;
+            }
+            
+            if (t.receipt) {
+                receiptBase64 = t.receipt;
+                $('receipt-preview').src = t.receipt;
+                $('receipt-preview').classList.remove('hidden');
+            }
+
+            toggleFormFields();
+            navigateTo('tab-log');
+        }
+
+        // --- Log Form Logic ---
+        function toggleFormFields() {
+            const type = document.querySelector('input[name="type"]:checked').value;
+            const isBill = type === 'Bill';
+            const isPaid = $('input-ispaid').checked;
+
+            if (isBill) {
+                $('bill-options').classList.remove('hidden');
+                $('date-label').textContent = isPaid ? 'Date Paid' : 'Due Date';
+            } else {
+                $('bill-options').classList.add('hidden');
+                $('date-label').textContent = 'Date';
+            }
+        }
+
+        document.querySelectorAll('input[name="type"]').forEach(r => r.addEventListener('change', toggleFormFields));
+        $('input-ispaid').addEventListener('change', toggleFormFields);
+
+        // Pre-fill today's date
+        $('input-date').value = new Date().toISOString().split('T')[0];
+
+        function clearLogForm() {
+            editingId = null;
+            receiptBase64 = null;
+            $('log-form').reset();
+            $('log-title').textContent = "Log Entry";
+            $('btn-save').textContent = "Save Transaction";
+            $('input-date').value = new Date().toISOString().split('T')[0];
+            $('receipt-preview').classList.add('hidden');
+            $('receipt-preview').src = '';
+            toggleFormFields();
+        }
+
+        // Image Compression (HTML5 Canvas)
+        $('input-receipt').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                const img = new Image();
+                img.onload = function() {
+                    const canvas = $('receipt-canvas');
+                    const ctx = canvas.getContext('2d');
+                    let width = img.width;
+                    let height = img.height;
+                    const MAX = 1200;
+
+                    if (width > height && width > MAX) {
+                        height *= MAX / width; width = MAX;
+                    } else if (height > MAX) {
+                        width *= MAX / height; height = MAX;
+                    }
+
+                    canvas.width = width;
+                    canvas.height = height;
+                    ctx.drawImage(img, 0, 0, width, height);
+                    
+                    receiptBase64 = canvas.toDataURL('image/jpeg', 0.8);
+                    $('receipt-preview').src = receiptBase64;
+                    $('receipt-preview').classList.remove('hidden');
+                }
+                img.src = event.target.result;
+            }
+            reader.readAsDataURL(file);
+        });
+
+        $('log-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const btn = $('btn-save');
+            const originalText = btn.textContent;
+            
+            const type = document.querySelector('input[name="type"]:checked').value;
+            const amount = parseFloat($('input-amount').value);
+            const desc = $('input-desc').value.trim();
+            const dateVal = $('input-date').value;
+
+            // Guardrail
+            if (isNaN(amount) || amount <= 0) {
+                showToast("Amount must be greater than zero.", "error");
+                return;
+            }
+            if (!dateVal) {
+                showToast("Date is required.", "error");
+                return;
+            }
+
+            btn.textContent = "Saving...";
+            
+            const trans = {
+                id: editingId || crypto.randomUUID(),
+                type,
+                amount,
+                description: desc,
+                createdAt: editingId ? transactions.find(t=>t.id===editingId).createdAt : new Date().toISOString(),
+                receipt: receiptBase64
+            };
+
+            if (type === 'Bill') {
+                const isPaid = $('input-ispaid').checked;
+                trans.isPaid = isPaid;
+                trans.isRecurring = $('input-recurring').checked;
+                if (isPaid) trans.date = dateVal;
+                else trans.dueDate = dateVal;
+            } else {
+                trans.date = dateVal;
+            }
+
+            if (editingId) {
+                const idx = transactions.findIndex(t => t.id === editingId);
+                transactions[idx] = trans;
+            } else {
+                transactions.push(trans);
+            }
+
+            await saveData();
+            
+            btn.textContent = "Success! ✓";
+            showToast(editingId ? "Transaction updated." : "Transaction logged.", "success");
+            
+            setTimeout(() => {
+                clearLogForm();
+                navigateTo('tab-dashboard');
+            }, 600);
+        });
+
+        // --- Settings & Sync Logic ---
+
+        // Smart Paste
+        $('btn-smart-paste').addEventListener('click', () => {
+            const text = $('smart-paste-area').value;
+            if (!text.trim()) return showToast("Nothing to process", "error");
+
+            const lines = text.split('\n');
+            let added = 0;
+
+            lines.forEach(line => {
+                if(!line.trim()) return;
+                // Regex looks for an amount > 0
+                const amtMatch = line.match(/\$?(?!0\.(?:00?|0?))(\d+(?:\.\d{2})?)/);
+                const dateMatch = line.match(/(\d{4}-\d{2}-\d{2})|(\d{1,2}\/\d{1,2}(?:\/\d{2,4})?)/);
+                
+                if (amtMatch) {
+                    const amount = parseFloat(amtMatch[1]);
+                    if (amount > 0) {
+                        let date = new Date().toISOString().split('T')[0]; // fallback today
+                        if (dateMatch) {
+                            try { date = new Date(dateMatch[0]).toISOString().split('T')[0]; } catch(e){}
+                        }
+                        
+                        let desc = line.replace(amtMatch[0], '').replace(dateMatch ? dateMatch[0] : '', '').trim();
+                        // Strip remaining extra spaces and symbols if desired
+                        desc = desc.replace(/^[-\s]+|[-\s]+$/g, '') || 'Imported Entry';
+                        
+                        transactions.push({
+                            id: crypto.randomUUID(), type: 'Spend', amount, description: desc, date, createdAt: new Date().toISOString()
+                        });
+                        added++;
+                    }
+                }
+            });
+
+            if (added > 0) {
+                saveData();
+                showToast(`Parsed ${added} transactions.`, "success");
+                $('smart-paste-area').value = '';
+            } else {
+                showToast("Could not detect any valid transactions.", "error");
+            }
+        });
+
+        // CSV Import via PapaParse
+        $('btn-import-csv').addEventListener('click', () => {
+            const file = $('input-csv').files[0];
+            if (!file) return showToast("Select a CSV file first.", "error");
+
+            Papa.parse(file, {
+                header: true, skipEmptyLines: true,
+                complete: function(results) {
+                    let added = 0;
+                    results.data.forEach(row => {
+                        // Very generic mapper assuming columns might have 'Amount', 'Date', 'Description'
+                        let amtRaw = row['Amount'] || row['amount'] || row['Value'] || '';
+                        let amount = parseFloat(amtRaw.replace(/[^\d.-]/g, ''));
+                        
+                        let desc = row['Description'] || row['description'] || row['Name'] || 'CSV Import';
+                        let date = row['Date'] || row['date'] || new Date().toISOString().split('T')[0];
+
+                        // Attempt format standardization
+                        try { date = new Date(date).toISOString().split('T')[0]; } catch(e){ date = new Date().toISOString().split('T')[0]; }
+
+                        if (!isNaN(amount) && amount !== 0) {
+                            let type = amount > 0 ? 'Income' : 'Spend';
+                            transactions.push({
+                                id: crypto.randomUUID(), type, amount: Math.abs(amount), description: desc, date, createdAt: new Date().toISOString()
+                            });
+                            added++;
+                        }
+                    });
+
+                    if (added > 0) {
+                        saveData();
+                        showToast(`Imported ${added} records.`, "success");
+                    } else {
+                        showToast("No valid columns (Amount, Date, Description) found.", "error");
+                    }
+                }
+            });
+        });
+
+        // Prune Ledger
+        $('btn-prune').addEventListener('click', async () => {
+            const now = new Date();
+            const cutoff = new Date(now.setDate(now.getDate() - 90));
+            
+            const toKeep = [];
+            const toArchive =[];
+            
+            transactions.forEach(t => {
+                // Never prune unpaid bills
+                if (t.type === 'Bill' && !t.isPaid) {
+                    toKeep.push(t);
+                    return;
+                }
+                const tDate = new Date(t.date || t.createdAt);
+                if (tDate < cutoff) toArchive.push(t);
+                else toKeep.push(t);
+            });
+
+            if (toArchive.length === 0) {
+                return showToast("No old transactions to prune.");
+            }
+
+            try {
+                const existingArchive = await localforage.getItem('ts-archive') || [];
+                await localforage.setItem('ts-archive',[...existingArchive, ...toArchive]);
+                transactions = toKeep;
+                await saveData();
+                showToast(`Pruned ${toArchive.length} entries to archive.`, "success");
+                renderDashboard();
+            } catch (err) {
+                showToast("Failed to archive.", "error");
+            }
+        });
+
+        // Wipe Memory
+        $('btn-wipe').addEventListener('click', () => {
+            if (confirm("DANGER: This will permanently wipe all local data. Are you absolutely sure?")) {
+                localforage.clear().then(() => {
+                    transactions =[];
+                    renderDashboard();
+                    showToast("Memory wiped.", "error");
+                });
+            }
+        });
+
+        // --- Google Drive Sync Logic ---
+        let tokenClient;
+        let gToken = null;
+
+        window.onload = function () {
+            // Load Local Data
+            loadData();
+
+            // Init Google GSI Client
+            // TODO: REPLACE client_id WITH YOUR OWN GOOGLE CLOUD CREDENTIALS
+            try {
+                tokenClient = google.accounts.oauth2.initTokenClient({
+                    client_id: 'YOUR_GOOGLE_CLIENT_ID', 
+                    scope: 'https://www.googleapis.com/auth/drive.appdata',
+                    callback: (tokenResponse) => {
+                        gToken = tokenResponse.access_token;
+                        $('sync-status').textContent = "Connected securely to Google Drive.";
+                        $('btn-gauth').classList.add('hidden');
+                        $('btn-gbackup').classList.remove('opacity-50', 'pointer-events-none');
+                        $('btn-grestore').classList.remove('opacity-50', 'pointer-events-none');
+                        showToast("Google Auth Successful", "success");
+                    },
+                });
+            } catch(e) { console.error("GSI script missing or blocked."); }
+        };
+
+        $('btn-gauth').addEventListener('click', () => {
+            if (tokenClient) tokenClient.requestAccessToken({prompt: 'consent'});
+        });
+
+        async function getDriveFileId() {
+            if(!gToken) return null;
+            const res = await fetch('https://www.googleapis.com/drive/v3/files?spaces=appDataFolder&q=name="tight-ship-ledger.json"', {
+                headers: { Authorization: `Bearer ${gToken}` }
+            });
+            const data = await res.json();
+            return data.files && data.files.length > 0 ? data.files[0].id : null;
+        }
+
+        async function syncWithDrive(isQuiet = false) {
+            if (!gToken) return;
+            try {
+                if(!isQuiet) showToast("Syncing with cloud...");
+                
+                const fileId = await getDriveFileId();
+                const metadata = { name: 'tight-ship-ledger.json', parents: ['appDataFolder'] };
+                const fileContent = JSON.stringify(transactions);
+                
+                const form = new FormData();
+                form.append('metadata', new Blob([JSON.stringify(metadata)], { type: 'application/json' }));
+                form.append('file', new Blob([fileContent], { type: 'application/json' }));
+
+                const url = fileId 
+                    ? `https://www.googleapis.com/upload/drive/v3/files/${fileId}?uploadType=multipart` 
+                    : 'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart';
+                const method = fileId ? 'PATCH' : 'POST';
+
+                await fetch(url, {
+                    method: method,
+                    headers: { Authorization: `Bearer ${gToken}` },
+                    body: form
+                });
+
+                if(!isQuiet) showToast("Backup complete.", "success");
+            } catch (err) {
+                if(!isQuiet) showToast("Cloud sync failed.", "error");
+            }
+        }
+
+        $('btn-gbackup').addEventListener('click', () => syncWithDrive(false));
+
+        $('btn-grestore').addEventListener('click', async () => {
+            if(!gToken) return;
+            try {
+                showToast("Looking for cloud backup...");
+                const fileId = await getDriveFileId();
+                if (!fileId) return showToast("No cloud backup found.", "error");
+
+                const res = await fetch(`https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`, {
+                    headers: { Authorization: `Bearer ${gToken}` }
+                });
+                const cloudData = await res.json();
+                
+                if (Array.isArray(cloudData)) {
+                    transactions = cloudData;
+                    await localforage.setItem('ts-transactions', transactions);
+                    renderDashboard();
+                    showToast("Data restored from cloud.", "success");
+                }
+            } catch (err) {
+                showToast("Failed to restore data.", "error");
+            }
+        });
+
     </script>
 </body>
 </html>
