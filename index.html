@@ -11,7 +11,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/localforage/1.10.0/localforage.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
-    <script src="https://accounts.google.com/gsi/client" async defer></script>
+
 
     <style>
         /* Base Animations & Utilities */
@@ -39,37 +39,79 @@
     <main class="flex-1 overflow-y-auto w-full max-w-2xl mx-auto">
         
         <!-- TAB 1: DASHBOARD -->
-        <div id="tab-dashboard" class="tab-content active p-4 space-y-6">
-            <!-- Hero Math Engine -->
-            <div class="text-center pt-6 pb-4">
-                <p class="text-slate-400 text-sm font-semibold uppercase tracking-widest mb-1">Safe to Spend</p>
-                <h1 id="hero-safe" class="text-6xl font-bold tracking-tight text-emerald-400">$0.00</h1>
+        <div id="tab-dashboard" class="tab-content active p-4 space-y-5">
+
+            <!-- ── ZONE 1: Header greeting ── -->
+            <div class="flex items-center justify-between pt-2">
+                <div>
+                    <p id="dash-greeting" class="text-slate-400 text-xs font-semibold uppercase tracking-widest">Good morning</p>
+                    <p id="dash-date" class="text-slate-600 text-xs mt-0.5"></p>
+                </div>
+                <div class="text-right">
+                    <p class="text-slate-500 text-[10px] uppercase tracking-widest mb-0.5">Monthly goal</p>
+                    <div class="flex items-center gap-2">
+                        <div class="w-24 h-1.5 bg-slate-800 rounded-full overflow-hidden">
+                            <div id="goal-bar" class="h-full bg-amber-400 rounded-full transition-all" style="width:0%"></div>
+                        </div>
+                        <span id="goal-pct" class="text-xs font-semibold text-amber-400">0%</span>
+                    </div>
+                </div>
             </div>
 
-            <div class="grid grid-cols-2 gap-4">
-                <div class="bg-slate-900 rounded-2xl p-4 border border-slate-800">
-                    <p class="text-slate-400 text-xs font-medium uppercase mb-1">Cash on Hand</p>
-                    <p id="hero-cash" class="text-2xl font-semibold">$0.00</p>
-                </div>
-                <div class="bg-slate-900 rounded-2xl p-4 border border-slate-800">
-                    <p class="text-slate-400 text-xs font-medium uppercase mb-1">Total Owed</p>
-                    <p id="hero-owed" class="text-2xl font-semibold">$0.00</p>
+            <!-- ── ZONE 1: Financial pulse ── -->
+            <div class="bg-slate-900 rounded-2xl p-4 border border-slate-800">
+                <p class="text-slate-400 text-xs font-semibold uppercase tracking-widest mb-1">Safe to Spend</p>
+                <h1 id="hero-safe" class="text-5xl font-bold tracking-tight text-emerald-400 mb-4">$0.00</h1>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <p class="text-slate-500 text-[10px] uppercase tracking-widest mb-0.5">Cash on Hand</p>
+                        <p id="hero-cash" class="text-xl font-semibold">$0.00</p>
+                    </div>
+                    <div>
+                        <p class="text-slate-500 text-[10px] uppercase tracking-widest mb-0.5">Total Owed</p>
+                        <p id="hero-owed" class="text-xl font-semibold text-rose-400">$0.00</p>
+                    </div>
                 </div>
             </div>
 
-            <!-- Action Required: Unpaid Bills -->
+            <!-- ── ZONE 2: Needs attention (hidden when clear) ── -->
             <div id="action-required-container" class="hidden">
-                <h2 class="text-sm font-semibold text-rose-400 uppercase tracking-wider mb-3 flex items-center gap-2">
-                    <i class="ph-fill ph-warning-circle text-lg"></i> Action Required
+                <h2 class="text-xs font-semibold text-rose-400 uppercase tracking-wider mb-2 flex items-center gap-2">
+                    <i class="ph-fill ph-warning-circle"></i> Needs Attention
                 </h2>
-                <div id="unpaid-bills-list" class="space-y-3"></div>
+                <div id="unpaid-bills-list" class="space-y-2"></div>
             </div>
 
-            <!-- Recent Ledger -->
+            <!-- ── ZONE 3: Quick add pills ── -->
             <div>
-                <h2 class="text-sm font-semibold text-slate-400 uppercase tracking-wider mb-3">Recent Ledger</h2>
+                <p class="text-slate-500 text-[10px] uppercase tracking-widest mb-2">Quick Add</p>
+                <div class="flex gap-2 flex-wrap">
+                    <button onclick="quickNav('Income')"  class="px-3 py-1.5 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 active:scale-95 transition">+ Income</button>
+                    <button onclick="quickNav('Spend')"   class="px-3 py-1.5 rounded-full text-xs font-semibold bg-rose-500/10    text-rose-400    border border-rose-500/20    active:scale-95 transition">+ Spend</button>
+                    <button onclick="quickNav('Bill')"    class="px-3 py-1.5 rounded-full text-xs font-semibold bg-blue-500/10    text-blue-400    border border-blue-500/20    active:scale-95 transition">+ Bill</button>
+                    <button onclick="quickNav('Project')" class="px-3 py-1.5 rounded-full text-xs font-semibold bg-violet-500/10  text-violet-400  border border-violet-500/20  active:scale-95 transition">+ Project</button>
+                </div>
+            </div>
+
+            <!-- ── ZONE 4: Today's focus — projects snapshot ── -->
+            <div id="dashboard-projects-container" class="hidden">
+                <div class="flex items-center justify-between mb-2">
+                    <h2 class="text-xs font-semibold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
+                        <i class="ph-fill ph-projector-screen-chart"></i> Active Projects
+                    </h2>
+                    <button class="nav-btn text-[10px] text-slate-500 hover:text-violet-400 transition-colors" data-target="tab-projects">
+                        View all <i class="ph ph-arrow-right text-[10px]"></i>
+                    </button>
+                </div>
+                <div id="dashboard-projects-list" class="space-y-2"></div>
+            </div>
+
+            <!-- ── ZONE 5: Recent ledger ── -->
+            <div>
+                <h2 class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Recent Ledger</h2>
                 <div id="recent-ledger" class="space-y-2"></div>
             </div>
+
         </div>
 
         <!-- TAB 2: LOG TRANSACTION -->
@@ -144,21 +186,50 @@
 
         <!-- TAB 3: SETUP & DATA -->
         <div id="tab-setup" class="tab-content p-4 space-y-8">
-            <h1 class="text-2xl font-bold mb-2">Setup & Sync</h1>
+            <h1 class="text-2xl font-bold mb-2">Setup & Data</h1>
 
-            <!-- Google Drive Section -->
+            <!-- ── Backup & Restore ── -->
             <div class="bg-slate-900 p-5 rounded-2xl border border-slate-800 space-y-4">
-                <div class="flex items-center gap-3 text-blue-400">
-                    <i class="ph ph-google-drive-logo text-3xl"></i>
-                    <h2 class="text-lg font-semibold">Cloud Sync</h2>
+                <div class="flex items-center justify-between">
+                    <h2 class="text-lg font-semibold flex items-center gap-2">
+                        <i class="ph-fill ph-shield-check text-emerald-400"></i> Backup & Restore
+                    </h2>
+                    <span id="last-backup-label" class="text-xs text-slate-500">Never backed up</span>
                 </div>
-                <p class="text-sm text-slate-400">Securely back up your ledger directly to your private Google Drive appData folder.</p>
+                <p class="text-xs text-slate-400">Save a full copy of all your data — transactions, projects, settings — to a file on your device. Import it anytime to restore or move to another device.</p>
                 <div class="grid grid-cols-2 gap-2">
-                    <button id="btn-gauth" class="col-span-2 bg-slate-800 py-3 rounded-lg font-medium hover:bg-slate-700 transition">Authenticate</button>
-                    <button id="btn-gbackup" class="bg-slate-800 py-3 rounded-lg font-medium hover:bg-slate-700 transition opacity-50 pointer-events-none">Force Backup</button>
-                    <button id="btn-grestore" class="bg-slate-800 py-3 rounded-lg font-medium hover:bg-slate-700 transition opacity-50 pointer-events-none">Restore Data</button>
+                    <button id="btn-backup-json" class="bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 py-3 rounded-xl font-medium flex items-center justify-center gap-2 hover:bg-emerald-500/20 active:scale-95 transition">
+                        <i class="ph-fill ph-download-simple"></i> Download Backup
+                    </button>
+                    <label class="bg-slate-800 text-slate-300 border border-slate-700 py-3 rounded-xl font-medium flex items-center justify-center gap-2 hover:bg-slate-700 active:scale-95 transition cursor-pointer">
+                        <i class="ph-fill ph-upload-simple"></i> Restore Backup
+                        <input type="file" id="input-restore-json" accept=".json" class="hidden">
+                    </label>
                 </div>
-                <p id="sync-status" class="text-xs text-center text-slate-500 mt-2">Not connected</p>
+                <div id="backup-warning" class="hidden bg-amber-500/10 border border-amber-500/20 rounded-lg px-3 py-2 text-xs text-amber-400 flex items-center gap-2">
+                    <i class="ph-fill ph-warning text-sm"></i>
+                    <span id="backup-warning-text"></span>
+                </div>
+            </div>
+
+            <!-- ── Monthly Summary Export ── -->
+            <div class="bg-slate-900 p-5 rounded-2xl border border-slate-800 space-y-4">
+                <h2 class="text-lg font-semibold flex items-center gap-2">
+                    <i class="ph-fill ph-chart-bar text-violet-400"></i> Monthly Summary
+                </h2>
+                <p class="text-xs text-slate-400">Generate a full report for any month — income, spending, bills, projects, and hours. Export as CSV for spreadsheets or save as a printable PDF.</p>
+                <div class="flex gap-2">
+                    <select id="summary-month" class="flex-1 bg-slate-950 border border-slate-800 rounded-xl py-2 px-3 text-sm focus:outline-none focus:border-slate-500"></select>
+                    <select id="summary-year"  class="w-24 bg-slate-950 border border-slate-800 rounded-xl py-2 px-3 text-sm focus:outline-none focus:border-slate-500"></select>
+                </div>
+                <div class="grid grid-cols-2 gap-2">
+                    <button id="btn-export-csv" class="bg-violet-500/10 text-violet-400 border border-violet-500/20 py-3 rounded-xl font-medium flex items-center justify-center gap-2 hover:bg-violet-500/20 active:scale-95 transition">
+                        <i class="ph-fill ph-file-csv"></i> Export CSV
+                    </button>
+                    <button id="btn-export-pdf" class="bg-slate-800 text-slate-300 border border-slate-700 py-3 rounded-xl font-medium flex items-center justify-center gap-2 hover:bg-slate-700 active:scale-95 transition">
+                        <i class="ph-fill ph-printer"></i> Print / PDF
+                    </button>
+                </div>
             </div>
 
             <!-- Smart Paste -->
@@ -187,6 +258,117 @@
             </div>
         </div>
 
+        <!-- TAB 4: PROJECT ALLOCATIONS -->
+        <div id="tab-projects" class="tab-content p-4 space-y-6">
+            <div class="flex items-center justify-between">
+                <h1 class="text-2xl font-bold">Project Allocations</h1>
+                <button id="btn-new-project" class="bg-slate-800 text-slate-200 text-sm font-medium px-4 py-2 rounded-xl flex items-center gap-2 hover:bg-slate-700 active:scale-95 transition">
+                    <i class="ph-fill ph-plus text-base"></i> New
+                </button>
+            </div>
+
+            <!-- Summary bar -->
+            <div class="grid grid-cols-3 gap-3">
+                <div class="bg-slate-900 rounded-2xl p-3 border border-slate-800 text-center">
+                    <p class="text-slate-500 text-[10px] uppercase tracking-widest mb-1">Total Planned</p>
+                    <p id="proj-total" class="text-lg font-bold text-violet-400">$0.00</p>
+                </div>
+                <div class="bg-slate-900 rounded-2xl p-3 border border-slate-800 text-center">
+                    <p class="text-slate-500 text-[10px] uppercase tracking-widest mb-1">In Progress</p>
+                    <p id="proj-inprogress-count" class="text-lg font-bold text-amber-400">0</p>
+                </div>
+                <div class="bg-slate-900 rounded-2xl p-3 border border-slate-800 text-center">
+                    <p class="text-slate-500 text-[10px] uppercase tracking-widest mb-1">Complete</p>
+                    <p id="proj-complete-count" class="text-lg font-bold text-emerald-400">0</p>
+                </div>
+            </div>
+
+            <!-- Project list -->
+            <div id="projects-list" class="space-y-3"></div>
+        </div>
+
+        <!-- Project Form Modal -->
+        <div id="project-modal" class="hidden fixed inset-0 z-50 flex items-end justify-center">
+            <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" id="project-modal-backdrop"></div>
+            <div class="relative bg-slate-900 border border-slate-800 rounded-t-3xl w-full max-w-2xl p-6 space-y-5 pb-10">
+                <div class="flex items-center justify-between mb-1">
+                    <h2 class="text-lg font-bold" id="project-modal-title">New Project</h2>
+                    <button id="btn-close-modal" class="text-slate-500 hover:text-slate-300 transition">
+                        <i class="ph-fill ph-x-circle text-2xl"></i>
+                    </button>
+                </div>
+
+                <div>
+                    <label class="block text-xs text-slate-400 mb-1">Project Name</label>
+                    <input type="text" id="proj-input-name" class="w-full bg-slate-950 border border-slate-800 rounded-xl py-3 px-4 focus:outline-none focus:border-slate-500 transition" placeholder="e.g. Website Redesign">
+                </div>
+
+                <div>
+                    <label class="block text-xs text-slate-400 mb-1">Target Amount</label>
+                    <div class="relative">
+                        <span class="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 text-xl">$</span>
+                        <input type="number" id="proj-input-amount" step="0.01" min="0" class="w-full bg-slate-950 border border-slate-800 rounded-xl py-3 pl-8 pr-4 text-xl focus:outline-none focus:border-slate-500 transition" placeholder="0.00">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs text-slate-400 mb-1">Target Date</label>
+                    <input type="date" id="proj-input-date" class="w-full bg-slate-950 border border-slate-800 rounded-xl py-3 px-4 focus:outline-none focus:border-slate-500 transition">
+                </div>
+
+                <div>
+                    <label class="block text-xs text-slate-400 mb-2">Status</label>
+                    <div class="grid grid-cols-3 gap-2 bg-slate-950 p-1 rounded-xl border border-slate-800">
+                        <label class="cursor-pointer">
+                            <input type="radio" name="proj-status" value="Planned" class="peer hidden" checked>
+                            <div class="text-center py-2 rounded-lg text-sm font-medium text-slate-400 peer-checked:bg-violet-500/20 peer-checked:text-violet-400 transition-colors">Planned</div>
+                        </label>
+                        <label class="cursor-pointer">
+                            <input type="radio" name="proj-status" value="In Progress" class="peer hidden">
+                            <div class="text-center py-2 rounded-lg text-sm font-medium text-slate-400 peer-checked:bg-amber-500/20 peer-checked:text-amber-400 transition-colors">In Progress</div>
+                        </label>
+                        <label class="cursor-pointer">
+                            <input type="radio" name="proj-status" value="Complete" class="peer hidden">
+                            <div class="text-center py-2 rounded-lg text-sm font-medium text-slate-400 peer-checked:bg-emerald-500/20 peer-checked:text-emerald-400 transition-colors">Complete</div>
+                        </label>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs text-slate-400 mb-1">Notes</label>
+                    <textarea id="proj-input-notes" rows="2" class="w-full bg-slate-950 border border-slate-800 rounded-xl py-3 px-4 focus:outline-none focus:border-slate-500 transition resize-none text-sm" placeholder="Any details, reminders, or context..."></textarea>
+                </div>
+
+                <!-- Reminder -->
+                <div class="bg-slate-950 border border-slate-800 rounded-xl p-4 space-y-4">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-2">
+                            <i class="ph-fill ph-bell text-amber-400 text-lg"></i>
+                            <span class="text-sm font-medium">Remind me</span>
+                        </div>
+                        <label class="relative inline-flex items-center cursor-pointer">
+                            <input type="checkbox" id="proj-input-remind" class="sr-only peer">
+                            <div class="w-11 h-6 bg-slate-700 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-amber-500"></div>
+                        </label>
+                    </div>
+                    <div id="remind-options" class="hidden space-y-3">
+                        <div>
+                            <label class="block text-xs text-slate-400 mb-1">Advance warning — days before target date</label>
+                            <input type="number" id="proj-input-remind-days" min="1" max="90" value="7" class="w-full bg-slate-900 border border-slate-800 rounded-xl py-3 px-4 focus:outline-none focus:border-slate-500 transition" placeholder="e.g. 7">
+                        </div>
+                        <p class="text-[11px] text-slate-500 flex items-start gap-1">
+                            <i class="ph ph-info text-sm flex-shrink-0 mt-0.5"></i>
+                            You'll get an alert <span id="remind-preview" class="text-amber-400 mx-1">7 days</span> before and again on the target date. Allow notifications when prompted.
+                        </p>
+                    </div>
+                </div>
+
+                <button id="btn-save-project" class="w-full bg-slate-100 text-slate-900 font-bold text-lg py-4 rounded-xl active:scale-[0.98] transition-transform">
+                    Save Project
+                </button>
+            </div>
+        </div>
+
     </main>
 
     <!-- Bottom Navigation -->
@@ -198,6 +380,10 @@
         <button class="nav-btn flex flex-col items-center gap-1 text-slate-500 hover:text-slate-300 w-16 transition-colors" data-target="tab-log">
             <i class="ph-fill ph-plus-circle text-2xl"></i>
             <span class="text-[10px] font-medium">Log</span>
+        </button>
+        <button class="nav-btn flex flex-col items-center gap-1 text-slate-500 hover:text-slate-300 w-16 transition-colors" data-target="tab-projects">
+            <i class="ph-fill ph-projector-screen-chart text-2xl"></i>
+            <span class="text-[10px] font-medium">Projects</span>
         </button>
         <button class="nav-btn flex flex-col items-center gap-1 text-slate-500 hover:text-slate-300 w-16 transition-colors" data-target="tab-setup">
             <i class="ph-fill ph-gear text-2xl"></i>
@@ -272,7 +458,6 @@
         async function saveData() {
             try {
                 await localforage.setItem('ts-transactions', transactions);
-                if(gToken) syncWithDrive(true); // Quiet background sync
             } catch (err) {
                 showToast("Failed to save data locally", "error");
             }
@@ -305,16 +490,118 @@
 
         function renderDashboard() {
             const stats = calculateFinances();
-            
+
+            // ── Zone 1: greeting & date ──
+            const now  = new Date();
+            const hour = now.getHours();
+            const greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
+            const dateStr  = now.toLocaleDateString('en-US', { weekday:'long', month:'long', day:'numeric' });
+            if ($('dash-greeting')) $('dash-greeting').textContent = greeting;
+            if ($('dash-date'))     $('dash-date').textContent     = dateStr;
+
+            // ── Zone 1: financial pulse ──
             $('hero-cash').textContent = fmtCur.format(stats.cashOnHand);
             $('hero-owed').textContent = fmtCur.format(stats.totalOwed);
-            
+
             const safeEl = $('hero-safe');
             safeEl.textContent = fmtCur.format(stats.safeToSpend);
-            safeEl.className = `text-6xl font-bold tracking-tight ${stats.safeToSpend >= 0 ? 'text-emerald-400' : 'text-rose-500'}`;
+            safeEl.className = `text-5xl font-bold tracking-tight mb-4 ${stats.safeToSpend >= 0 ? 'text-emerald-400' : 'text-rose-500'}`;
+
+            // ── Zone 1: monthly goal bar ──
+            // Goal = total income this calendar month vs simple target
+            // Uses a stored goal amount; defaults to showing % of income vs spend
+            const monthIncome = transactions
+                .filter(t => t.type === 'Income' && new Date(t.date).getMonth() === now.getMonth() && new Date(t.date).getFullYear() === now.getFullYear())
+                .reduce((s, t) => s + parseFloat(t.amount||0), 0);
+            const monthSpend = transactions
+                .filter(t => (t.type === 'Spend' || (t.type === 'Bill' && t.isPaid)) && new Date(t.date||t.dueDate).getMonth() === now.getMonth())
+                .reduce((s, t) => s + parseFloat(t.amount||0), 0);
+            const goalPct = monthIncome > 0 ? Math.min(100, Math.round((monthIncome - monthSpend) / monthIncome * 100)) : 0;
+            if ($('goal-bar')) $('goal-bar').style.width = goalPct + '%';
+            if ($('goal-pct')) $('goal-pct').textContent = goalPct + '%';
 
             renderUnpaidBills();
+            renderDashboardProjects();
             renderLedger();
+        }
+
+        // Quick add pills — navigate to Log tab pre-selecting type
+        function quickNav(type) {
+            if (type === 'Project') {
+                navigateTo('tab-projects');
+                setTimeout(() => $('btn-new-project') && $('btn-new-project').click(), 150);
+                return;
+            }
+            navigateTo('tab-log');
+            setTimeout(() => {
+                const radio = document.querySelector(`input[name="type"][value="${type}"]`);
+                if (radio) { radio.checked = true; radio.dispatchEvent(new Event('change')); }
+            }, 100);
+        }
+
+        function renderDashboardProjects() {
+            const container = $('dashboard-projects-container');
+            const list      = $('dashboard-projects-list');
+            list.innerHTML  = '';
+
+            // Only show active (non-complete) projects, sorted by target date
+            const active = projects
+                .filter(p => p.status !== 'Complete')
+                .sort((a, b) => new Date(a.targetDate || '9999') - new Date(b.targetDate || '9999'));
+
+            if (active.length === 0) {
+                container.classList.add('hidden');
+                return;
+            }
+
+            container.classList.remove('hidden');
+
+            const today = new Date(); today.setHours(0,0,0,0);
+
+            active.forEach(p => {
+                const amt = parseFloat(p.amount) || 0;
+
+                const statusConfig = {
+                    'Planned':     { bg: 'bg-violet-500/15', text: 'text-violet-400', dot: 'bg-violet-400' },
+                    'In Progress': { bg: 'bg-amber-500/15',  text: 'text-amber-400',  dot: 'bg-amber-400'  },
+                };
+                const sc = statusConfig[p.status] || statusConfig['Planned'];
+
+                let dateHtml = '';
+                if (p.targetDate) {
+                    const d = new Date(p.targetDate);
+                    d.setMinutes(d.getMinutes() + d.getTimezoneOffset());
+                    d.setHours(0,0,0,0);
+                    const diff = Math.ceil((d - today) / (1000*60*60*24));
+                    let dateColor = 'text-slate-500';
+                    let dateLabel = p.targetDate;
+                    if (diff < 0)       { dateColor = 'text-rose-400';  dateLabel = `Overdue ${Math.abs(diff)}d`; }
+                    else if (diff === 0){ dateColor = 'text-rose-400';  dateLabel = 'Due Today'; }
+                    else if (diff <= 7) { dateColor = 'text-amber-400'; dateLabel = `${diff}d away`; }
+                    dateHtml = `<span class="text-[10px] ${dateColor}">${dateLabel}</span>`;
+                }
+
+                list.innerHTML += `
+                    <div class="flex items-center justify-between bg-slate-900/50 border border-slate-800/50 p-3 rounded-xl">
+                        <div class="flex items-center gap-3 min-w-0">
+                            <div class="p-2 bg-slate-800 rounded-lg flex-shrink-0">
+                                <i class="ph-fill ph-projector-screen-chart ${sc.text} text-base"></i>
+                            </div>
+                            <div class="min-w-0">
+                                <p class="font-medium text-sm text-slate-200 truncate">${p.name}</p>
+                                <div class="flex items-center gap-2 mt-0.5 flex-wrap">
+                                    <span class="${sc.bg} ${sc.text} text-[10px] font-semibold px-1.5 py-0.5 rounded-full flex items-center gap-1">
+                                        <span class="w-1 h-1 rounded-full ${sc.dot} inline-block"></span>${p.status}
+                                    </span>
+                                    ${dateHtml}
+                                    ${p.remind ? `<span class="text-[10px] text-amber-400 flex items-center gap-0.5"><i class="ph-fill ph-bell text-[10px]"></i>${p.remindDays || 7}d</span>` : ''}
+                                </div>
+                            </div>
+                        </div>
+                        <span class="text-sm font-bold text-violet-400 flex-shrink-0 ml-2">${amt > 0 ? fmtCur.format(amt) : '—'}</span>
+                    </div>
+                `;
+            });
         }
 
         function renderUnpaidBills() {
@@ -748,99 +1035,624 @@
             }
         });
 
-        // --- Google Drive Sync Logic ---
-        let tokenClient;
-        let gToken = null;
-
+        // Load data on startup
         window.onload = function () {
-            // Load Local Data
             loadData();
-
-            // Init Google GSI Client
-            // TODO: REPLACE client_id WITH YOUR OWN GOOGLE CLOUD CREDENTIALS
-            try {
-                tokenClient = google.accounts.oauth2.initTokenClient({
-                    client_id: 'YOUR_GOOGLE_CLIENT_ID', 
-                    scope: 'https://www.googleapis.com/auth/drive.appdata',
-                    callback: (tokenResponse) => {
-                        gToken = tokenResponse.access_token;
-                        $('sync-status').textContent = "Connected securely to Google Drive.";
-                        $('btn-gauth').classList.add('hidden');
-                        $('btn-gbackup').classList.remove('opacity-50', 'pointer-events-none');
-                        $('btn-grestore').classList.remove('opacity-50', 'pointer-events-none');
-                        showToast("Google Auth Successful", "success");
-                    },
-                });
-            } catch(e) { console.error("GSI script missing or blocked."); }
         };
 
-        $('btn-gauth').addEventListener('click', () => {
-            if (tokenClient) tokenClient.requestAccessToken({prompt: 'consent'});
-        });
+        // ═══════════════════════════════════════════════
+        //  PROJECT ALLOCATIONS — completely separate from
+        //  transactions. Never affects the math engine.
+        // ═══════════════════════════════════════════════
+        let projects = [];
+        let editingProjectId = null;
 
-        async function getDriveFileId() {
-            if(!gToken) return null;
-            const res = await fetch('https://www.googleapis.com/drive/v3/files?spaces=appDataFolder&q=name="tight-ship-ledger.json"', {
-                headers: { Authorization: `Bearer ${gToken}` }
+        // Load projects from localforage
+        async function loadProjects() {
+            try {
+                const stored = await localforage.getItem('ts-projects');
+                projects = stored || [];
+                renderProjects();
+                renderDashboardProjects();
+            } catch(e) {}
+        }
+
+        async function saveProjects() {
+            try {
+                await localforage.setItem('ts-projects', projects);
+            } catch(e) {
+                showToast("Failed to save projects.", "error");
+            }
+        }
+
+        // Render the project list + summary bar
+        function renderProjects() {
+            const list = $('projects-list');
+            list.innerHTML = '';
+
+            let total = 0;
+            let inProgressCount = 0;
+            let completeCount = 0;
+
+            if (projects.length === 0) {
+                list.innerHTML = `<p class="text-slate-500 text-sm italic text-center py-8">No projects yet. Tap <strong>New</strong> to plan ahead.</p>`;
+            }
+
+            // Sort: Planned → In Progress → Complete, then by date
+            const sorted = [...projects].sort((a, b) => {
+                const order = { 'Planned': 0, 'In Progress': 1, 'Complete': 2 };
+                if (order[a.status] !== order[b.status]) return order[a.status] - order[b.status];
+                return new Date(a.targetDate || '9999') - new Date(b.targetDate || '9999');
             });
-            const data = await res.json();
-            return data.files && data.files.length > 0 ? data.files[0].id : null;
+
+            sorted.forEach(p => {
+                const amt = parseFloat(p.amount) || 0;
+                if (p.status !== 'Complete') total += amt;
+                if (p.status === 'In Progress') inProgressCount++;
+                if (p.status === 'Complete') completeCount++;
+
+                // Status badge colours
+                const statusConfig = {
+                    'Planned':     { bg: 'bg-violet-500/15', text: 'text-violet-400', dot: 'bg-violet-400' },
+                    'In Progress': { bg: 'bg-amber-500/15',  text: 'text-amber-400',  dot: 'bg-amber-400'  },
+                    'Complete':    { bg: 'bg-emerald-500/15',text: 'text-emerald-400',dot: 'bg-emerald-400' },
+                };
+                const sc = statusConfig[p.status] || statusConfig['Planned'];
+
+                // Date display
+                let dateHtml = '';
+                if (p.targetDate) {
+                    const d = new Date(p.targetDate);
+                    d.setMinutes(d.getMinutes() + d.getTimezoneOffset());
+                    const today = new Date(); today.setHours(0,0,0,0);
+                    const diff = Math.ceil((d - today) / (1000*60*60*24));
+                    let dateColor = 'text-slate-500';
+                    let dateLabel = `Target: ${p.targetDate}`;
+                    if (p.status !== 'Complete') {
+                        if (diff < 0)      { dateColor = 'text-rose-400'; dateLabel = `Overdue ${Math.abs(diff)}d`; }
+                        else if (diff <= 7){ dateColor = 'text-amber-400'; dateLabel = `${diff}d away`; }
+                    }
+                    dateHtml = `<span class="${dateColor}">${dateLabel}</span>`;
+                }
+
+                list.innerHTML += `
+                    <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 space-y-3 ${p.status === 'Complete' ? 'opacity-60' : ''}">
+                        <div class="flex items-start justify-between gap-3">
+                            <div class="flex-1 min-w-0">
+                                <div class="flex items-center gap-2 flex-wrap">
+                                    <span class="font-semibold text-slate-100 truncate">${p.name}</span>
+                                    <span class="${sc.bg} ${sc.text} text-[10px] font-semibold px-2 py-0.5 rounded-full flex items-center gap-1">
+                                        <span class="w-1.5 h-1.5 rounded-full ${sc.dot} inline-block"></span>${p.status}
+                                    </span>
+                                    ${p.remind ? `<span class="text-amber-400 text-[10px] flex items-center gap-0.5"><i class="ph-fill ph-bell"></i>${p.remindDays || 7}d</span>` : ''}
+                                </div>
+                                <div class="flex items-center gap-3 mt-1 text-[11px] flex-wrap">
+                                    ${dateHtml}
+                                </div>
+                            </div>
+                            <div class="text-right flex-shrink-0">
+                                <p class="text-lg font-bold text-violet-400">${fmtCur.format(amt)}</p>
+                            </div>
+                        </div>
+                        ${p.notes ? `<p class="text-xs text-slate-400 bg-slate-800/60 rounded-lg px-3 py-2 leading-relaxed">${p.notes}</p>` : ''}
+                        <div class="flex gap-2 pt-1">
+                            <button onclick="editProject('${p.id}')" class="flex-1 bg-slate-800 text-slate-300 text-xs font-medium py-2 rounded-lg flex items-center justify-center gap-1 hover:bg-slate-700 active:scale-95 transition">
+                                <i class="ph-fill ph-pencil-simple"></i> Edit
+                            </button>
+                            <button onclick="deleteProject('${p.id}')" class="bg-rose-500/10 text-rose-400 text-xs font-medium py-2 px-4 rounded-lg flex items-center justify-center gap-1 hover:bg-rose-500/20 active:scale-95 transition">
+                                <i class="ph-fill ph-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+                `;
+            });
+
+            $('proj-total').textContent = fmtCur.format(total);
+            $('proj-inprogress-count').textContent = inProgressCount;
+            $('proj-complete-count').textContent = completeCount;
         }
 
-        async function syncWithDrive(isQuiet = false) {
-            if (!gToken) return;
-            try {
-                if(!isQuiet) showToast("Syncing with cloud...");
-                
-                const fileId = await getDriveFileId();
-                const metadata = { name: 'tight-ship-ledger.json', parents: ['appDataFolder'] };
-                const fileContent = JSON.stringify(transactions);
-                
-                const form = new FormData();
-                form.append('metadata', new Blob([JSON.stringify(metadata)], { type: 'application/json' }));
-                form.append('file', new Blob([fileContent], { type: 'application/json' }));
+        // Open modal for new project
+        $('btn-new-project').addEventListener('click', () => {
+            editingProjectId = null;
+            $('project-modal-title').textContent = 'New Project';
+            $('proj-input-name').value = '';
+            $('proj-input-amount').value = '';
+            $('proj-input-date').value = '';
+            $('proj-input-notes').value = '';
+            $('proj-input-remind').checked = false;
+            $('proj-input-remind-days').value = 7;
+            $('remind-options').classList.add('hidden');
+            $('remind-preview').textContent = '7 days';
+            document.querySelector('input[name="proj-status"][value="Planned"]').checked = true;
+            openProjectModal();
+        });
 
-                const url = fileId 
-                    ? `https://www.googleapis.com/upload/drive/v3/files/${fileId}?uploadType=multipart` 
-                    : 'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart';
-                const method = fileId ? 'PATCH' : 'POST';
+        function editProject(id) {
+            const p = projects.find(x => x.id === id);
+            if (!p) return;
+            editingProjectId = id;
+            $('project-modal-title').textContent = 'Edit Project';
+            $('proj-input-name').value = p.name;
+            $('proj-input-amount').value = p.amount || '';
+            $('proj-input-date').value = p.targetDate || '';
+            $('proj-input-notes').value = p.notes || '';
+            $('proj-input-remind').checked = p.remind || false;
+            $('proj-input-remind-days').value = p.remindDays || 7;
+            $('remind-options').classList.toggle('hidden', !p.remind);
+            $('remind-preview').textContent = `${p.remindDays || 7} days`;
+            const statusRadio = document.querySelector(`input[name="proj-status"][value="${p.status}"]`);
+            if (statusRadio) statusRadio.checked = true;
+            openProjectModal();
+        }
 
-                await fetch(url, {
-                    method: method,
-                    headers: { Authorization: `Bearer ${gToken}` },
-                    body: form
+        function deleteProject(id) {
+            if (!confirm("Remove this project?")) return;
+            projects = projects.filter(p => p.id !== id);
+            saveProjects().then(() => renderProjects());
+            showToast("Project removed.");
+        }
+
+        function openProjectModal() {
+            $('project-modal').classList.remove('hidden');
+            requestAnimationFrame(() => $('proj-input-name').focus());
+        }
+
+        function closeProjectModal() {
+            $('project-modal').classList.add('hidden');
+        }
+
+        // Show/hide reminder options when toggle changes
+        $('proj-input-remind').addEventListener('change', function() {
+            $('remind-options').classList.toggle('hidden', !this.checked);
+            if (this.checked) requestNotificationPermission();
+        });
+
+        // Live preview of days
+        $('proj-input-remind-days').addEventListener('input', function() {
+            $('remind-preview').textContent = `${this.value || 1} day${this.value == 1 ? '' : 's'}`;
+        });
+
+        $('btn-close-modal').addEventListener('click', closeProjectModal);
+        $('project-modal-backdrop').addEventListener('click', closeProjectModal);
+
+        $('btn-save-project').addEventListener('click', () => {
+            const name       = $('proj-input-name').value.trim();
+            const amount     = parseFloat($('proj-input-amount').value) || 0;
+            const date       = $('proj-input-date').value;
+            const notes      = $('proj-input-notes').value.trim();
+            const status     = document.querySelector('input[name="proj-status"]:checked').value;
+            const remind     = $('proj-input-remind').checked;
+            const remindDays = parseInt($('proj-input-remind-days').value) || 7;
+
+            if (!name) {
+                showToast("Project name is required.", "error");
+                return;
+            }
+            if (remind && !date) {
+                showToast("A target date is required to set a reminder.", "error");
+                return;
+            }
+
+            const projectData = { name, amount, targetDate: date, notes, status, remind, remindDays };
+
+            if (editingProjectId) {
+                const idx = projects.findIndex(p => p.id === editingProjectId);
+                if (idx > -1) {
+                    projects[idx] = { ...projects[idx], ...projectData };
+                    showToast("Project updated.", "success");
+                }
+            } else {
+                projects.push({
+                    id: crypto.randomUUID(),
+                    ...projectData,
+                    createdAt: new Date().toISOString()
                 });
+                showToast("Project saved.", "success");
+            }
 
-                if(!isQuiet) showToast("Backup complete.", "success");
-            } catch (err) {
-                if(!isQuiet) showToast("Cloud sync failed.", "error");
+            saveProjects().then(() => {
+                renderProjects();
+                closeProjectModal();
+            });
+        });
+
+        // ── NOTIFICATION SYSTEM ──────────────────────────────
+
+        async function requestNotificationPermission() {
+            if (!('Notification' in window)) {
+                showToast("Your browser doesn't support notifications.", "error");
+                return false;
+            }
+            if (Notification.permission === 'granted') return true;
+            if (Notification.permission === 'denied') {
+                showToast("Notifications are blocked. Enable them in your browser settings.", "error");
+                return false;
+            }
+            const result = await Notification.requestPermission();
+            if (result === 'granted') {
+                showToast("Notifications enabled.", "success");
+                return true;
+            } else {
+                showToast("Notifications permission denied.", "error");
+                return false;
             }
         }
 
-        $('btn-gbackup').addEventListener('click', () => syncWithDrive(false));
+        function fireNotification(title, body) {
+            if (Notification.permission !== 'granted') return;
+            new Notification(title, {
+                body,
+                icon: './icon-192.png',
+                badge: './icon-192.png',
+                tag: `tight-ship-${title}`,  // prevents duplicates
+            });
+        }
 
-        $('btn-grestore').addEventListener('click', async () => {
-            if(!gToken) return;
-            try {
-                showToast("Looking for cloud backup...");
-                const fileId = await getDriveFileId();
-                if (!fileId) return showToast("No cloud backup found.", "error");
+        function checkProjectReminders() {
+            if (!('Notification' in window) || Notification.permission !== 'granted') return;
 
-                const res = await fetch(`https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`, {
-                    headers: { Authorization: `Bearer ${gToken}` }
-                });
-                const cloudData = await res.json();
-                
-                if (Array.isArray(cloudData)) {
-                    transactions = cloudData;
-                    await localforage.setItem('ts-transactions', transactions);
-                    renderDashboard();
-                    showToast("Data restored from cloud.", "success");
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+
+            projects.forEach(p => {
+                if (!p.remind || !p.targetDate || p.status === 'Complete') return;
+
+                const target = new Date(p.targetDate);
+                target.setMinutes(target.getMinutes() + target.getTimezoneOffset());
+                target.setHours(0, 0, 0, 0);
+
+                const diffDays = Math.round((target - today) / (1000 * 60 * 60 * 24));
+                const remindDays = p.remindDays || 7;
+
+                // On the day
+                if (diffDays === 0) {
+                    fireNotification(
+                        `📅 Today: ${p.name}`,
+                        `Your project "${p.name}" is due today${p.amount ? ` — ${fmtCur.format(p.amount)} allocated` : ''}.`
+                    );
                 }
-            } catch (err) {
-                showToast("Failed to restore data.", "error");
+                // Advance warning
+                else if (diffDays === remindDays) {
+                    fireNotification(
+                        `⏰ Upcoming: ${p.name}`,
+                        `"${p.name}" is due in ${remindDays} day${remindDays === 1 ? '' : 's'}${p.amount ? ` — ${fmtCur.format(p.amount)} allocated` : ''}.`
+                    );
+                }
+            });
+        }
+
+        // In-app alert banner for reminders (shown on app open)
+        function checkInAppReminders() {
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+
+            const alerts = [];
+
+            projects.forEach(p => {
+                if (!p.remind || !p.targetDate || p.status === 'Complete') return;
+
+                const target = new Date(p.targetDate);
+                target.setMinutes(target.getMinutes() + target.getTimezoneOffset());
+                target.setHours(0, 0, 0, 0);
+
+                const diffDays = Math.round((target - today) / (1000 * 60 * 60 * 24));
+                const remindDays = p.remindDays || 7;
+
+                if (diffDays === 0) {
+                    alerts.push({ label: `Due Today`, name: p.name, color: 'rose' });
+                } else if (diffDays > 0 && diffDays <= remindDays) {
+                    alerts.push({ label: `${diffDays}d away`, name: p.name, color: diffDays <= 3 ? 'amber' : 'violet' });
+                } else if (diffDays < 0) {
+                    alerts.push({ label: `Overdue ${Math.abs(diffDays)}d`, name: p.name, color: 'rose' });
+                }
+            });
+
+            if (alerts.length === 0) return;
+
+            // Show one toast per alert, staggered
+            alerts.forEach((alert, i) => {
+                setTimeout(() => {
+                    showToast(`${alert.label}: ${alert.name}`, alert.color === 'rose' ? 'error' : 'info');
+                }, i * 800);
+            });
+        }
+
+        // Render projects when tab is opened
+        document.querySelectorAll('.nav-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                if (btn.dataset.target === 'tab-projects') renderProjects();
+            });
+        });
+
+        // Also show reminder badge on project cards
+        // (update renderProjects to show bell icon if remind is on)
+        const _origRenderProjects = renderProjects;
+
+        // Load projects on startup + run reminder checks
+        loadProjects().then(() => {
+            checkProjectReminders();   // browser notifications
+            checkInAppReminders();     // in-app toasts
+        });
+
+        // ═══════════════════════════════════════════════
+        //  BACKUP & RESTORE
+        // ═══════════════════════════════════════════════
+
+        // Track last backup time
+        async function updateBackupLabel() {
+            const ts = await localforage.getItem('ts-last-backup');
+            const label = $('last-backup-label');
+            const warning = $('backup-warning');
+            const warnText = $('backup-warning-text');
+            if (!ts) {
+                label.textContent = 'Never backed up';
+                label.className = 'text-xs text-rose-400 font-medium';
+                warning.classList.remove('hidden');
+                warnText.textContent = 'No backup found. Download one now to protect your data.';
+                return;
+            }
+            const d = new Date(ts);
+            const daysSince = Math.floor((Date.now() - d) / (1000 * 60 * 60 * 24));
+            const dateStr = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+            label.textContent = `Last backup: ${dateStr}`;
+            if (daysSince > 30) {
+                label.className = 'text-xs text-amber-400 font-medium';
+                warning.classList.remove('hidden');
+                warnText.textContent = `It's been ${daysSince} days since your last backup. Consider downloading a fresh copy.`;
+            } else {
+                label.className = 'text-xs text-emerald-400';
+                warning.classList.add('hidden');
+            }
+        }
+
+        // Download full JSON backup
+        $('btn-backup-json').addEventListener('click', async () => {
+            try {
+                const payload = {
+                    version: 1,
+                    exportedAt: new Date().toISOString(),
+                    transactions,
+                    projects,
+                };
+                const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+                const url  = URL.createObjectURL(blob);
+                const a    = document.createElement('a');
+                const date = new Date().toISOString().split('T')[0];
+                a.href = url;
+                a.download = `tight-ship-backup-${date}.json`;
+                a.click();
+                URL.revokeObjectURL(url);
+
+                await localforage.setItem('ts-last-backup', new Date().toISOString());
+                updateBackupLabel();
+                showToast('Backup downloaded.', 'success');
+            } catch(e) {
+                showToast('Backup failed.', 'error');
             }
         });
+
+        // Restore from JSON backup file
+        $('input-restore-json').addEventListener('change', async (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = async (ev) => {
+                try {
+                    const data = JSON.parse(ev.target.result);
+                    if (!confirm('This will replace ALL current data with the backup. Are you sure?')) return;
+
+                    if (Array.isArray(data)) {
+                        // Legacy format: plain transactions array
+                        transactions = data;
+                    } else if (data.transactions) {
+                        transactions = data.transactions || [];
+                        projects     = data.projects     || [];
+                    } else {
+                        showToast('Unrecognised backup format.', 'error');
+                        return;
+                    }
+
+                    await localforage.setItem('ts-transactions', transactions);
+                    await localforage.setItem('ts-projects', projects);
+                    await localforage.setItem('ts-last-backup', new Date().toISOString());
+
+                    renderDashboard();
+                    renderProjects();
+                    updateBackupLabel();
+                    showToast('Data restored successfully.', 'success');
+                } catch(err) {
+                    showToast('Could not read backup file.', 'error');
+                }
+            };
+            reader.readAsText(file);
+            e.target.value = ''; // reset input
+        });
+
+        // ═══════════════════════════════════════════════
+        //  MONTHLY SUMMARY
+        // ═══════════════════════════════════════════════
+
+        // Populate month/year selectors
+        function initSummarySelectors() {
+            const monthSel = $('summary-month');
+            const yearSel  = $('summary-year');
+            const months   = ['January','February','March','April','May','June',
+                              'July','August','September','October','November','December'];
+            const now = new Date();
+
+            months.forEach((m, i) => {
+                const opt = document.createElement('option');
+                opt.value = i;
+                opt.textContent = m;
+                if (i === now.getMonth()) opt.selected = true;
+                monthSel.appendChild(opt);
+            });
+
+            for (let y = now.getFullYear(); y >= now.getFullYear() - 3; y--) {
+                const opt = document.createElement('option');
+                opt.value = y;
+                opt.textContent = y;
+                if (y === now.getFullYear()) opt.selected = true;
+                yearSel.appendChild(opt);
+            }
+        }
+
+        // Compute the summary data for a given month/year
+        function computeMonthlySummary(month, year) {
+            const inMonth = (dateStr) => {
+                if (!dateStr) return false;
+                const d = new Date(dateStr);
+                return d.getMonth() === month && d.getFullYear() === year;
+            };
+
+            let totalIncome = 0, totalSpend = 0, billsPaid = 0, billsOwed = 0;
+            const incomeRows = [], spendRows = [], billRows = [];
+
+            transactions.forEach(t => {
+                const amt = parseFloat(t.amount) || 0;
+                const date = t.type === 'Bill' ? (t.isPaid ? t.date : t.dueDate) : t.date;
+                if (!inMonth(date)) return;
+
+                if (t.type === 'Income') { totalIncome += amt; incomeRows.push(t); }
+                if (t.type === 'Spend')  { totalSpend  += amt; spendRows.push(t); }
+                if (t.type === 'Bill') {
+                    if (t.isPaid) { billsPaid += amt; }
+                    else          { billsOwed += amt; }
+                    billRows.push(t);
+                }
+            });
+
+            const monthProjects = projects.filter(p => {
+                if (!p.targetDate) return false;
+                const d = new Date(p.targetDate);
+                return d.getMonth() === month && d.getFullYear() === year;
+            });
+
+            return {
+                totalIncome, totalSpend, billsPaid, billsOwed,
+                net: totalIncome - totalSpend - billsPaid,
+                incomeRows, spendRows, billRows, monthProjects
+            };
+        }
+
+        // Export CSV
+        $('btn-export-csv').addEventListener('click', () => {
+            const month = parseInt($('summary-month').value);
+            const year  = parseInt($('summary-year').value);
+            const s = computeMonthlySummary(month, year);
+            const mName = ['January','February','March','April','May','June',
+                           'July','August','September','October','November','December'][month];
+
+            const rows = [
+                ['Tight Ship — Monthly Summary'],
+                [`${mName} ${year}`],
+                [],
+                ['SUMMARY'],
+                ['Total Income',  fmtCur.format(s.totalIncome)],
+                ['Total Spend',   fmtCur.format(s.totalSpend)],
+                ['Bills Paid',    fmtCur.format(s.billsPaid)],
+                ['Bills Owed',    fmtCur.format(s.billsOwed)],
+                ['Net',           fmtCur.format(s.net)],
+                [],
+                ['INCOME', 'Date', 'Amount'],
+                ...s.incomeRows.map(t => [t.description, t.date, fmtCur.format(t.amount)]),
+                [],
+                ['SPENDING', 'Date', 'Amount'],
+                ...s.spendRows.map(t => [t.description, t.date, fmtCur.format(t.amount)]),
+                [],
+                ['BILLS', 'Due Date', 'Amount', 'Status'],
+                ...s.billRows.map(t => [t.description, t.dueDate || t.date, fmtCur.format(t.amount), t.isPaid ? 'Paid' : 'Unpaid']),
+                [],
+                ['PROJECTS DUE THIS MONTH', 'Status', 'Amount'],
+                ...s.monthProjects.map(p => [p.name, p.status, p.amount ? fmtCur.format(p.amount) : '—']),
+            ];
+
+            const csv = rows.map(r => r.map(c => `"${String(c).replace(/"/g,'""')}"`).join(',')).join('\n');
+            const blob = new Blob([csv], { type: 'text/csv' });
+            const url  = URL.createObjectURL(blob);
+            const a    = document.createElement('a');
+            a.href = url;
+            a.download = `tight-ship-${mName.toLowerCase()}-${year}.csv`;
+            a.click();
+            URL.revokeObjectURL(url);
+            showToast(`${mName} ${year} exported as CSV.`, 'success');
+        });
+
+        // Print / PDF
+        $('btn-export-pdf').addEventListener('click', () => {
+            const month = parseInt($('summary-month').value);
+            const year  = parseInt($('summary-year').value);
+            const s = computeMonthlySummary(month, year);
+            const mName = ['January','February','March','April','May','June',
+                           'July','August','September','October','November','December'][month];
+
+            const tableRows = (headers, rows) => `
+                <table>
+                    <thead><tr>${headers.map(h => `<th>${h}</th>`).join('')}</tr></thead>
+                    <tbody>${rows.length ? rows.map(r => `<tr>${r.map(c => `<td>${c}</td>`).join('')}</tr>`).join('') : `<tr><td colspan="${headers.length}" style="color:#888;font-style:italic;">No entries</td></tr>`}</tbody>
+                </table>`;
+
+            const html = `<!DOCTYPE html>
+<html><head><meta charset="UTF-8">
+<title>Tight Ship — ${mName} ${year}</title>
+<style>
+  body { font-family: -apple-system, sans-serif; color: #111; max-width: 800px; margin: 40px auto; padding: 0 20px; }
+  h1 { font-size: 22px; margin: 0 0 4px; } 
+  .sub { color: #666; font-size: 13px; margin-bottom: 28px; }
+  .summary-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 32px; }
+  .stat { background: #f5f5f5; border-radius: 8px; padding: 12px 16px; }
+  .stat-label { font-size: 10px; text-transform: uppercase; letter-spacing: .08em; color: #888; margin-bottom: 4px; }
+  .stat-val { font-size: 20px; font-weight: 600; }
+  .green { color: #16a34a; } .red { color: #dc2626; } .blue { color: #2563eb; }
+  h2 { font-size: 13px; text-transform: uppercase; letter-spacing: .08em; color: #555; border-bottom: 1px solid #ddd; padding-bottom: 6px; margin: 24px 0 10px; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th { text-align: left; padding: 6px 8px; background: #f5f5f5; border-bottom: 1px solid #ddd; font-weight: 500; }
+  td { padding: 6px 8px; border-bottom: 1px solid #f0f0f0; }
+  .footer { margin-top: 40px; font-size: 11px; color: #aaa; text-align: center; }
+  @media print { body { margin: 0; } }
+</style>
+</head><body>
+<h1>Monthly Summary</h1>
+<div class="sub">${mName} ${year} &nbsp;·&nbsp; Generated ${new Date().toLocaleDateString()}</div>
+<div class="summary-grid">
+  <div class="stat"><div class="stat-label">Income</div><div class="stat-val green">${fmtCur.format(s.totalIncome)}</div></div>
+  <div class="stat"><div class="stat-label">Spend + Bills</div><div class="stat-val red">${fmtCur.format(s.totalSpend + s.billsPaid)}</div></div>
+  <div class="stat"><div class="stat-label">Net</div><div class="stat-val ${s.net >= 0 ? 'green' : 'red'}">${fmtCur.format(s.net)}</div></div>
+  <div class="stat"><div class="stat-label">Bills Owed</div><div class="stat-val red">${fmtCur.format(s.billsOwed)}</div></div>
+  <div class="stat"><div class="stat-label">Projects</div><div class="stat-val blue">${s.monthProjects.length}</div></div>
+</div>
+<h2>Income</h2>
+${tableRows(['Description','Date','Amount'], s.incomeRows.map(t => [t.description, t.date, fmtCur.format(t.amount)]))}
+<h2>Spending</h2>
+${tableRows(['Description','Date','Amount'], s.spendRows.map(t => [t.description, t.date, fmtCur.format(t.amount)]))}
+<h2>Bills</h2>
+${tableRows(['Description','Due Date','Amount','Status'], s.billRows.map(t => [t.description, t.dueDate||t.date, fmtCur.format(t.amount), t.isPaid?'Paid':'Unpaid']))}
+<h2>Projects due this month</h2>
+${tableRows(['Project','Status','Allocated'], s.monthProjects.map(p => [p.name, p.status, p.amount ? fmtCur.format(p.amount) : '—']))}
+<div class="footer">Tight Ship command centre</div>
+</body></html>`;
+
+            const win = window.open('', '_blank');
+            if (win) {
+                win.document.write(html);
+                win.document.close();
+                win.onload = () => win.print();
+            } else {
+                showToast('Please allow pop-ups to print.', 'error');
+            }
+        });
+
+        // Show backup warning when setup tab opens
+        document.querySelectorAll('.nav-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                if (btn.dataset.target === 'tab-setup') updateBackupLabel();
+            });
+        });
+
+        // Run on startup
+        initSummarySelectors();
+        updateBackupLabel();
 
     </script>
 </body>
