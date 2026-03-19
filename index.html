@@ -63,29 +63,48 @@
                     <p id="dash-greeting" class="text-slate-400 text-xs font-semibold uppercase tracking-widest">Good morning</p>
                     <p id="dash-date" class="text-slate-600 text-xs mt-0.5"></p>
                 </div>
-                <div class="text-right">
-                    <p class="text-slate-500 text-[10px] uppercase tracking-widest mb-0.5">Monthly goal</p>
-                    <div class="flex items-center gap-2">
-                        <div class="w-24 h-1.5 bg-slate-800 rounded-full overflow-hidden">
-                            <div id="goal-bar" class="h-full bg-amber-400 rounded-full transition-all" style="width:0%"></div>
-                        </div>
-                        <span id="goal-pct" class="text-xs font-semibold text-amber-400">0%</span>
-                    </div>
-                </div>
             </div>
 
-            <!-- ── ZONE 1: Financial pulse ── -->
-            <div class="bg-slate-900 rounded-2xl p-4 border border-slate-800">
-                <p class="text-slate-400 text-xs font-semibold uppercase tracking-widest mb-1">Safe to Spend</p>
-                <h1 id="hero-safe" class="text-5xl font-bold tracking-tight text-emerald-400 mb-4">$0.00</h1>
-                <div class="grid grid-cols-2 gap-3">
+            <!-- ── ZONE 1: Financial pulse (compact) ── -->
+            <div class="bg-slate-900 rounded-2xl border border-slate-800 overflow-hidden">
+                <!-- Always-visible summary row -->
+                <div class="flex items-center justify-between px-4 py-3">
                     <div>
-                        <p class="text-slate-500 text-[10px] uppercase tracking-widest mb-0.5">Cash on Hand</p>
-                        <p id="hero-cash" class="text-xl font-semibold">$0.00</p>
+                        <p class="text-slate-500 text-[10px] uppercase tracking-widest mb-0.5">Safe to Spend</p>
+                        <h1 id="hero-safe" class="text-2xl font-bold tracking-tight text-emerald-400 leading-none">$0.00</h1>
                     </div>
-                    <div>
-                        <p class="text-slate-500 text-[10px] uppercase tracking-widest mb-0.5">Total Owed</p>
-                        <p id="hero-owed" class="text-xl font-semibold text-rose-400">$0.00</p>
+                    <div class="flex gap-4 text-right">
+                        <div>
+                            <p class="text-slate-500 text-[10px] uppercase tracking-widest mb-0.5">Cash</p>
+                            <p id="hero-cash" class="text-sm font-semibold">$0.00</p>
+                        </div>
+                        <div>
+                            <p class="text-slate-500 text-[10px] uppercase tracking-widest mb-0.5">Owed</p>
+                            <p id="hero-owed" class="text-sm font-semibold text-rose-400">$0.00</p>
+                        </div>
+                        <button onclick="toggleFinance()" class="text-slate-600 hover:text-slate-400 transition pl-1">
+                            <i id="finance-chevron" class="ph-fill ph-caret-down text-sm transition-transform duration-200"></i>
+                        </button>
+                    </div>
+                </div>
+                <!-- Expandable detail -->
+                <div id="finance-body" class="hidden border-t border-slate-800 px-4 py-3 grid grid-cols-2 gap-3">
+                    <div class="bg-slate-800/50 rounded-xl p-3">
+                        <p class="text-slate-500 text-[10px] uppercase tracking-widest mb-1">Monthly Income</p>
+                        <p id="hero-month-income" class="text-base font-semibold text-emerald-400">$0.00</p>
+                    </div>
+                    <div class="bg-slate-800/50 rounded-xl p-3">
+                        <p class="text-slate-500 text-[10px] uppercase tracking-widest mb-1">Monthly Spend</p>
+                        <p id="hero-month-spend" class="text-base font-semibold text-rose-400">$0.00</p>
+                    </div>
+                    <div class="col-span-2">
+                        <p class="text-slate-500 text-[10px] uppercase tracking-widest mb-1">Monthly health</p>
+                        <div class="flex items-center gap-3">
+                            <div class="flex-1 h-1.5 bg-slate-700 rounded-full overflow-hidden">
+                                <div id="goal-bar" class="h-full bg-amber-400 rounded-full transition-all" style="width:0%"></div>
+                            </div>
+                            <span id="goal-pct" class="text-xs font-semibold text-amber-400 w-8 text-right">0%</span>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -109,17 +128,24 @@
                 </div>
             </div>
 
-            <!-- ── ZONE 4: Today's focus — projects snapshot ── -->
-            <div id="dashboard-projects-container" class="hidden">
-                <div class="flex items-center justify-between mb-2">
-                    <h2 class="text-xs font-semibold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
-                        <i class="ph-fill ph-projector-screen-chart"></i> Active Projects
-                    </h2>
-                    <button class="nav-btn text-[10px] text-slate-500 hover:text-violet-400 transition-colors" data-target="tab-projects">
-                        View all <i class="ph ph-arrow-right text-[10px]"></i>
-                    </button>
+            <!-- ── ZONE 4: Active projects (collapsible) ── -->
+            <div id="dashboard-projects-container" class="hidden bg-slate-900 rounded-2xl border border-slate-800 overflow-hidden">
+                <button onclick="toggleDashProjects()" class="w-full flex items-center justify-between px-4 py-3 active:bg-slate-800 transition-colors">
+                    <div class="flex items-center gap-2">
+                        <i class="ph-fill ph-projector-screen-chart text-violet-400 text-sm"></i>
+                        <h2 class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Active Projects</h2>
+                        <span id="dash-proj-count" class="text-[10px] font-semibold bg-slate-800 text-violet-400 px-2 py-0.5 rounded-full"></span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <button class="nav-btn text-[10px] text-slate-500 hover:text-violet-400 transition-colors" data-target="tab-projects">
+                            All <i class="ph ph-arrow-right text-[10px]"></i>
+                        </button>
+                        <i id="dash-proj-chevron" class="ph-fill ph-caret-down text-slate-500 text-sm transition-transform duration-200"></i>
+                    </div>
+                </button>
+                <div id="dashboard-projects-body" class="hidden px-4 pb-4">
+                    <div id="dashboard-projects-list" class="space-y-2"></div>
                 </div>
-                <div id="dashboard-projects-list" class="space-y-2"></div>
             </div>
 
             <!-- ── ZONE 5: Recent ledger (collapsible) ── -->
@@ -500,6 +526,23 @@
             chevron.style.transform = open ? 'rotate(0deg)' : 'rotate(180deg)';
         }
 
+        function toggleFinance() {
+            const body    = $('finance-body');
+            const chevron = $('finance-chevron');
+            const open    = !body.classList.contains('hidden');
+            body.classList.toggle('hidden', open);
+            chevron.style.transform = open ? 'rotate(0deg)' : 'rotate(180deg)';
+        }
+
+        function toggleDashProjects() {
+            const body    = $('dashboard-projects-body');
+            const chevron = $('dash-proj-chevron');
+            if (!body) return;
+            const open = !body.classList.contains('hidden');
+            body.classList.toggle('hidden', open);
+            chevron.style.transform = open ? 'rotate(0deg)' : 'rotate(180deg)';
+        }
+
         // ── FAB: context-aware action ────────────────────────
         // Home tab   → opens speed-dial menu
         // Log tab    → FAB is hidden
@@ -717,6 +760,8 @@
             const goalPct = monthIncome > 0 ? Math.min(100, Math.round((monthIncome - monthSpend) / monthIncome * 100)) : 0;
             if ($('goal-bar')) $('goal-bar').style.width = goalPct + '%';
             if ($('goal-pct')) $('goal-pct').textContent = goalPct + '%';
+            if ($('hero-month-income')) $('hero-month-income').textContent = fmtCur.format(monthIncome);
+            if ($('hero-month-spend'))  $('hero-month-spend').textContent  = fmtCur.format(monthSpend);
 
             renderUnpaidBills();
             renderDashboardProjects();
@@ -755,6 +800,10 @@
             container.classList.remove('hidden');
 
             const today = new Date(); today.setHours(0,0,0,0);
+
+            // Update count badge
+            const countEl = $('dash-proj-count');
+            if (countEl) countEl.textContent = active.length;
 
             active.forEach(p => {
                 const amt = parseFloat(p.amount) || 0;
