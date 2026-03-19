@@ -314,7 +314,7 @@
         <!-- Project Form Modal -->
         <div id="project-modal" class="hidden fixed inset-0 z-50 flex items-end justify-center">
             <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" id="project-modal-backdrop"></div>
-            <div class="relative bg-slate-900 border border-slate-800 rounded-t-3xl w-full max-w-2xl p-6 space-y-5 pb-10">
+            <div class="relative bg-slate-900 border border-slate-800 rounded-t-3xl w-full max-w-2xl p-6 space-y-5 pb-safe overflow-y-auto max-h-[90vh]" style="padding-bottom: max(1.5rem, env(safe-area-inset-bottom))">
                 <div class="flex items-center justify-between mb-1">
                     <h2 class="text-lg font-bold" id="project-modal-title">New Project</h2>
                     <button id="btn-close-modal" class="text-slate-500 hover:text-slate-300 transition">
@@ -387,7 +387,8 @@
                     </div>
                 </div>
 
-                <button id="btn-save-project" class="w-full bg-slate-100 text-slate-900 font-bold text-lg py-4 rounded-xl active:scale-[0.98] transition-transform">
+                <button id="btn-save-project" class="w-full bg-emerald-500 hover:bg-emerald-400 text-white font-bold text-lg py-4 rounded-xl active:scale-[0.98] transition-all flex items-center justify-center gap-2">
+                    <i class="ph-fill ph-check-circle text-xl"></i>
                     Save Project
                 </button>
             </div>
