@@ -5,6 +5,15 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Tight Ship</title>
     <link rel="manifest" href="./manifest.json">
+
+    <!-- PWA / Home screen meta tags -->
+    <meta name="theme-color" content="#0f172a">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Tight Ship">
+    <link rel="apple-touch-icon" href="./icon-192.png">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="description" content="Personal command centre — finances, projects, time">
     
     <!-- Dependencies -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -113,10 +122,18 @@
                 <div id="dashboard-projects-list" class="space-y-2"></div>
             </div>
 
-            <!-- ── ZONE 5: Recent ledger ── -->
-            <div>
-                <h2 class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Recent Ledger</h2>
-                <div id="recent-ledger" class="space-y-2"></div>
+            <!-- ── ZONE 5: Recent ledger (collapsible) ── -->
+            <div class="bg-slate-900 rounded-2xl border border-slate-800 overflow-hidden">
+                <button id="ledger-toggle" onclick="toggleLedger()" class="w-full flex items-center justify-between px-4 py-3 active:bg-slate-800 transition-colors">
+                    <div class="flex items-center gap-2">
+                        <h2 class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Recent Ledger</h2>
+                        <span id="ledger-count" class="text-[10px] font-semibold bg-slate-800 text-slate-400 px-2 py-0.5 rounded-full"></span>
+                    </div>
+                    <i id="ledger-chevron" class="ph-bold ph-caret-down text-slate-500 text-sm transition-transform duration-200"></i>
+                </button>
+                <div id="ledger-body" class="hidden px-4 pb-4">
+                    <div id="recent-ledger" class="space-y-2"></div>
+                </div>
             </div>
 
         </div>
@@ -379,10 +396,43 @@
     </main>
 
     <!-- Bottom Navigation -->
-    <!-- Floating Action Button — Log Entry -->
-    <button id="fab-log" onclick="navigateTo('tab-log')" class="fixed bottom-24 right-4 z-40 w-14 h-14 bg-emerald-500 rounded-full shadow-lg shadow-emerald-500/30 flex items-center justify-center active:scale-95 transition-transform max-w-none">
-        <i class="ph-bold ph-plus text-white text-2xl"></i>
+    <!-- Floating Action Button — context-aware -->
+    <button id="fab-log" onclick="fabAction()" class="fixed bottom-24 right-4 z-40 w-14 h-14 bg-emerald-500 rounded-full flex items-center justify-center active:scale-95 transition-all duration-200 max-w-none" style="box-shadow:0 4px 20px rgba(16,185,129,0.45);">
+        <svg id="fab-icon" xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 256 256" fill="white">
+            <path d="M224,128a8,8,0,0,1-8,8H136v80a8,8,0,0,1-16,0V136H40a8,8,0,0,1,0-16h80V40a8,8,0,0,1,16,0v80h80A8,8,0,0,1,224,128Z"/>
+        </svg>
     </button>
+
+    <!-- FAB speed-dial menu (home tab only) -->
+    <div id="fab-menu" class="hidden fixed bottom-40 right-4 z-40 flex flex-col items-end gap-3">
+        <div class="fab-item flex items-center gap-3 cursor-pointer" onclick="fabMenuPick('Project')">
+            <span class="text-sm font-semibold text-white bg-slate-700 border border-slate-600 px-4 py-2 rounded-full whitespace-nowrap" style="box-shadow:0 2px 12px rgba(0,0,0,0.5);">New project</span>
+            <div class="w-11 h-11 rounded-full bg-violet-500 flex items-center justify-center flex-shrink-0" style="box-shadow:0 4px 14px rgba(139,92,246,0.5);">
+                <i class="ph-fill ph-projector-screen-chart text-white text-lg"></i>
+            </div>
+        </div>
+        <div class="fab-item flex items-center gap-3 cursor-pointer" onclick="fabMenuPick('Bill')">
+            <span class="text-sm font-semibold text-white bg-slate-700 border border-slate-600 px-4 py-2 rounded-full whitespace-nowrap" style="box-shadow:0 2px 12px rgba(0,0,0,0.5);">Log bill</span>
+            <div class="w-11 h-11 rounded-full bg-blue-500 flex items-center justify-center flex-shrink-0" style="box-shadow:0 4px 14px rgba(59,130,246,0.5);">
+                <i class="ph-fill ph-receipt text-white text-lg"></i>
+            </div>
+        </div>
+        <div class="fab-item flex items-center gap-3 cursor-pointer" onclick="fabMenuPick('Spend')">
+            <span class="text-sm font-semibold text-white bg-slate-700 border border-slate-600 px-4 py-2 rounded-full whitespace-nowrap" style="box-shadow:0 2px 12px rgba(0,0,0,0.5);">Log spend</span>
+            <div class="w-11 h-11 rounded-full bg-rose-500 flex items-center justify-center flex-shrink-0" style="box-shadow:0 4px 14px rgba(239,68,68,0.5);">
+                <i class="ph-fill ph-shopping-cart text-white text-lg"></i>
+            </div>
+        </div>
+        <div class="fab-item flex items-center gap-3 cursor-pointer" onclick="fabMenuPick('Income')">
+            <span class="text-sm font-semibold text-white bg-slate-700 border border-slate-600 px-4 py-2 rounded-full whitespace-nowrap" style="box-shadow:0 2px 12px rgba(0,0,0,0.5);">Log income</span>
+            <div class="w-11 h-11 rounded-full bg-emerald-500 flex items-center justify-center flex-shrink-0" style="box-shadow:0 4px 14px rgba(16,185,129,0.5);">
+                <i class="ph-fill ph-trend-up text-white text-lg"></i>
+            </div>
+        </div>
+    </div>
+
+    <!-- FAB backdrop (closes menu on outside tap) -->
+    <div id="fab-backdrop" class="hidden fixed inset-0 z-30 bg-slate-950/40 backdrop-blur-sm" onclick="closeFabMenu()"></div>
 
     <!-- Bottom Navigation -->
     <nav id="main-nav" class="fixed bottom-0 w-full max-w-2xl mx-auto bg-slate-950/95 backdrop-blur-md border-t border-slate-800/60 z-50">
@@ -441,6 +491,82 @@
             setTimeout(() => toast.remove(), 3000);
         }
 
+        function toggleLedger() {
+            const body    = $('ledger-body');
+            const chevron = $('ledger-chevron');
+            const open    = !body.classList.contains('hidden');
+            body.classList.toggle('hidden', open);
+            chevron.style.transform = open ? 'rotate(0deg)' : 'rotate(180deg)';
+        }
+
+        // ── FAB: context-aware action ────────────────────────
+        // Home tab   → opens speed-dial menu
+        // Log tab    → FAB is hidden
+        // Projects   → opens new project modal directly
+        // Setup      → FAB is hidden (nothing to "add" here)
+
+        let fabMenuOpen = false;
+
+        function fabAction() {
+            const activeTab = document.querySelector('.tab-content.active')?.id;
+            if (activeTab === 'tab-dashboard') {
+                fabMenuOpen ? closeFabMenu() : openFabMenu();
+            } else if (activeTab === 'tab-projects') {
+                $('btn-new-project') && $('btn-new-project').click();
+            }
+        }
+
+        // SVG paths for plus and X icons
+        const ICON_PLUS = '<path d="M224,128a8,8,0,0,1-8,8H136v80a8,8,0,0,1-16,0V136H40a8,8,0,0,1,0-16h80V40a8,8,0,0,1,16,0v80h80A8,8,0,0,1,224,128Z"/>';
+        const ICON_X    = '<path d="M205.66,194.34a8,8,0,0,1-11.32,11.32L128,139.31,61.66,205.66a8,8,0,0,1-11.32-11.32L116.69,128,50.34,61.66A8,8,0,0,1,61.66,50.34L128,116.69l66.34-66.35a8,8,0,0,1,11.32,11.32L139.31,128Z"/>';
+
+        function openFabMenu() {
+            fabMenuOpen = true;
+            $('fab-menu').classList.remove('hidden');
+            $('fab-backdrop').classList.remove('hidden');
+            $('fab-icon').innerHTML = ICON_X;
+            $('fab-log').style.background = '#334155';
+            $('fab-log').style.boxShadow  = 'none';
+        }
+
+        function closeFabMenu() {
+            fabMenuOpen = false;
+            $('fab-menu').classList.add('hidden');
+            $('fab-backdrop').classList.add('hidden');
+            $('fab-icon').innerHTML = ICON_PLUS;
+            $('fab-log').style.background = '';
+            $('fab-log').style.boxShadow  = '';
+        }
+
+        function fabMenuPick(type) {
+            closeFabMenu();
+            quickNav(type);
+        }
+
+        // Update FAB appearance when switching tabs
+        function updateFab(tabId) {
+            const fab = $('fab-log');
+            const icon = $('fab-icon');
+            if (!fab) return;
+            closeFabMenu();
+
+            if (tabId === 'tab-log' || tabId === 'tab-setup') {
+                // Hide FAB on Log and Setup — nothing useful to add
+                fab.classList.add('hidden');
+            } else if (tabId === 'tab-projects') {
+                // Projects — FAB opens new project
+                fab.classList.remove('hidden');
+                fab.classList.replace('bg-slate-700', 'bg-emerald-500');
+                fab.classList.replace('bg-violet-500', 'bg-emerald-500');
+                icon.className = 'ph-bold ph-plus text-white text-2xl';
+            } else {
+                // Home — FAB opens speed dial
+                fab.classList.remove('hidden');
+                fab.classList.replace('bg-slate-700', 'bg-emerald-500');
+                icon.className = 'ph-bold ph-plus text-white text-2xl';
+            }
+        }
+
         // --- Navigation ---
         const tabOrder = ['tab-dashboard','tab-log','tab-projects','tab-setup'];
 
@@ -469,6 +595,7 @@
             // Show/hide FAB — hide on Log tab (already on that page)
             const fab = $('fab-log');
             if (fab) fab.classList.toggle('hidden', targetId === 'tab-log');
+            updateFab(targetId);
 
             // Lifecycle hooks
             if (targetId !== 'tab-log') clearLogForm();
@@ -733,11 +860,14 @@
             const list = $('recent-ledger');
             list.innerHTML = '';
             
-            // Sort by created or date descending, grab top 20
             const recent = [...transactions].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)).slice(0, 20);
+
+            // Update count badge on the toggle header
+            const countEl = $('ledger-count');
+            if (countEl) countEl.textContent = recent.length > 0 ? recent.length : '';
             
             if (recent.length === 0) {
-                list.innerHTML = `<p class="text-slate-500 text-sm italic">No transactions yet.</p>`;
+                list.innerHTML = `<p class="text-slate-500 text-sm italic pt-1">No transactions yet.</p>`;
                 return;
             }
 
