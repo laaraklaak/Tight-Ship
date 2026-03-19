@@ -25,12 +25,19 @@
         .toast { padding: 1rem; border-radius: 0.5rem; display: flex; align-items: center; gap: 0.5rem; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.5); font-weight: 500; animation: slideIn 0.3s ease, fadeOut 0.3s ease 2.7s forwards; pointer-events: auto; }
         @keyframes slideIn { from { transform: translateY(-100%); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
         @keyframes fadeOut { from { opacity: 1; } to { opacity: 0; } }
-        
+
+        /* FAB pulse ring */
+        #fab-log { box-shadow: 0 0 0 0 rgba(52,211,153,0.4); animation: fab-pulse 3s ease-out infinite; }
+        @keyframes fab-pulse { 0%,100%{ box-shadow: 0 0 0 0 rgba(52,211,153,0.4); } 50%{ box-shadow: 0 0 0 10px rgba(52,211,153,0); } }
+
+        /* Nav active pill background */
+        .nav-btn.text-emerald-400 { background: rgba(52,211,153,0.08); border-radius: 10px; }
+
         /* Hide Scrollbar */
         ::-webkit-scrollbar { display: none; }
     </style>
 </head>
-<body class="antialiased h-screen flex flex-col overflow-hidden pb-16">
+<body class="antialiased h-screen flex flex-col overflow-hidden pb-24">
 
     <!-- Toast Container -->
     <div id="toast-container"></div>
@@ -372,23 +379,41 @@
     </main>
 
     <!-- Bottom Navigation -->
-    <nav class="fixed bottom-0 w-full max-w-2xl mx-auto bg-slate-950/90 backdrop-blur-md border-t border-slate-900 flex justify-around p-3 pb-6 z-50">
-        <button class="nav-btn flex flex-col items-center gap-1 text-emerald-400 w-16" data-target="tab-dashboard">
-            <i class="ph-fill ph-squares-four text-2xl"></i>
-            <span class="text-[10px] font-medium">Home</span>
-        </button>
-        <button class="nav-btn flex flex-col items-center gap-1 text-slate-500 hover:text-slate-300 w-16 transition-colors" data-target="tab-log">
-            <i class="ph-fill ph-plus-circle text-2xl"></i>
-            <span class="text-[10px] font-medium">Log</span>
-        </button>
-        <button class="nav-btn flex flex-col items-center gap-1 text-slate-500 hover:text-slate-300 w-16 transition-colors" data-target="tab-projects">
-            <i class="ph-fill ph-projector-screen-chart text-2xl"></i>
-            <span class="text-[10px] font-medium">Projects</span>
-        </button>
-        <button class="nav-btn flex flex-col items-center gap-1 text-slate-500 hover:text-slate-300 w-16 transition-colors" data-target="tab-setup">
-            <i class="ph-fill ph-gear text-2xl"></i>
-            <span class="text-[10px] font-medium">Setup</span>
-        </button>
+    <!-- Floating Action Button — Log Entry -->
+    <button id="fab-log" onclick="navigateTo('tab-log')" class="fixed bottom-24 right-4 z-40 w-14 h-14 bg-emerald-500 rounded-full shadow-lg shadow-emerald-500/30 flex items-center justify-center active:scale-95 transition-transform max-w-none">
+        <i class="ph-bold ph-plus text-white text-2xl"></i>
+    </button>
+
+    <!-- Bottom Navigation -->
+    <nav id="main-nav" class="fixed bottom-0 w-full max-w-2xl mx-auto bg-slate-950/95 backdrop-blur-md border-t border-slate-800/60 z-50">
+
+        <!-- Active tab sliding indicator -->
+        <div class="relative flex justify-around items-center px-2 pt-2 pb-1">
+            <div id="nav-indicator" class="absolute top-0 h-0.5 bg-emerald-400 rounded-full transition-all duration-300" style="width:20%;left:0%"></div>
+
+            <button class="nav-btn flex flex-col items-center gap-1 py-2 px-3 rounded-xl transition-colors text-emerald-400" data-target="tab-dashboard" data-index="0">
+                <i class="ph-fill ph-squares-four text-xl"></i>
+                <span class="text-[9px] font-semibold tracking-wide">Home</span>
+            </button>
+
+            <button class="nav-btn flex flex-col items-center gap-1 py-2 px-3 rounded-xl transition-colors text-slate-500" data-target="tab-log" data-index="1">
+                <i class="ph-fill ph-plus-circle text-xl"></i>
+                <span class="text-[9px] font-semibold tracking-wide">Log</span>
+            </button>
+
+            <button class="nav-btn flex flex-col items-center gap-1 py-2 px-3 rounded-xl transition-colors text-slate-500" data-target="tab-projects" data-index="2">
+                <i class="ph-fill ph-projector-screen-chart text-xl"></i>
+                <span class="text-[9px] font-semibold tracking-wide">Projects</span>
+            </button>
+
+            <button class="nav-btn flex flex-col items-center gap-1 py-2 px-3 rounded-xl transition-colors text-slate-500" data-target="tab-setup" data-index="3">
+                <i class="ph-fill ph-sliders text-xl"></i>
+                <span class="text-[9px] font-semibold tracking-wide">Setup</span>
+            </button>
+        </div>
+
+        <!-- Safe area spacer for phones -->
+        <div class="h-safe-area-inset-bottom pb-4"></div>
     </nav>
 
     <!-- Vanilla Javascript Logic -->
@@ -417,32 +442,77 @@
         }
 
         // --- Navigation ---
-        document.querySelectorAll('.nav-btn').forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                // Update tabs
-                document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
-                $(btn.dataset.target).classList.add('active');
-                
-                // Update Nav Icons
-                document.querySelectorAll('.nav-btn').forEach(b => {
-                    b.classList.remove('text-emerald-400');
-                    b.classList.add('text-slate-500');
-                });
-                btn.classList.add('text-emerald-400');
-                btn.classList.remove('text-slate-500');
+        const tabOrder = ['tab-dashboard','tab-log','tab-projects','tab-setup'];
 
-                // Clear form if leaving Log tab
-                if(btn.dataset.target !== 'tab-log') clearLogForm();
-                
-                // Render dashboard if going there
-                if(btn.dataset.target === 'tab-dashboard') renderDashboard();
+        function setActiveTab(targetId) {
+            // Update tab content
+            document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+            const tabEl = $(targetId);
+            if (tabEl) tabEl.classList.add('active');
+
+            // Update nav buttons
+            document.querySelectorAll('.nav-btn').forEach(b => {
+                const isActive = b.dataset.target === targetId;
+                b.classList.toggle('text-emerald-400', isActive);
+                b.classList.toggle('text-slate-500',   !isActive);
             });
+
+            // Slide the indicator to the active tab
+            const idx = tabOrder.indexOf(targetId);
+            const indicator = $('nav-indicator');
+            if (indicator && idx >= 0) {
+                const pct = (idx / tabOrder.length) * 100;
+                indicator.style.left  = pct + '%';
+                indicator.style.width = (100 / tabOrder.length) + '%';
+            }
+
+            // Show/hide FAB — hide on Log tab (already on that page)
+            const fab = $('fab-log');
+            if (fab) fab.classList.toggle('hidden', targetId === 'tab-log');
+
+            // Lifecycle hooks
+            if (targetId !== 'tab-log') clearLogForm();
+            if (targetId === 'tab-dashboard') renderDashboard();
+            if (targetId === 'tab-projects')  renderProjects();
+            if (targetId === 'tab-setup') {
+                updateBackupLabel && updateBackupLabel();
+            }
+        }
+
+        document.querySelectorAll('.nav-btn').forEach(btn => {
+            btn.addEventListener('click', () => setActiveTab(btn.dataset.target));
         });
 
         function navigateTo(tabId) {
-            const targetBtn = document.querySelector(`.nav-btn[data-target="${tabId}"]`);
-            if (targetBtn) targetBtn.click();
+            setActiveTab(tabId);
         }
+
+        // ── Swipe gesture navigation ──
+        let touchStartX = 0;
+        let touchStartY = 0;
+
+        document.addEventListener('touchstart', e => {
+            touchStartX = e.touches[0].clientX;
+            touchStartY = e.touches[0].clientY;
+        }, { passive: true });
+
+        document.addEventListener('touchend', e => {
+            const dx = e.changedTouches[0].clientX - touchStartX;
+            const dy = e.changedTouches[0].clientY - touchStartY;
+
+            // Only treat as horizontal swipe if mostly horizontal & long enough
+            if (Math.abs(dx) < 60 || Math.abs(dy) > Math.abs(dx) * 0.6) return;
+
+            const currentId  = document.querySelector('.tab-content.active')?.id;
+            const currentIdx = tabOrder.indexOf(currentId);
+            if (currentIdx < 0) return;
+
+            if (dx < 0 && currentIdx < tabOrder.length - 1) {
+                setActiveTab(tabOrder[currentIdx + 1]); // swipe left → next tab
+            } else if (dx > 0 && currentIdx > 0) {
+                setActiveTab(tabOrder[currentIdx - 1]); // swipe right → prev tab
+            }
+        }, { passive: true });
 
         // --- Data Persistence ---
         async function loadData() {
