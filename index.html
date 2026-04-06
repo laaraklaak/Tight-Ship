@@ -36,8 +36,12 @@
         
         <!-- TAB 1: DASHBOARD -->
         <section id="tab-dashboard" class="tab-content active p-4 space-y-6">
-            <header class="pt-4 pb-2">
-                <h1 class="text-xl font-bold text-slate-500 tracking-wide uppercase text-center mb-1">Tight Ship</h1>
+            <header class="pt-4 pb-2 flex items-center justify-between">
+                <div class="w-8"></div>
+                <h1 class="text-xl font-bold text-slate-500 tracking-wide uppercase text-center">Tight Ship</h1>
+                <button onclick="openGuide()" class="w-8 h-8 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center text-slate-400 hover:text-slate-200 transition-all" title="How to use">
+                    <i class="ph-bold ph-question text-base"></i>
+                </button>
             </header>
 
             <!-- Available Balance (Income - Spend only, bills never deducted until paid) -->
@@ -275,6 +279,164 @@
         </section>
     </main>
 
+
+    <!-- How to Use Guide Modal -->
+    <div id="guideOverlay" class="fixed inset-0 z-[110] bg-slate-950/90 backdrop-blur-sm hidden items-end justify-center p-0">
+        <div class="bg-slate-900 border border-slate-700 rounded-t-3xl w-full max-w-lg shadow-2xl" style="animation: slideInUp 0.35s cubic-bezier(0.16,1,0.3,1) forwards;">
+            <!-- Header -->
+            <div class="flex items-center justify-between px-6 pt-5 pb-3 border-b border-slate-800">
+                <p class="text-xs font-bold text-slate-500 uppercase tracking-wider" id="guideStepLabel">Step 1 of 5</p>
+                <button onclick="closeGuide()" class="w-8 h-8 rounded-full bg-slate-800 flex items-center justify-center text-slate-400 hover:text-slate-200 transition-colors">
+                    <i class="ph-bold ph-x text-sm"></i>
+                </button>
+            </div>
+
+            <!-- Slides -->
+            <div id="guideSlides" class="overflow-hidden">
+
+                <!-- Slide 1 -->
+                <div class="guide-slide px-6 py-6">
+                    <div class="w-14 h-14 rounded-2xl bg-emerald-900/30 border border-emerald-800/50 flex items-center justify-center mb-4">
+                        <i class="ph-fill ph-boat text-3xl text-emerald-400"></i>
+                    </div>
+                    <h2 class="text-2xl font-bold text-slate-100 mb-2">Welcome to Tight Ship</h2>
+                    <p class="text-slate-400 text-sm leading-relaxed">Your simple personal finance tracker. Log what comes in, what goes out, and what's still owed — and always know exactly where you stand.</p>
+                    <div class="mt-5 bg-slate-800 rounded-2xl p-4 border border-slate-700 space-y-2">
+                        <div class="flex items-center gap-3">
+                            <i class="ph-fill ph-trend-up text-emerald-400 text-lg shrink-0"></i>
+                            <p class="text-sm text-slate-300"><span class="font-bold text-slate-100">Income</span> — money received</p>
+                        </div>
+                        <div class="flex items-center gap-3">
+                            <i class="ph-fill ph-shopping-cart text-rose-400 text-lg shrink-0"></i>
+                            <p class="text-sm text-slate-300"><span class="font-bold text-slate-100">Spend</span> — money spent</p>
+                        </div>
+                        <div class="flex items-center gap-3">
+                            <i class="ph-fill ph-file-text text-blue-400 text-lg shrink-0"></i>
+                            <p class="text-sm text-slate-300"><span class="font-bold text-slate-100">Bill</span> — recurring or upcoming payments</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Slide 2 -->
+                <div class="guide-slide px-6 py-6 hidden">
+                    <div class="w-14 h-14 rounded-2xl bg-blue-900/30 border border-blue-800/50 flex items-center justify-center mb-4">
+                        <i class="ph-fill ph-squares-four text-3xl text-blue-400"></i>
+                    </div>
+                    <h2 class="text-2xl font-bold text-slate-100 mb-2">Your Dashboard</h2>
+                    <p class="text-slate-400 text-sm leading-relaxed mb-4">At a glance, the dashboard shows three things:</p>
+                    <div class="space-y-3">
+                        <div class="bg-slate-800 rounded-xl p-3 border border-slate-700 flex gap-3 items-start">
+                            <div class="w-8 h-8 rounded-full bg-emerald-900/40 flex items-center justify-center shrink-0 mt-0.5">
+                                <i class="ph-fill ph-currency-dollar text-emerald-400 text-base"></i>
+                            </div>
+                            <div>
+                                <p class="font-bold text-slate-100 text-sm">Available Balance</p>
+                                <p class="text-xs text-slate-400 mt-0.5">Income minus all actual spend and paid bills. This is what you have right now.</p>
+                            </div>
+                        </div>
+                        <div class="bg-slate-800 rounded-xl p-3 border border-slate-700 flex gap-3 items-start">
+                            <div class="w-8 h-8 rounded-full bg-slate-700 flex items-center justify-center shrink-0 mt-0.5">
+                                <i class="ph-fill ph-arrows-left-right text-slate-300 text-base"></i>
+                            </div>
+                            <div>
+                                <p class="font-bold text-slate-100 text-sm">Income & Spend totals</p>
+                                <p class="text-xs text-slate-400 mt-0.5">Side-by-side so you can see the flow at a glance.</p>
+                            </div>
+                        </div>
+                        <div class="bg-slate-800 rounded-xl p-3 border border-slate-700 flex gap-3 items-start">
+                            <div class="w-8 h-8 rounded-full bg-amber-900/40 flex items-center justify-center shrink-0 mt-0.5">
+                                <i class="ph-fill ph-clock text-amber-400 text-base"></i>
+                            </div>
+                            <div>
+                                <p class="font-bold text-slate-100 text-sm">Unpaid Bills</p>
+                                <p class="text-xs text-slate-400 mt-0.5">Money you still owe. Does not affect your balance until you mark it paid.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Slide 3 -->
+                <div class="guide-slide px-6 py-6 hidden">
+                    <div class="w-14 h-14 rounded-2xl bg-rose-900/30 border border-rose-800/50 flex items-center justify-center mb-4">
+                        <i class="ph-fill ph-plus-circle text-3xl text-rose-400"></i>
+                    </div>
+                    <h2 class="text-2xl font-bold text-slate-100 mb-2">Logging a Transaction</h2>
+                    <p class="text-slate-400 text-sm leading-relaxed mb-4">Tap <span class="font-bold text-slate-300">Log</span> in the nav bar. Choose a type, fill in the amount and details, then save.</p>
+                    <div class="space-y-3">
+                        <div class="bg-slate-800 rounded-xl p-3 border-l-4 border-emerald-600 border-y border-r border-slate-700">
+                            <p class="font-bold text-emerald-400 text-sm">Income</p>
+                            <p class="text-xs text-slate-400 mt-0.5">Enter the source (e.g. "Salary") and the date received. This adds to your balance immediately.</p>
+                        </div>
+                        <div class="bg-slate-800 rounded-xl p-3 border-l-4 border-rose-600 border-y border-r border-slate-700">
+                            <p class="font-bold text-rose-400 text-sm">Spend</p>
+                            <p class="text-xs text-slate-400 mt-0.5">Enter the vendor and date. Deducted from your balance straight away.</p>
+                        </div>
+                        <div class="bg-slate-800 rounded-xl p-3 border-l-4 border-blue-600 border-y border-r border-slate-700">
+                            <p class="font-bold text-blue-400 text-sm">Bill</p>
+                            <p class="text-xs text-slate-400 mt-0.5">Toggle whether it's already paid. If <span class="font-bold text-slate-300">paid</span>, it deducts now. If <span class="font-bold text-slate-300">unpaid</span>, set a due date — it sits in Unpaid Bills without touching your balance.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Slide 4 -->
+                <div class="guide-slide px-6 py-6 hidden">
+                    <div class="w-14 h-14 rounded-2xl bg-amber-900/30 border border-amber-800/50 flex items-center justify-center mb-4">
+                        <i class="ph-fill ph-clock text-3xl text-amber-400"></i>
+                    </div>
+                    <h2 class="text-2xl font-bold text-slate-100 mb-2">Managing Bills</h2>
+                    <p class="text-slate-400 text-sm leading-relaxed mb-4">Unpaid bills appear at the top of your Ledger with a due-date badge.</p>
+                    <div class="space-y-3">
+                        <div class="bg-slate-800 rounded-xl p-4 border border-amber-900/40 flex items-center justify-between">
+                            <div>
+                                <p class="font-bold text-slate-100 text-sm">Electricity Co.</p>
+                                <span class="text-xs font-bold px-2 py-0.5 rounded-full bg-amber-900/60 text-amber-300">Due in 2d</span>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <span class="font-bold text-amber-400">$120.00</span>
+                                <div class="px-3 py-1.5 bg-blue-600 text-white text-xs font-bold rounded-lg flex items-center gap-1">
+                                    <i class="ph-bold ph-check"></i> Pay
+                                </div>
+                            </div>
+                        </div>
+                        <p class="text-xs text-slate-500 px-1">Hit <span class="font-bold text-slate-300">Pay</span> when you've settled it — the amount moves into Spend and your balance updates instantly.</p>
+                        <p class="text-xs text-slate-500 px-1">You can also edit any entry with the <i class="ph-bold ph-pencil-simple"></i> icon to correct amounts or dates.</p>
+                    </div>
+                </div>
+
+                <!-- Slide 5 -->
+                <div class="guide-slide px-6 py-6 hidden">
+                    <div class="w-14 h-14 rounded-2xl bg-slate-800 border border-slate-700 flex items-center justify-center mb-4">
+                        <i class="ph-fill ph-google-drive-logo text-3xl text-blue-400"></i>
+                    </div>
+                    <h2 class="text-2xl font-bold text-slate-100 mb-2">Keeping Your Data Safe</h2>
+                    <p class="text-slate-400 text-sm leading-relaxed mb-4">Your data is stored on this device. To back it up, connect Google Drive in <span class="font-bold text-slate-300">Settings</span>.</p>
+                    <div class="space-y-3">
+                        <div class="bg-slate-800 rounded-xl p-3 border border-slate-700 flex gap-3 items-center">
+                            <i class="ph-fill ph-cloud-arrow-up text-blue-400 text-xl shrink-0"></i>
+                            <p class="text-xs text-slate-400"><span class="font-bold text-slate-100">Backup Now</span> — saves everything to a private folder in your Drive.</p>
+                        </div>
+                        <div class="bg-slate-800 rounded-xl p-3 border border-slate-700 flex gap-3 items-center">
+                            <i class="ph-fill ph-cloud-arrow-down text-blue-400 text-xl shrink-0"></i>
+                            <p class="text-xs text-slate-400"><span class="font-bold text-slate-100">Restore Data</span> — loads your backup if you switch devices.</p>
+                        </div>
+                        <div class="bg-slate-800 rounded-xl p-3 border border-slate-700 flex gap-3 items-center">
+                            <i class="ph-fill ph-download-simple text-slate-400 text-xl shrink-0"></i>
+                            <p class="text-xs text-slate-400"><span class="font-bold text-slate-100">Export Ledger</span> — downloads a JSON file to your device anytime.</p>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- Step dots + nav -->
+            <div class="flex items-center justify-between px-6 py-5 border-t border-slate-800">
+                <button onclick="guidePrev()" id="guidePrevBtn" class="px-4 py-2 rounded-xl bg-slate-800 border border-slate-700 text-slate-300 font-bold text-sm active:scale-[0.97] transition-all disabled:opacity-30" disabled>Back</button>
+                <div class="flex gap-1.5" id="guideDots"></div>
+                <button onclick="guideNext()" id="guideNextBtn" class="px-5 py-2 rounded-xl bg-emerald-600 text-white font-bold text-sm active:scale-[0.97] transition-all shadow-lg shadow-emerald-900/30">Next</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Wipe Confirmation Modal -->
     <div id="wipeOverlay" class="fixed inset-0 z-[100] bg-slate-950/80 backdrop-blur-sm hidden items-center justify-center p-4">
         <div class="bg-slate-800 border border-slate-700 rounded-3xl p-8 max-w-sm w-full text-center shadow-2xl animate-enter">
@@ -331,7 +493,74 @@
             document.getElementById('input-due-date').valueAsDate = new Date();
             updateDashboard();
             updateFormUI();
+            // Show guide automatically for first-time users
+            if (!localStorage.getItem('tightShipGuideSeen')) {
+                setTimeout(() => openGuide(), 600);
+            }
         });
+
+        /* --- HOW TO USE GUIDE --- */
+        let guideStep = 0;
+        const GUIDE_TOTAL = 5;
+
+        function openGuide() {
+            guideStep = 0;
+            renderGuide();
+            const overlay = document.getElementById('guideOverlay');
+            overlay.classList.remove('hidden');
+            overlay.classList.add('flex');
+        }
+
+        function closeGuide() {
+            document.getElementById('guideOverlay').classList.add('hidden');
+            document.getElementById('guideOverlay').classList.remove('flex');
+            localStorage.setItem('tightShipGuideSeen', 'true');
+        }
+
+        function guideNext() {
+            if (guideStep < GUIDE_TOTAL - 1) {
+                guideStep++;
+                renderGuide();
+            } else {
+                closeGuide();
+            }
+        }
+
+        function guidePrev() {
+            if (guideStep > 0) {
+                guideStep--;
+                renderGuide();
+            }
+        }
+
+        function renderGuide() {
+            // Show/hide slides
+            document.querySelectorAll('.guide-slide').forEach((el, i) => {
+                el.classList.toggle('hidden', i !== guideStep);
+            });
+
+            // Step label
+            document.getElementById('guideStepLabel').innerText = `Step ${guideStep + 1} of ${GUIDE_TOTAL}`;
+
+            // Dots
+            const dotsEl = document.getElementById('guideDots');
+            dotsEl.innerHTML = '';
+            for (let i = 0; i < GUIDE_TOTAL; i++) {
+                const dot = document.createElement('div');
+                dot.className = i === guideStep
+                    ? 'w-5 h-2 rounded-full bg-emerald-500 transition-all'
+                    : 'w-2 h-2 rounded-full bg-slate-700 transition-all';
+                dotsEl.appendChild(dot);
+            }
+
+            // Buttons
+            document.getElementById('guidePrevBtn').disabled = guideStep === 0;
+            const nextBtn = document.getElementById('guideNextBtn');
+            nextBtn.innerText = guideStep === GUIDE_TOTAL - 1 ? "Got it!" : "Next";
+            nextBtn.className = guideStep === GUIDE_TOTAL - 1
+                ? 'px-5 py-2 rounded-xl bg-blue-600 text-white font-bold text-sm active:scale-[0.97] transition-all shadow-lg shadow-blue-900/30'
+                : 'px-5 py-2 rounded-xl bg-emerald-600 text-white font-bold text-sm active:scale-[0.97] transition-all shadow-lg shadow-emerald-900/30';
+        }
 
         function switchTab(tabId) {
             document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
