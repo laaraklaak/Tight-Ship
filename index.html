@@ -1,1937 +1,962 @@
 <!DOCTYPE html>
-<html lang="en" class="bg-slate-950 text-slate-100">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Tight Ship</title>
-    <link rel="manifest" href="./manifest.json">
-
-    <!-- PWA / Home screen meta tags -->
-    <meta name="theme-color" content="#0f172a">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="Tight Ship">
-    <link rel="apple-touch-icon" href="./icon-192.png">
-    <meta name="mobile-web-app-capable" content="yes">
-    <meta name="description" content="Personal command centre — finances, projects, time">
     
-    <!-- Dependencies -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#020617">
+    
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/localforage/1.10.0/localforage.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
-
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+    <script src="https://apis.google.com/js/api.js" async defer></script>
 
     <style>
-        /* Base Animations & Utilities */
-        * { -webkit-tap-highlight-color: transparent; box-sizing: border-box; }
-        .tab-content { display: none; opacity: 0; transition: opacity 0.3s ease; }
-        .tab-content.active { display: block; opacity: 1; animation: fadeIn 0.3s forwards; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
-
-        /* Mobile-first: prevent number overflow in tight rows */
-        .truncate-num { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 100%; }
-
-        /* Fluid font size utility — scales between two sizes based on viewport */
-        .fluid-lg { font-size: clamp(1.1rem, 5vw, 1.5rem); }
-        .fluid-sm { font-size: clamp(0.7rem, 3vw, 0.875rem); }
-        
-        /* Custom Toast System */
-        #toast-container { position: fixed; top: 1rem; left: 50%; transform: translateX(-50%); z-index: 100; display: flex; flex-direction: column; gap: 0.5rem; width: 90%; max-width: 400px; pointer-events: none; }
-        .toast { padding: 1rem; border-radius: 0.5rem; display: flex; align-items: center; gap: 0.5rem; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.5); font-weight: 500; animation: slideIn 0.3s ease, fadeOut 0.3s ease 2.7s forwards; pointer-events: auto; }
-        @keyframes slideIn { from { transform: translateY(-100%); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
-        @keyframes fadeOut { from { opacity: 1; } to { opacity: 0; } }
-
-        /* FAB pulse ring */
-        #fab-log { box-shadow: 0 0 0 0 rgba(52,211,153,0.4); animation: fab-pulse 3s ease-out infinite; }
-        @keyframes fab-pulse { 0%,100%{ box-shadow: 0 0 0 0 rgba(52,211,153,0.4); } 50%{ box-shadow: 0 0 0 10px rgba(52,211,153,0); } }
-
-        /* Nav active pill background */
-        .nav-btn.text-emerald-400 { background: rgba(52,211,153,0.08); border-radius: 10px; }
-
-        /* Hide Scrollbar */
-        ::-webkit-scrollbar { display: none; }
+        :root { color-scheme: dark; }
+        @keyframes slideInUp { from { transform: translateY(100%); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        .animate-enter { animation: fadeIn 0.3s ease-out forwards; }
+        .toast-enter { animation: slideInUp 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+        ::-webkit-scrollbar { width: 0px; background: transparent; }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; animation: fadeIn 0.2s ease-out forwards; }
+        input[type="date"]::-webkit-calendar-picker-indicator {
+            background: transparent; bottom: 0; color: transparent; cursor: pointer;
+            height: auto; left: 0; position: absolute; right: 0; top: 0; width: auto;
+        }
     </style>
 </head>
-<body class="antialiased h-screen flex flex-col overflow-hidden pb-24">
+<body class="bg-slate-950 text-slate-100 h-screen flex flex-col font-sans overflow-hidden antialiased selection:bg-blue-900">
 
-    <!-- Toast Container -->
-    <div id="toast-container"></div>
+    <div id="toast-container" class="fixed top-4 left-0 right-0 z-50 flex flex-col items-center gap-2 pointer-events-none px-4"></div>
 
-    <!-- Main Content Area -->
-    <main class="flex-1 overflow-y-auto w-full max-w-2xl mx-auto">
+    <main class="flex-1 overflow-y-auto pb-24 w-full max-w-lg mx-auto relative bg-slate-950">
         
         <!-- TAB 1: DASHBOARD -->
-        <div id="tab-dashboard" class="tab-content active p-4 space-y-5">
+        <section id="tab-dashboard" class="tab-content active p-4 space-y-6">
+            <header class="pt-4 pb-2">
+                <h1 class="text-xl font-bold text-slate-500 tracking-wide uppercase text-center mb-1">Tight Ship</h1>
+            </header>
 
-            <!-- ── ZONE 1: Header greeting ── -->
-            <div class="flex items-center justify-between pt-2">
-                <div>
-                    <p id="dash-greeting" class="text-slate-400 text-xs font-semibold uppercase tracking-widest">Good morning</p>
-                    <p id="dash-date" class="text-slate-600 text-xs mt-0.5"></p>
+            <!-- Available Balance (Income - Spend only, bills never deducted until paid) -->
+            <div class="bg-slate-800 rounded-3xl p-6 shadow-lg border border-slate-700 text-center flex flex-col items-center justify-center transition-colors duration-300 relative overflow-hidden" id="safeToSpendCard">
+                <div class="absolute top-0 right-0 w-24 h-24 bg-emerald-900/20 rounded-bl-full -z-10" id="safeSpendAccent"></div>
+                <p class="text-sm font-semibold text-slate-400 uppercase tracking-wider mb-2">Available Balance</p>
+                <h2 id="safeToSpendAmount" class="text-5xl font-extrabold tracking-tight text-emerald-400 mb-1">$0.00</h2>
+                <p class="text-xs text-slate-400 mt-2 bg-slate-900/50 px-3 py-1 rounded-full border border-slate-700/50">Income − Spend − Paid Bills</p>
+            </div>
+
+            <!-- Income / Spend row -->
+            <div class="grid grid-cols-2 gap-3">
+                <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 flex flex-col gap-1 shadow-sm">
+                    <div class="flex items-center gap-2 mb-1">
+                        <div class="bg-emerald-900/30 p-1.5 rounded-full border border-emerald-900/50">
+                            <i class="ph-fill ph-trend-up text-base text-emerald-400"></i>
+                        </div>
+                        <p class="text-xs text-slate-400 font-medium uppercase tracking-wider">Income</p>
+                    </div>
+                    <p id="totalIncomeAmount" class="text-xl font-bold text-emerald-400">$0.00</p>
+                </div>
+                <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 flex flex-col gap-1 shadow-sm">
+                    <div class="flex items-center gap-2 mb-1">
+                        <div class="bg-rose-900/30 p-1.5 rounded-full border border-rose-900/50">
+                            <i class="ph-fill ph-shopping-cart text-base text-rose-400"></i>
+                        </div>
+                        <p class="text-xs text-slate-400 font-medium uppercase tracking-wider">Spend</p>
+                    </div>
+                    <p id="totalSpendAmount" class="text-xl font-bold text-rose-400">$0.00</p>
+                    <p class="text-xs text-slate-600">incl. paid bills</p>
                 </div>
             </div>
 
-            <!-- ── ZONE 1: Financial pulse (compact) ── -->
-            <div class="bg-slate-900 rounded-2xl border border-slate-800 overflow-hidden">
-                <!-- Always-visible summary row -->
-                <div class="flex items-center gap-2 px-4 py-3" style="min-width:0;">
-
-                    <!-- Safe to Spend — takes all available space, never shrinks below a readable size -->
-                    <div class="flex-1 min-w-0">
-                        <p class="text-slate-500 text-[10px] uppercase tracking-widest mb-0.5 truncate">Safe to Spend</p>
-                        <h1 id="hero-safe" class="font-bold tracking-tight text-emerald-400 leading-none truncate"
-                            style="font-size: clamp(1.1rem, 5vw, 1.5rem);">$0.00</h1>
-                    </div>
-
-                    <!-- Divider -->
-                    <div class="w-px h-8 bg-slate-800 flex-shrink-0"></div>
-
-                    <!-- Cash -->
-                    <div class="flex-shrink-0 text-right" style="min-width:0;">
-                        <p class="text-slate-500 text-[10px] uppercase tracking-widest mb-0.5">Cash</p>
-                        <p id="hero-cash" class="font-semibold text-slate-200 truncate"
-                           style="font-size: clamp(0.7rem, 3vw, 0.875rem);">$0.00</p>
-                    </div>
-
-                    <!-- Divider -->
-                    <div class="w-px h-8 bg-slate-800 flex-shrink-0"></div>
-
-                    <!-- Owed -->
-                    <div class="flex-shrink-0 text-right" style="min-width:0;">
-                        <p class="text-slate-500 text-[10px] uppercase tracking-widest mb-0.5">Owed</p>
-                        <p id="hero-owed" class="font-semibold text-rose-400 truncate"
-                           style="font-size: clamp(0.7rem, 3vw, 0.875rem);">$0.00</p>
-                    </div>
-
-                    <!-- Chevron toggle -->
-                    <button onclick="toggleFinance()" class="flex-shrink-0 text-slate-500 hover:text-slate-300 transition p-1 -mr-1">
-                        <i id="finance-chevron" class="ph-fill ph-caret-down text-base transition-transform duration-200 block"></i>
-                    </button>
-
-                </div>
-
-                <!-- Expandable detail -->
-                <div id="finance-body" class="hidden border-t border-slate-800 px-4 py-3 space-y-3">
-                    <div class="grid grid-cols-2 gap-3">
-                        <div class="bg-slate-800/50 rounded-xl p-3 min-w-0">
-                            <p class="text-slate-500 text-[10px] uppercase tracking-widest mb-1">This month — in</p>
-                            <p id="hero-month-income" class="font-semibold text-emerald-400 truncate"
-                               style="font-size: clamp(0.85rem, 3.5vw, 1rem);">$0.00</p>
-                        </div>
-                        <div class="bg-slate-800/50 rounded-xl p-3 min-w-0">
-                            <p class="text-slate-500 text-[10px] uppercase tracking-widest mb-1">This month — out</p>
-                            <p id="hero-month-spend" class="font-semibold text-rose-400 truncate"
-                               style="font-size: clamp(0.85rem, 3.5vw, 1rem);">$0.00</p>
-                        </div>
+            <!-- Unpaid Bills card -->
+            <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 flex justify-between items-center shadow-md" id="upcomingBillsCard">
+                <div class="flex items-center gap-3">
+                    <div class="bg-amber-900/30 p-2 rounded-full border border-amber-900/50">
+                        <i class="ph-fill ph-clock text-xl text-amber-400"></i>
                     </div>
                     <div>
-                        <div class="flex items-center justify-between mb-1">
-                            <p class="text-slate-500 text-[10px] uppercase tracking-widest">Monthly health</p>
-                            <span id="goal-pct" class="text-xs font-semibold text-amber-400">0%</span>
-                        </div>
-                        <div class="h-1.5 bg-slate-700 rounded-full overflow-hidden">
-                            <div id="goal-bar" class="h-full bg-amber-400 rounded-full transition-all" style="width:0%"></div>
-                        </div>
+                        <p class="text-xs text-slate-300 font-medium uppercase tracking-wider">Unpaid Bills</p>
+                        <p class="text-xs text-slate-500" id="upcomingBillsCount">None outstanding</p>
                     </div>
+                </div>
+                <h3 id="upcomingBillsTotal" class="text-2xl font-bold tracking-tight text-amber-400">$0.00</h3>
+            </div>
+
+            <div id="sync-warning-banner" class="hidden bg-amber-50 border border-amber-200 p-4 rounded-2xl flex flex-col sm:flex-row gap-3 items-start sm:items-center justify-between shadow-sm">
+                <div class="flex gap-3 items-start">
+                    <div class="text-amber-600 mt-0.5"><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg></div>
+                    <div>
+                        <p class="text-sm font-bold text-amber-900">Backup Required</p>
+                        <p class="text-xs text-amber-700 font-medium">Connect to Google Drive to secure your data.</p>
+                    </div>
+                </div>
+                <div class="flex gap-2 w-full sm:w-auto mt-1 sm:mt-0">
+                    <button onclick="dismissSyncBanner()" class="px-3 py-2 text-amber-700 text-xs font-bold rounded-lg hover:bg-amber-100 transition-colors">Dismiss</button>
+                    <button onclick="switchTab('settings')" class="flex-1 sm:flex-none px-4 py-2 bg-amber-600 text-white text-xs font-bold rounded-lg shadow-sm hover:bg-amber-700 transition-colors text-center">Fix Now</button>
                 </div>
             </div>
 
-            <!-- ── ZONE 2: Needs attention (hidden when clear) ── -->
-            <div id="action-required-container" class="hidden">
-                <h2 class="text-xs font-semibold text-rose-400 uppercase tracking-wider mb-2 flex items-center gap-2">
-                    <i class="ph-fill ph-warning-circle"></i> Needs Attention
-                </h2>
-                <div id="unpaid-bills-list" class="space-y-2"></div>
-            </div>
-
-            <!-- ── ZONE 3: Quick add pills ── -->
             <div>
-                <p class="text-slate-500 text-[10px] uppercase tracking-widest mb-2">Quick Add</p>
-                <div class="flex gap-2 flex-wrap">
-                    <button onclick="quickNav('Income')"  class="px-3 py-1.5 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 active:scale-95 transition">+ Income</button>
-                    <button onclick="quickNav('Spend')"   class="px-3 py-1.5 rounded-full text-xs font-semibold bg-rose-500/10    text-rose-400    border border-rose-500/20    active:scale-95 transition">+ Spend</button>
-                    <button onclick="quickNav('Bill')"    class="px-3 py-1.5 rounded-full text-xs font-semibold bg-blue-500/10    text-blue-400    border border-blue-500/20    active:scale-95 transition">+ Bill</button>
-                    <button onclick="quickNav('Project')" class="px-3 py-1.5 rounded-full text-xs font-semibold bg-violet-500/10  text-violet-400  border border-violet-500/20  active:scale-95 transition">+ Project</button>
+                <h3 class="text-sm font-bold text-slate-500 uppercase tracking-wider mb-3 ml-1">Ledger</h3>
+                <div class="bg-slate-800 rounded-2xl border border-slate-700 shadow-sm overflow-hidden" id="recentLedgerList">
+                    <div class="p-8 text-center text-slate-500 text-sm">No transactions logged yet.</div>
                 </div>
             </div>
-
-            <!-- ── ZONE 4: Active projects (collapsible) ── -->
-            <div id="dashboard-projects-container" class="hidden bg-slate-900 rounded-2xl border border-slate-800 overflow-hidden">
-                <button onclick="toggleDashProjects()" class="w-full flex items-center justify-between px-4 py-3 active:bg-slate-800 transition-colors">
-                    <div class="flex items-center gap-2">
-                        <i class="ph-fill ph-projector-screen-chart text-violet-400 text-sm"></i>
-                        <h2 class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Active Projects</h2>
-                        <span id="dash-proj-count" class="text-[10px] font-semibold bg-slate-800 text-violet-400 px-2 py-0.5 rounded-full"></span>
-                    </div>
-                    <div class="flex items-center gap-2">
-                        <button class="nav-btn text-[10px] text-slate-500 hover:text-violet-400 transition-colors" data-target="tab-projects">
-                            All <i class="ph ph-arrow-right text-[10px]"></i>
-                        </button>
-                        <i id="dash-proj-chevron" class="ph-fill ph-caret-down text-slate-500 text-sm transition-transform duration-200"></i>
-                    </div>
-                </button>
-                <div id="dashboard-projects-body" class="hidden px-4 pb-4">
-                    <div id="dashboard-projects-list" class="space-y-2"></div>
-                </div>
-            </div>
-
-            <!-- ── ZONE 5: Recent ledger (collapsible) ── -->
-            <div class="bg-slate-900 rounded-2xl border border-slate-800 overflow-hidden">
-                <button id="ledger-toggle" onclick="toggleLedger()" class="w-full flex items-center justify-between px-4 py-3 active:bg-slate-800 transition-colors">
-                    <div class="flex items-center gap-2">
-                        <h2 class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Recent Ledger</h2>
-                        <span id="ledger-count" class="text-[10px] font-semibold bg-slate-800 text-slate-400 px-2 py-0.5 rounded-full"></span>
-                    </div>
-                    <i id="ledger-chevron" class="ph-bold ph-caret-down text-slate-500 text-sm transition-transform duration-200"></i>
-                </button>
-                <div id="ledger-body" class="hidden px-4 pb-4">
-                    <div id="recent-ledger" class="space-y-2"></div>
-                </div>
-            </div>
-
-        </div>
+        </section>
 
         <!-- TAB 2: LOG TRANSACTION -->
-        <div id="tab-log" class="tab-content p-4">
-            <h1 class="text-2xl font-bold mb-6" id="log-title">Log Entry</h1>
-            
-            <form id="log-form" class="space-y-5">
-                <!-- Type Toggles -->
-                <div class="grid grid-cols-3 gap-2 bg-slate-900 p-1 rounded-xl border border-slate-800">
-                    <label class="cursor-pointer">
-                        <input type="radio" name="type" value="Income" class="peer hidden" checked>
-                        <div class="text-center py-2 rounded-lg text-sm font-medium peer-checked:bg-emerald-500/20 peer-checked:text-emerald-400 transition-colors">Income</div>
-                    </label>
-                    <label class="cursor-pointer">
-                        <input type="radio" name="type" value="Spend" class="peer hidden">
-                        <div class="text-center py-2 rounded-lg text-sm font-medium peer-checked:bg-rose-500/20 peer-checked:text-rose-400 transition-colors">Spend</div>
-                    </label>
-                    <label class="cursor-pointer">
-                        <input type="radio" name="type" value="Bill" class="peer hidden">
-                        <div class="text-center py-2 rounded-lg text-sm font-medium peer-checked:bg-blue-500/20 peer-checked:text-blue-400 transition-colors">Bill</div>
-                    </label>
-                </div>
+        <section id="tab-log" class="tab-content p-4">
+            <h2 class="text-2xl font-bold text-slate-100 mb-6 pt-2">Log Transaction</h2>
 
-                <!-- Core Inputs -->
+            <div class="grid grid-cols-3 gap-2 mb-8 bg-slate-900 p-1.5 rounded-2xl border border-slate-800">
+                <label class="cursor-pointer">
+                    <input type="radio" name="txType" value="income" class="peer sr-only" checked onchange="updateFormUI()">
+                    <div class="text-center py-3 rounded-xl text-sm font-semibold text-slate-500 peer-checked:bg-slate-800 peer-checked:text-emerald-400 peer-checked:border-slate-700 border border-transparent transition-all flex flex-col items-center gap-1">
+                        <i class="ph-fill ph-money text-xl"></i> Income
+                    </div>
+                </label>
+                <label class="cursor-pointer">
+                    <input type="radio" name="txType" value="spend" class="peer sr-only" onchange="updateFormUI()">
+                    <div class="text-center py-3 rounded-xl text-sm font-semibold text-slate-500 peer-checked:bg-slate-800 peer-checked:text-rose-400 peer-checked:border-slate-700 border border-transparent transition-all flex flex-col items-center gap-1">
+                        <i class="ph-fill ph-credit-card text-xl"></i> Spend
+                    </div>
+                </label>
+                <label class="cursor-pointer">
+                    <input type="radio" name="txType" value="bill" class="peer sr-only" onchange="updateFormUI()">
+                    <div class="text-center py-3 rounded-xl text-sm font-semibold text-slate-500 peer-checked:bg-slate-800 peer-checked:text-blue-400 peer-checked:border-slate-700 border border-transparent transition-all flex flex-col items-center gap-1">
+                        <i class="ph-fill ph-file-text text-xl"></i> Bill
+                    </div>
+                </label>
+            </div>
+
+            <form id="txForm" class="space-y-5" onsubmit="handleLogTransaction(event)">
+                
                 <div>
-                    <label class="block text-xs text-slate-400 mb-1">Amount</label>
+                    <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Amount</label>
                     <div class="relative">
-                        <span class="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 text-xl">$</span>
-                        <input type="number" id="input-amount" step="0.01" min="0.01" required class="w-full bg-slate-900 border border-slate-800 rounded-xl py-3 pl-8 pr-4 text-xl focus:outline-none focus:border-slate-500 transition-colors" placeholder="0.00">
+                        <span class="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 font-bold text-xl">$</span>
+                        <input type="number" id="txAmount" step="0.01" min="0.01" required class="w-full bg-slate-900 border border-slate-700 rounded-2xl py-4 pl-10 pr-4 text-xl font-bold text-slate-100 focus:outline-none focus:ring-2 focus:ring-slate-500 focus:border-transparent transition-all placeholder-slate-700" placeholder="0.00" onblur="if(this.value) this.value = Math.abs(parseFloat(this.value)).toFixed(2)">
                     </div>
                 </div>
 
                 <div>
-                    <label class="block text-xs text-slate-400 mb-1">Description</label>
-                    <input type="text" id="input-desc" required class="w-full bg-slate-900 border border-slate-800 rounded-xl py-3 px-4 focus:outline-none focus:border-slate-500 transition-colors" placeholder="e.g. Target, Paycheck, Rent">
+                    <label id="lblDescription" class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Source</label>
+                    <input type="text" id="txDescription" required class="w-full bg-slate-900 border border-slate-700 rounded-2xl py-4 px-4 text-lg text-slate-100 focus:outline-none focus:ring-2 focus:ring-slate-500 focus:border-transparent transition-all placeholder-slate-700" placeholder="e.g. Freelance Client">
                 </div>
 
-                <!-- Dynamic Date / Bill Options -->
-                <div id="bill-options" class="hidden space-y-4 p-4 bg-slate-900/50 rounded-xl border border-slate-800">
-                    <div class="flex items-center justify-between">
-                        <span class="text-sm">Already Paid?</span>
-                        <label class="relative inline-flex items-center cursor-pointer">
-                            <input type="checkbox" id="input-ispaid" class="sr-only peer">
-                            <div class="w-11 h-6 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-500"></div>
-                        </label>
-                    </div>
-                    <div class="flex items-center justify-between">
-                        <span class="text-sm">Repeats Monthly?</span>
-                        <label class="relative inline-flex items-center cursor-pointer">
-                            <input type="checkbox" id="input-recurring" class="sr-only peer">
-                            <div class="w-11 h-6 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-500"></div>
-                        </label>
-                    </div>
-                </div>
-
-                <div>
-                    <label id="date-label" class="block text-xs text-slate-400 mb-1">Date</label>
-                    <input type="date" id="input-date" required class="w-full bg-slate-900 border border-slate-800 rounded-xl py-3 px-4 focus:outline-none focus:border-slate-500 block">
-                </div>
-
-                <!-- Receipt Capture -->
-                <div>
-                    <label class="block text-xs text-slate-400 mb-1">Receipt (Optional)</label>
-                    <input type="file" id="input-receipt" accept="image/*" class="block w-full text-sm text-slate-400 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-slate-800 file:text-slate-300 hover:file:bg-slate-700 transition-colors">
-                    <img id="receipt-preview" class="hidden mt-3 max-h-32 rounded-lg border border-slate-700 object-cover">
-                    <canvas id="receipt-canvas" class="hidden"></canvas>
-                </div>
-
-                <button type="submit" id="btn-save" class="w-full bg-slate-100 text-slate-900 font-bold text-lg py-4 rounded-xl active:scale-[0.98] transition-transform">Save Transaction</button>
-            </form>
-        </div>
-
-        <!-- TAB 3: SETUP & DATA -->
-        <div id="tab-setup" class="tab-content p-4 space-y-8">
-            <h1 class="text-2xl font-bold mb-2">Setup & Data</h1>
-
-            <!-- ── Backup & Restore ── -->
-            <div class="bg-slate-900 p-5 rounded-2xl border border-slate-800 space-y-4">
-                <div class="flex items-center justify-between">
-                    <h2 class="text-lg font-semibold flex items-center gap-2">
-                        <i class="ph-fill ph-shield-check text-emerald-400"></i> Backup & Restore
-                    </h2>
-                    <span id="last-backup-label" class="text-xs text-slate-500">Never backed up</span>
-                </div>
-                <p class="text-xs text-slate-400">Save a full copy of all your data — transactions, projects, settings — to a file on your device. Import it anytime to restore or move to another device.</p>
-                <div class="grid grid-cols-2 gap-2">
-                    <button id="btn-backup-json" class="bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 py-3 rounded-xl font-medium flex items-center justify-center gap-2 hover:bg-emerald-500/20 active:scale-95 transition">
-                        <i class="ph-fill ph-download-simple"></i> Download Backup
-                    </button>
-                    <label class="bg-slate-800 text-slate-300 border border-slate-700 py-3 rounded-xl font-medium flex items-center justify-center gap-2 hover:bg-slate-700 active:scale-95 transition cursor-pointer">
-                        <i class="ph-fill ph-upload-simple"></i> Restore Backup
-                        <input type="file" id="input-restore-json" accept=".json" class="hidden">
-                    </label>
-                </div>
-                <div id="backup-warning" class="hidden bg-amber-500/10 border border-amber-500/20 rounded-lg px-3 py-2 text-xs text-amber-400 flex items-center gap-2">
-                    <i class="ph-fill ph-warning text-sm"></i>
-                    <span id="backup-warning-text"></span>
-                </div>
-            </div>
-
-            <!-- ── Monthly Summary Export ── -->
-            <div class="bg-slate-900 p-5 rounded-2xl border border-slate-800 space-y-4">
-                <h2 class="text-lg font-semibold flex items-center gap-2">
-                    <i class="ph-fill ph-chart-bar text-violet-400"></i> Monthly Summary
-                </h2>
-                <p class="text-xs text-slate-400">Generate a full report for any month — income, spending, bills, projects, and hours. Export as CSV for spreadsheets or save as a printable PDF.</p>
-                <div class="flex gap-2">
-                    <select id="summary-month" class="flex-1 bg-slate-950 border border-slate-800 rounded-xl py-2 px-3 text-sm focus:outline-none focus:border-slate-500"></select>
-                    <select id="summary-year"  class="w-24 bg-slate-950 border border-slate-800 rounded-xl py-2 px-3 text-sm focus:outline-none focus:border-slate-500"></select>
-                </div>
-                <div class="grid grid-cols-2 gap-2">
-                    <button id="btn-export-csv" class="bg-violet-500/10 text-violet-400 border border-violet-500/20 py-3 rounded-xl font-medium flex items-center justify-center gap-2 hover:bg-violet-500/20 active:scale-95 transition">
-                        <i class="ph-fill ph-file-csv"></i> Export CSV
-                    </button>
-                    <button id="btn-export-pdf" class="bg-slate-800 text-slate-300 border border-slate-700 py-3 rounded-xl font-medium flex items-center justify-center gap-2 hover:bg-slate-700 active:scale-95 transition">
-                        <i class="ph-fill ph-printer"></i> Print / PDF
-                    </button>
-                </div>
-            </div>
-
-            <!-- Smart Paste -->
-            <div class="bg-slate-900 p-5 rounded-2xl border border-slate-800 space-y-3">
-                <h2 class="text-lg font-semibold flex items-center gap-2"><i class="ph ph-clipboard-text"></i> Smart Paste</h2>
-                <p class="text-xs text-slate-400">Paste raw text from your banking app. We'll automatically extract Spend transactions.</p>
-                <textarea id="smart-paste-area" class="w-full bg-slate-950 border border-slate-800 rounded-lg p-3 text-sm h-24 focus:outline-none focus:border-slate-500" placeholder="e.g. 10/24 Target Corp $45.20..."></textarea>
-                <button id="btn-smart-paste" class="w-full bg-slate-800 py-2 rounded-lg font-medium hover:bg-slate-700 transition">Process Text</button>
-            </div>
-
-            <!-- CSV Import -->
-            <div class="bg-slate-900 p-5 rounded-2xl border border-slate-800 space-y-3">
-                <h2 class="text-lg font-semibold flex items-center gap-2"><i class="ph ph-file-csv"></i> CSV Bulk Import</h2>
-                <input type="file" id="input-csv" accept=".csv" class="block w-full text-sm text-slate-400 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:bg-slate-800 file:text-slate-300">
-                <button id="btn-import-csv" class="w-full bg-slate-800 py-2 rounded-lg font-medium hover:bg-slate-700 transition">Import File</button>
-            </div>
-
-            <!-- Danger Zone -->
-            <div class="pt-4 border-t border-slate-800 space-y-3">
-                <button id="btn-prune" class="w-full bg-slate-900 border border-slate-800 text-slate-300 py-3 rounded-lg font-medium flex items-center justify-center gap-2 hover:bg-slate-800 transition">
-                    <i class="ph ph-scissors"></i> Prune Old Ledger (>90 Days)
-                </button>
-                <button id="btn-wipe" class="w-full bg-rose-500/10 text-rose-500 py-3 rounded-lg font-medium flex items-center justify-center gap-2 hover:bg-rose-500/20 transition">
-                    <i class="ph ph-skull"></i> Wipe Memory
-                </button>
-            </div>
-        </div>
-
-        <!-- TAB 4: PROJECT ALLOCATIONS -->
-        <div id="tab-projects" class="tab-content p-4 space-y-6">
-            <div class="flex items-center justify-between">
-                <h1 class="text-2xl font-bold">Project Allocations</h1>
-                <button id="btn-new-project" class="bg-slate-800 text-slate-200 text-sm font-medium px-4 py-2 rounded-xl flex items-center gap-2 hover:bg-slate-700 active:scale-95 transition">
-                    <i class="ph-fill ph-plus text-base"></i> New
-                </button>
-            </div>
-
-            <!-- Summary bar -->
-            <div class="grid grid-cols-3 gap-3">
-                <div class="bg-slate-900 rounded-2xl p-3 border border-slate-800 text-center">
-                    <p class="text-slate-500 text-[10px] uppercase tracking-widest mb-1">Total Planned</p>
-                    <p id="proj-total" class="text-lg font-bold text-violet-400">$0.00</p>
-                </div>
-                <div class="bg-slate-900 rounded-2xl p-3 border border-slate-800 text-center">
-                    <p class="text-slate-500 text-[10px] uppercase tracking-widest mb-1">In Progress</p>
-                    <p id="proj-inprogress-count" class="text-lg font-bold text-amber-400">0</p>
-                </div>
-                <div class="bg-slate-900 rounded-2xl p-3 border border-slate-800 text-center">
-                    <p class="text-slate-500 text-[10px] uppercase tracking-widest mb-1">Complete</p>
-                    <p id="proj-complete-count" class="text-lg font-bold text-emerald-400">0</p>
-                </div>
-            </div>
-
-            <!-- Project list -->
-            <div id="projects-list" class="space-y-3"></div>
-        </div>
-
-        <!-- Project Form Modal -->
-        <div id="project-modal" class="hidden fixed inset-0 z-50 flex items-end justify-center">
-            <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" id="project-modal-backdrop"></div>
-            <div class="relative bg-slate-900 border border-slate-800 rounded-t-3xl w-full max-w-2xl p-6 space-y-5 pb-safe overflow-y-auto max-h-[90vh]" style="padding-bottom: max(1.5rem, env(safe-area-inset-bottom))">
-                <div class="flex items-center justify-between mb-1">
-                    <h2 class="text-lg font-bold" id="project-modal-title">New Project</h2>
-                    <button id="btn-close-modal" class="text-slate-500 hover:text-slate-300 transition">
-                        <i class="ph-fill ph-x-circle text-2xl"></i>
-                    </button>
-                </div>
-
-                <div>
-                    <label class="block text-xs text-slate-400 mb-1">Project Name</label>
-                    <input type="text" id="proj-input-name" class="w-full bg-slate-950 border border-slate-800 rounded-xl py-3 px-4 focus:outline-none focus:border-slate-500 transition" placeholder="e.g. Website Redesign">
-                </div>
-
-                <div>
-                    <label class="block text-xs text-slate-400 mb-1">Target Amount</label>
-                    <div class="relative">
-                        <span class="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 text-xl">$</span>
-                        <input type="number" id="proj-input-amount" step="0.01" min="0" class="w-full bg-slate-950 border border-slate-800 rounded-xl py-3 pl-8 pr-4 text-xl focus:outline-none focus:border-slate-500 transition" placeholder="0.00">
-                    </div>
-                </div>
-
-                <div>
-                    <label class="block text-xs text-slate-400 mb-1">Target Date</label>
-                    <input type="date" id="proj-input-date" class="w-full bg-slate-950 border border-slate-800 rounded-xl py-3 px-4 focus:outline-none focus:border-slate-500 transition">
-                </div>
-
-                <div>
-                    <label class="block text-xs text-slate-400 mb-2">Status</label>
-                    <div class="grid grid-cols-3 gap-2 bg-slate-950 p-1 rounded-xl border border-slate-800">
-                        <label class="cursor-pointer">
-                            <input type="radio" name="proj-status" value="Planned" class="peer hidden" checked>
-                            <div class="text-center py-2 rounded-lg text-sm font-medium text-slate-400 peer-checked:bg-violet-500/20 peer-checked:text-violet-400 transition-colors">Planned</div>
-                        </label>
-                        <label class="cursor-pointer">
-                            <input type="radio" name="proj-status" value="In Progress" class="peer hidden">
-                            <div class="text-center py-2 rounded-lg text-sm font-medium text-slate-400 peer-checked:bg-amber-500/20 peer-checked:text-amber-400 transition-colors">In Progress</div>
-                        </label>
-                        <label class="cursor-pointer">
-                            <input type="radio" name="proj-status" value="Complete" class="peer hidden">
-                            <div class="text-center py-2 rounded-lg text-sm font-medium text-slate-400 peer-checked:bg-emerald-500/20 peer-checked:text-emerald-400 transition-colors">Complete</div>
-                        </label>
-                    </div>
-                </div>
-
-                <div>
-                    <label class="block text-xs text-slate-400 mb-1">Notes</label>
-                    <textarea id="proj-input-notes" rows="2" class="w-full bg-slate-950 border border-slate-800 rounded-xl py-3 px-4 focus:outline-none focus:border-slate-500 transition resize-none text-sm" placeholder="Any details, reminders, or context..."></textarea>
-                </div>
-
-                <!-- Reminder -->
-                <div class="bg-slate-950 border border-slate-800 rounded-xl p-4 space-y-4">
-                    <div class="flex items-center justify-between">
-                        <div class="flex items-center gap-2">
-                            <i class="ph-fill ph-bell text-amber-400 text-lg"></i>
-                            <span class="text-sm font-medium">Remind me</span>
-                        </div>
-                        <label class="relative inline-flex items-center cursor-pointer">
-                            <input type="checkbox" id="proj-input-remind" class="sr-only peer">
-                            <div class="w-11 h-6 bg-slate-700 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-amber-500"></div>
-                        </label>
-                    </div>
-                    <div id="remind-options" class="hidden space-y-3">
+                <div id="billPaidToggleContainer" class="hidden bg-blue-900/20 border border-blue-800/50 rounded-2xl p-4 flex items-center justify-between cursor-pointer" onclick="toggleBillPaid()">
+                    <div class="flex items-center gap-3">
+                        <i id="billPaidIcon" class="ph-fill ph-check-circle text-blue-400 text-3xl"></i>
                         <div>
-                            <label class="block text-xs text-slate-400 mb-1">Advance warning — days before target date</label>
-                            <input type="number" id="proj-input-remind-days" min="1" max="90" value="7" class="w-full bg-slate-900 border border-slate-800 rounded-xl py-3 px-4 focus:outline-none focus:border-slate-500 transition" placeholder="e.g. 7">
+                            <p class="font-bold text-blue-300" id="billPaidText">I have already paid this</p>
+                            <p class="text-xs text-blue-400/80" id="billPaidSubText">Toggle if this is an upcoming bill</p>
                         </div>
-                        <p class="text-[11px] text-slate-500 flex items-start gap-1">
-                            <i class="ph ph-info text-sm flex-shrink-0 mt-0.5"></i>
-                            You'll get an alert <span id="remind-preview" class="text-amber-400 mx-1">7 days</span> before and again on the target date. Allow notifications when prompted.
-                        </p>
+                    </div>
+                    <input type="checkbox" id="txIsPaid" checked class="w-6 h-6 accent-blue-500 cursor-pointer pointer-events-none opacity-0 absolute">
+                </div>
+
+                <div id="field-date">
+                    <label id="lblDate" class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Date Received</label>
+                    <div class="relative">
+                        <input type="date" id="txDate" required class="w-full bg-slate-900 border border-slate-700 rounded-2xl py-4 px-4 text-lg text-slate-100 focus:outline-none focus:ring-2 focus:ring-slate-500 focus:border-transparent transition-all relative z-10 bg-transparent appearance-none">
+                        <i class="ph ph-calendar-blank absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 text-xl z-0"></i>
                     </div>
                 </div>
 
-                <button id="btn-save-project" class="w-full bg-emerald-500 hover:bg-emerald-400 text-white font-bold text-lg py-4 rounded-xl active:scale-[0.98] transition-all flex items-center justify-center gap-2">
-                    <i class="ph-fill ph-check-circle text-xl"></i>
-                    Save Project
-                </button>
-            </div>
-        </div>
+                <div id="field-due-date" class="hidden">
+                    <label class="block text-xs font-bold text-rose-400 uppercase tracking-wider mb-1">When is this due?</label>
+                    <div class="relative">
+                        <input type="date" id="input-due-date" class="w-full bg-slate-900 border border-rose-900/50 rounded-2xl py-4 px-4 text-lg text-rose-100 focus:outline-none focus:ring-2 focus:ring-rose-500 focus:border-transparent transition-all relative z-10 bg-transparent">
+                        <i class="ph ph-calendar-blank absolute right-4 top-1/2 -translate-y-1/2 text-rose-500 text-xl z-0"></i>
+                    </div>
+                </div>
 
+                <div>
+                    <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Receipt / Image (Optional)</label>
+                    <label class="flex flex-col items-center justify-center w-full h-32 bg-slate-900 border-2 border-dashed border-slate-700 rounded-2xl cursor-pointer hover:bg-slate-800 transition-colors overflow-hidden relative group">
+                        <div class="flex flex-col items-center justify-center pt-5 pb-6" id="receiptPrompt">
+                            <i class="ph ph-camera text-3xl text-slate-600 mb-2"></i>
+                            <p class="text-sm text-slate-500 font-medium">Tap to snap or upload</p>
+                        </div>
+                        <img id="receiptPreview" class="hidden absolute inset-0 w-full h-full object-cover opacity-50 group-hover:opacity-30 transition-opacity">
+                        <div id="receiptChangeText" class="hidden absolute inset-0 flex items-center justify-center text-slate-100 font-bold drop-shadow-md bg-slate-900/40">Change Image</div>
+                        <input type="file" id="txReceipt" accept="image/*" class="hidden" onchange="handleReceiptUpload(event)">
+                    </label>
+                </div>
+
+                <div class="pt-4 flex gap-3">
+                    <button type="button" id="btn-cancel-edit" onclick="cancelEdit()" class="hidden w-1/3 bg-slate-800 border border-slate-700 text-slate-300 font-bold text-lg py-4 rounded-2xl shadow-lg active:scale-[0.98] transition-all">
+                        Cancel
+                    </button>
+                    <button type="submit" id="btn-submit" class="w-full bg-emerald-600 text-white font-bold text-lg py-4 rounded-2xl shadow-lg shadow-emerald-900/20 active:scale-[0.98] transition-all">
+                        Save Transaction
+                    </button>
+                </div>
+            </form>
+        </section>
+
+        <!-- TAB 3: SETTINGS -->
+        <section id="tab-settings" class="tab-content p-4 space-y-8">
+            <h2 class="text-2xl font-bold text-slate-100 mb-2 pt-2">Settings & Sync</h2>
+
+            <div class="bg-slate-800 rounded-3xl p-5 shadow-sm border border-slate-700">
+                <div class="flex items-center gap-4 mb-4">
+                    <div class="bg-blue-900/30 p-3 rounded-2xl text-blue-400 border border-blue-800/50">
+                        <i class="ph-fill ph-google-drive-logo text-3xl"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-bold text-slate-100 text-lg">Google Drive Sync</h3>
+                        <p class="text-sm text-slate-400" id="syncStatusText">Not connected</p>
+                    </div>
+                </div>
+                
+                <div id="driveUnauthUI" class="space-y-3">
+                    <p class="text-sm text-slate-400 mb-4">Backup your ledger safely to a hidden app-data folder in your Google Drive.</p>
+                    <button onclick="handleAuthClick()" class="w-full bg-slate-900 border border-slate-700 text-slate-100 font-bold py-3 rounded-xl active:scale-[0.98] transition-all flex justify-center items-center gap-2 hover:bg-slate-800">
+                        <i class="ph-bold ph-link"></i> Connect Account
+                    </button>
+                </div>
+
+                <div id="driveAuthUI" class="hidden space-y-3">
+                    <button onclick="syncToDrive()" class="w-full bg-emerald-600 text-white font-bold py-3 rounded-xl active:scale-[0.98] transition-transform flex justify-center items-center gap-2">
+                        <i class="ph-bold ph-cloud-arrow-up"></i> Backup Now
+                    </button>
+                    <button onclick="syncFromDrive()" class="w-full bg-slate-900 border border-slate-700 text-slate-100 font-bold py-3 rounded-xl active:scale-[0.98] transition-transform flex justify-center items-center gap-2">
+                        <i class="ph-bold ph-cloud-arrow-down"></i> Restore Data
+                    </button>
+                    <button onclick="handleSignoutClick()" class="w-full text-sm text-slate-500 hover:text-slate-300 mt-2 py-2 underline transition-colors">
+                        Disconnect Account
+                    </button>
+                </div>
+            </div>
+
+            <div>
+                <h3 class="text-sm font-bold text-slate-500 uppercase tracking-wider mb-3 ml-1">Share App</h3>
+                <div class="bg-slate-800 rounded-2xl border border-slate-700 shadow-sm overflow-hidden flex flex-col">
+                    <button onclick="shareApp()" class="flex items-center gap-3 p-4 hover:bg-slate-700/50 active:bg-slate-700 transition-colors text-left w-full group">
+                        <div class="bg-slate-900 p-2 rounded-full text-blue-400 group-hover:text-blue-300 border border-slate-700">
+                            <i class="ph-bold ph-share-network text-lg"></i>
+                        </div>
+                        <div>
+                            <p class="font-bold text-slate-100">Share App Link</p>
+                            <p class="text-xs text-slate-400">Send this prototype to others</p>
+                        </div>
+                    </button>
+                </div>
+            </div>
+
+            <div>
+                <h3 class="text-sm font-bold text-slate-500 uppercase tracking-wider mb-3 ml-1">Local Data</h3>
+                <div class="bg-slate-800 rounded-2xl border border-slate-700 shadow-sm overflow-hidden flex flex-col">
+                    <button onclick="downloadJson()" class="flex items-center gap-3 p-4 border-b border-slate-700/50 hover:bg-slate-700/50 active:bg-slate-700 transition-colors text-left w-full group">
+                        <div class="bg-slate-900 p-2 rounded-full text-slate-400 group-hover:text-slate-300 border border-slate-700">
+                            <i class="ph-bold ph-download-simple text-lg"></i>
+                        </div>
+                        <div>
+                            <p class="font-bold text-slate-100">Export Ledger</p>
+                            <p class="text-xs text-slate-400">Save as .json file to your device</p>
+                        </div>
+                    </button>
+                    
+                    <button onclick="promptWipeData()" class="flex items-center gap-3 p-4 hover:bg-rose-950/30 active:bg-rose-900/50 transition-colors text-left w-full group">
+                        <div class="bg-rose-900/20 group-hover:bg-rose-900/40 p-2 rounded-full text-rose-400 transition-colors border border-rose-900/50">
+                            <i class="ph-bold ph-trash text-lg"></i>
+                        </div>
+                        <div>
+                            <p class="font-bold text-rose-400">Wipe Phone Memory</p>
+                            <p class="text-xs text-rose-500/80">Permanently delete all local data</p>
+                        </div>
+                    </button>
+                </div>
+            </div>
+        </section>
     </main>
 
-    <!-- Bottom Navigation -->
-    <!-- Floating Action Button — context-aware -->
-    <button id="fab-log" onclick="fabAction()" class="fixed bottom-24 right-4 z-40 w-14 h-14 bg-emerald-500 rounded-full flex items-center justify-center active:scale-95 transition-all duration-200 max-w-none" style="box-shadow:0 4px 20px rgba(16,185,129,0.45);">
-        <svg id="fab-icon" xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 256 256" fill="white">
-            <path d="M224,128a8,8,0,0,1-8,8H136v80a8,8,0,0,1-16,0V136H40a8,8,0,0,1,0-16h80V40a8,8,0,0,1,16,0v80h80A8,8,0,0,1,224,128Z"/>
-        </svg>
-    </button>
-
-    <!-- FAB speed-dial menu (home tab only) -->
-    <div id="fab-menu" class="hidden fixed bottom-40 right-4 z-40 flex flex-col items-end gap-3">
-        <div class="fab-item flex items-center gap-3 cursor-pointer" onclick="fabMenuPick('Project')">
-            <span class="text-sm font-semibold text-white bg-slate-700 border border-slate-600 px-4 py-2 rounded-full whitespace-nowrap" style="box-shadow:0 2px 12px rgba(0,0,0,0.5);">New project</span>
-            <div class="w-11 h-11 rounded-full bg-violet-500 flex items-center justify-center flex-shrink-0" style="box-shadow:0 4px 14px rgba(139,92,246,0.5);">
-                <i class="ph-fill ph-projector-screen-chart text-white text-lg"></i>
+    <!-- Wipe Confirmation Modal -->
+    <div id="wipeOverlay" class="fixed inset-0 z-[100] bg-slate-950/80 backdrop-blur-sm hidden items-center justify-center p-4">
+        <div class="bg-slate-800 border border-slate-700 rounded-3xl p-8 max-w-sm w-full text-center shadow-2xl animate-enter">
+            <div class="mx-auto w-20 h-20 bg-rose-900/30 rounded-full flex items-center justify-center mb-6 border border-rose-800/50">
+                <i class="ph-bold ph-warning text-4xl text-rose-400"></i>
             </div>
-        </div>
-        <div class="fab-item flex items-center gap-3 cursor-pointer" onclick="fabMenuPick('Bill')">
-            <span class="text-sm font-semibold text-white bg-slate-700 border border-slate-600 px-4 py-2 rounded-full whitespace-nowrap" style="box-shadow:0 2px 12px rgba(0,0,0,0.5);">Log bill</span>
-            <div class="w-11 h-11 rounded-full bg-blue-500 flex items-center justify-center flex-shrink-0" style="box-shadow:0 4px 14px rgba(59,130,246,0.5);">
-                <i class="ph-fill ph-receipt text-white text-lg"></i>
-            </div>
-        </div>
-        <div class="fab-item flex items-center gap-3 cursor-pointer" onclick="fabMenuPick('Spend')">
-            <span class="text-sm font-semibold text-white bg-slate-700 border border-slate-600 px-4 py-2 rounded-full whitespace-nowrap" style="box-shadow:0 2px 12px rgba(0,0,0,0.5);">Log spend</span>
-            <div class="w-11 h-11 rounded-full bg-rose-500 flex items-center justify-center flex-shrink-0" style="box-shadow:0 4px 14px rgba(239,68,68,0.5);">
-                <i class="ph-fill ph-shopping-cart text-white text-lg"></i>
-            </div>
-        </div>
-        <div class="fab-item flex items-center gap-3 cursor-pointer" onclick="fabMenuPick('Income')">
-            <span class="text-sm font-semibold text-white bg-slate-700 border border-slate-600 px-4 py-2 rounded-full whitespace-nowrap" style="box-shadow:0 2px 12px rgba(0,0,0,0.5);">Log income</span>
-            <div class="w-11 h-11 rounded-full bg-emerald-500 flex items-center justify-center flex-shrink-0" style="box-shadow:0 4px 14px rgba(16,185,129,0.5);">
-                <i class="ph-fill ph-trend-up text-white text-lg"></i>
+            <h3 class="text-2xl font-bold text-slate-100 mb-2">Are you absolutely sure?</h3>
+            <p class="text-slate-400 mb-8 text-sm">This will delete all data on this device. If you haven't synced to Drive, it's gone forever.</p>
+            <div class="flex gap-3">
+                <button onclick="closeWipePrompt()" class="flex-1 bg-slate-900 border border-slate-700 text-slate-100 font-bold py-3 rounded-xl active:scale-[0.98] transition-transform">Cancel</button>
+                <button onclick="executeWipeData()" class="flex-1 bg-rose-600 text-white font-bold py-3 rounded-xl active:scale-[0.98] transition-transform">Yes, Wipe It</button>
             </div>
         </div>
     </div>
 
-    <!-- FAB backdrop (closes menu on outside tap) -->
-    <div id="fab-backdrop" class="hidden fixed inset-0 z-30 bg-slate-950/40 backdrop-blur-sm" onclick="closeFabMenu()"></div>
-
-    <!-- Bottom Navigation -->
-    <nav id="main-nav" class="fixed bottom-0 w-full max-w-2xl mx-auto bg-slate-950/95 backdrop-blur-md border-t border-slate-800/60 z-50">
-
-        <!-- Active tab sliding indicator -->
-        <div class="relative flex justify-around items-center px-2 pt-2 pb-1">
-            <div id="nav-indicator" class="absolute top-0 h-0.5 bg-emerald-400 rounded-full transition-all duration-300" style="width:20%;left:0%"></div>
-
-            <button class="nav-btn flex flex-col items-center gap-1 py-2 px-3 rounded-xl transition-colors text-emerald-400" data-target="tab-dashboard" data-index="0">
-                <i class="ph-fill ph-squares-four text-xl"></i>
-                <span class="text-[9px] font-semibold tracking-wide">Home</span>
-            </button>
-
-            <button class="nav-btn flex flex-col items-center gap-1 py-2 px-3 rounded-xl transition-colors text-slate-500" data-target="tab-log" data-index="1">
-                <i class="ph-fill ph-plus-circle text-xl"></i>
-                <span class="text-[9px] font-semibold tracking-wide">Log</span>
-            </button>
-
-            <button class="nav-btn flex flex-col items-center gap-1 py-2 px-3 rounded-xl transition-colors text-slate-500" data-target="tab-projects" data-index="2">
-                <i class="ph-fill ph-projector-screen-chart text-xl"></i>
-                <span class="text-[9px] font-semibold tracking-wide">Projects</span>
-            </button>
-
-            <button class="nav-btn flex flex-col items-center gap-1 py-2 px-3 rounded-xl transition-colors text-slate-500" data-target="tab-setup" data-index="3">
-                <i class="ph-fill ph-sliders text-xl"></i>
-                <span class="text-[9px] font-semibold tracking-wide">Setup</span>
-            </button>
-        </div>
-
-        <!-- Safe area spacer for phones -->
-        <div class="h-safe-area-inset-bottom pb-4"></div>
+    <!-- Navigation -->
+    <nav class="fixed bottom-0 w-full max-w-lg mx-auto bg-slate-900/95 backdrop-blur-md border-t border-slate-800 h-20 pb-safe flex justify-around items-center px-2 z-40">
+        <button onclick="switchTab('dashboard')" id="nav-dashboard" class="nav-btn flex-1 flex flex-col items-center justify-center py-2 transition-all text-slate-100">
+            <div class="nav-pill flex flex-col items-center justify-center w-16 h-12 rounded-full bg-slate-800 transition-colors">
+                <i class="ph-fill ph-squares-four text-2xl"></i>
+            </div>
+            <span class="text-[10px] font-bold mt-1 tracking-wide">Dash</span>
+        </button>
+        <button onclick="switchTab('log')" id="nav-log" class="nav-btn flex-1 flex flex-col items-center justify-center py-2 transition-all text-slate-500 hover:text-slate-300">
+            <div class="nav-pill flex flex-col items-center justify-center w-16 h-12 rounded-full transition-colors">
+                <i class="ph-fill ph-plus-circle text-2xl"></i>
+            </div>
+            <span class="text-[10px] font-bold mt-1 tracking-wide">Log</span>
+        </button>
+        <button onclick="switchTab('settings')" id="nav-settings" class="nav-btn flex-1 flex flex-col items-center justify-center py-2 transition-all text-slate-500 hover:text-slate-300">
+            <div class="nav-pill flex flex-col items-center justify-center w-16 h-12 rounded-full transition-colors">
+                <i class="ph-fill ph-gear text-2xl"></i>
+            </div>
+            <span class="text-[10px] font-bold mt-1 tracking-wide">Settings</span>
+        </button>
     </nav>
 
-    <!-- Vanilla Javascript Logic -->
     <script>
-        // --- Service Worker Registration ---
-        if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('./sw.js').catch(err => console.log('SW setup failed:', err));
+        const FILE_NAME = 'tight-ship-ledger.json';
+        const GOOGLE_CLIENT_ID = '590906229865-rlo3ap84ngm5rr6hmsov2sg9ko0o24sp.apps.googleusercontent.com'; 
+        const SCOPES = 'https://www.googleapis.com/auth/drive.appdata';
+
+        let transactions = JSON.parse(localStorage.getItem('tightShipTransactions')) || [];
+        let currentBase64Receipt = null;
+        let editingTxId = null;
+        let tokenClient;
+        let accessToken = null;
+        // FIX 1: driveFileId was referenced in updateDashboard() but never declared,
+        // causing a ReferenceError that silently aborted the entire function.
+        let driveFileId = null;
+
+        document.addEventListener('DOMContentLoaded', () => {
+            document.getElementById('txDate').valueAsDate = new Date();
+            document.getElementById('input-due-date').valueAsDate = new Date();
+            updateDashboard();
+            updateFormUI();
+        });
+
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.nav-btn').forEach(btn => {
+                btn.classList.remove('text-slate-100');
+                btn.classList.add('text-slate-500');
+                btn.querySelector('.nav-pill').classList.remove('bg-slate-800');
+            });
+            document.getElementById(`tab-${tabId}`).classList.add('active');
+            const activeNav = document.getElementById(`nav-${tabId}`);
+            activeNav.classList.remove('text-slate-500');
+            activeNav.classList.add('text-slate-100');
+            activeNav.querySelector('.nav-pill').classList.add('bg-slate-800');
+            window.scrollTo(0, 0);
+            if (tabId === 'dashboard') updateDashboard();
         }
 
-        // --- Core State ---
-        let transactions =[];
-        let editingId = null;
-        let receiptBase64 = null;
-        
-        // --- UI & Utility Functions ---
-        const fmtCur = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' });
-        const $ = id => document.getElementById(id);
-        
-        function showToast(msg, type = 'info') {
-            const container = $('toast-container');
+        function showToast(message, type = 'info') {
+            const container = document.getElementById('toast-container');
             const toast = document.createElement('div');
-            toast.className = `toast ${type === 'error' ? 'bg-rose-900 text-rose-100' : type === 'success' ? 'bg-emerald-900 text-emerald-100' : 'bg-slate-800 text-white'}`;
-            toast.innerHTML = `<i class="ph-fill ${type === 'error' ? 'ph-warning-circle' : type === 'success' ? 'ph-check-circle' : 'ph-info'} text-xl"></i> <span>${msg}</span>`;
+            let bgClass = 'bg-slate-800 text-slate-100 border border-slate-700';
+            let icon = '<i class="ph-bold ph-info text-blue-400"></i>';
+            if (type === 'success') { icon = '<i class="ph-bold ph-check-circle text-emerald-400"></i>'; }
+            if (type === 'error') { bgClass = 'bg-rose-900/90 text-white border border-rose-800'; icon = '<i class="ph-bold ph-warning text-rose-200"></i>'; }
+            toast.className = `${bgClass} px-5 py-3 rounded-full shadow-lg flex items-center gap-2 text-sm font-bold toast-enter w-auto max-w-sm pointer-events-auto backdrop-blur-sm`;
+            toast.innerHTML = `${icon} ${message}`;
             container.appendChild(toast);
-            setTimeout(() => toast.remove(), 3000);
-        }
-
-        function toggleLedger() {
-            const body    = $('ledger-body');
-            const chevron = $('ledger-chevron');
-            const open    = !body.classList.contains('hidden');
-            body.classList.toggle('hidden', open);
-            chevron.style.transform = open ? 'rotate(0deg)' : 'rotate(180deg)';
-        }
-
-        function toggleFinance() {
-            const body    = $('finance-body');
-            const chevron = $('finance-chevron');
-            const open    = !body.classList.contains('hidden');
-            body.classList.toggle('hidden', open);
-            chevron.style.transform = open ? 'rotate(0deg)' : 'rotate(180deg)';
-        }
-
-        function toggleDashProjects() {
-            const body    = $('dashboard-projects-body');
-            const chevron = $('dash-proj-chevron');
-            if (!body) return;
-            const open = !body.classList.contains('hidden');
-            body.classList.toggle('hidden', open);
-            chevron.style.transform = open ? 'rotate(0deg)' : 'rotate(180deg)';
-        }
-
-        // ── FAB: context-aware action ────────────────────────
-        // Home tab   → opens speed-dial menu
-        // Log tab    → FAB is hidden
-        // Projects   → opens new project modal directly
-        // Setup      → FAB is hidden (nothing to "add" here)
-
-        let fabMenuOpen = false;
-
-        function fabAction() {
-            const activeTab = document.querySelector('.tab-content.active')?.id;
-            if (activeTab === 'tab-dashboard') {
-                fabMenuOpen ? closeFabMenu() : openFabMenu();
-            } else if (activeTab === 'tab-projects') {
-                $('btn-new-project') && $('btn-new-project').click();
-            }
-        }
-
-        // SVG paths for plus and X icons
-        const ICON_PLUS = '<path d="M224,128a8,8,0,0,1-8,8H136v80a8,8,0,0,1-16,0V136H40a8,8,0,0,1,0-16h80V40a8,8,0,0,1,16,0v80h80A8,8,0,0,1,224,128Z"/>';
-        const ICON_X    = '<path d="M205.66,194.34a8,8,0,0,1-11.32,11.32L128,139.31,61.66,205.66a8,8,0,0,1-11.32-11.32L116.69,128,50.34,61.66A8,8,0,0,1,61.66,50.34L128,116.69l66.34-66.35a8,8,0,0,1,11.32,11.32L139.31,128Z"/>';
-
-        function openFabMenu() {
-            fabMenuOpen = true;
-            $('fab-menu').classList.remove('hidden');
-            $('fab-backdrop').classList.remove('hidden');
-            $('fab-icon').innerHTML = ICON_X;
-            $('fab-log').style.background = '#334155';
-            $('fab-log').style.boxShadow  = 'none';
-        }
-
-        function closeFabMenu() {
-            fabMenuOpen = false;
-            $('fab-menu').classList.add('hidden');
-            $('fab-backdrop').classList.add('hidden');
-            $('fab-icon').innerHTML = ICON_PLUS;
-            $('fab-log').style.background = '';
-            $('fab-log').style.boxShadow  = '';
-        }
-
-        function fabMenuPick(type) {
-            closeFabMenu();
-            quickNav(type);
-        }
-
-        // Update FAB appearance when switching tabs
-        function updateFab(tabId) {
-            const fab = $('fab-log');
-            const icon = $('fab-icon');
-            if (!fab) return;
-            closeFabMenu();
-
-            if (tabId === 'tab-log' || tabId === 'tab-setup') {
-                // Hide FAB on Log and Setup — nothing useful to add
-                fab.classList.add('hidden');
-            } else if (tabId === 'tab-projects') {
-                // Projects — FAB opens new project
-                fab.classList.remove('hidden');
-                fab.classList.replace('bg-slate-700', 'bg-emerald-500');
-                fab.classList.replace('bg-violet-500', 'bg-emerald-500');
-                icon.className = 'ph-bold ph-plus text-white text-2xl';
-            } else {
-                // Home — FAB opens speed dial
-                fab.classList.remove('hidden');
-                fab.classList.replace('bg-slate-700', 'bg-emerald-500');
-                icon.className = 'ph-bold ph-plus text-white text-2xl';
-            }
-        }
-
-        // --- Navigation ---
-        const tabOrder = ['tab-dashboard','tab-log','tab-projects','tab-setup'];
-
-        function setActiveTab(targetId) {
-            // Update tab content
-            document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
-            const tabEl = $(targetId);
-            if (tabEl) tabEl.classList.add('active');
-
-            // Update nav buttons
-            document.querySelectorAll('.nav-btn').forEach(b => {
-                const isActive = b.dataset.target === targetId;
-                b.classList.toggle('text-emerald-400', isActive);
-                b.classList.toggle('text-slate-500',   !isActive);
-            });
-
-            // Slide the indicator to the active tab
-            const idx = tabOrder.indexOf(targetId);
-            const indicator = $('nav-indicator');
-            if (indicator && idx >= 0) {
-                const pct = (idx / tabOrder.length) * 100;
-                indicator.style.left  = pct + '%';
-                indicator.style.width = (100 / tabOrder.length) + '%';
-            }
-
-            // Show/hide FAB — hide on Log tab (already on that page)
-            const fab = $('fab-log');
-            if (fab) fab.classList.toggle('hidden', targetId === 'tab-log');
-            updateFab(targetId);
-
-            // Lifecycle hooks
-            if (targetId !== 'tab-log') clearLogForm();
-            if (targetId === 'tab-dashboard') renderDashboard();
-            if (targetId === 'tab-projects')  renderProjects();
-            if (targetId === 'tab-setup') {
-                updateBackupLabel && updateBackupLabel();
-            }
-        }
-
-        document.querySelectorAll('.nav-btn').forEach(btn => {
-            btn.addEventListener('click', () => setActiveTab(btn.dataset.target));
-        });
-
-        function navigateTo(tabId) {
-            setActiveTab(tabId);
-        }
-
-        // ── Swipe gesture navigation ──
-        let touchStartX = 0;
-        let touchStartY = 0;
-
-        document.addEventListener('touchstart', e => {
-            touchStartX = e.touches[0].clientX;
-            touchStartY = e.touches[0].clientY;
-        }, { passive: true });
-
-        document.addEventListener('touchend', e => {
-            const dx = e.changedTouches[0].clientX - touchStartX;
-            const dy = e.changedTouches[0].clientY - touchStartY;
-
-            // Only treat as horizontal swipe if mostly horizontal & long enough
-            if (Math.abs(dx) < 60 || Math.abs(dy) > Math.abs(dx) * 0.6) return;
-
-            const currentId  = document.querySelector('.tab-content.active')?.id;
-            const currentIdx = tabOrder.indexOf(currentId);
-            if (currentIdx < 0) return;
-
-            if (dx < 0 && currentIdx < tabOrder.length - 1) {
-                setActiveTab(tabOrder[currentIdx + 1]); // swipe left → next tab
-            } else if (dx > 0 && currentIdx > 0) {
-                setActiveTab(tabOrder[currentIdx - 1]); // swipe right → prev tab
-            }
-        }, { passive: true });
-
-        // --- Data Persistence ---
-        async function loadData() {
-            try {
-                const stored = await localforage.getItem('ts-transactions');
-                transactions = stored ||[];
-                renderDashboard();
-            } catch (err) {
-                showToast("Failed to load local data", "error");
-            }
-        }
-
-        async function saveData() {
-            try {
-                await localforage.setItem('ts-transactions', transactions);
-            } catch (err) {
-                showToast("Failed to save data locally", "error");
-            }
-        }
-
-        // --- The Math Engine & Dashboard ---
-        function calculateFinances() {
-            let income = 0, spend = 0, paidBills = 0, totalOwed = 0;
-            
-            transactions.forEach(t => {
-                try {
-                    const amt = parseFloat(t.amount);
-                    if (isNaN(amt) || amt <= 0) return; // Fault tolerance: ignore corrupted
-                    
-                    if (t.type === 'Income') income += amt;
-                    if (t.type === 'Spend') spend += amt;
-                    if (t.type === 'Bill') {
-                        if (t.isPaid) paidBills += amt;
-                        else totalOwed += amt;
-                    }
-                } catch(e) {}
-            });
-
-            // Math rules: Cash floor is $0
-            const cashOnHand = Math.max(0, income - spend - paidBills);
-            const safeToSpend = cashOnHand - totalOwed;
-            
-            return { cashOnHand, totalOwed, safeToSpend };
-        }
-
-        function renderDashboard() {
-            const stats = calculateFinances();
-
-            // ── Zone 1: greeting & date ──
-            const now  = new Date();
-            const hour = now.getHours();
-            const greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
-            const dateStr  = now.toLocaleDateString('en-US', { weekday:'long', month:'long', day:'numeric' });
-            if ($('dash-greeting')) $('dash-greeting').textContent = greeting;
-            if ($('dash-date'))     $('dash-date').textContent     = dateStr;
-
-            // ── Zone 1: financial pulse ──
-            $('hero-cash').textContent = fmtCur.format(stats.cashOnHand);
-            $('hero-owed').textContent = fmtCur.format(stats.totalOwed);
-
-            const safeEl = $('hero-safe');
-            safeEl.textContent = fmtCur.format(stats.safeToSpend);
-            safeEl.className = `text-5xl font-bold tracking-tight mb-4 ${stats.safeToSpend >= 0 ? 'text-emerald-400' : 'text-rose-500'}`;
-
-            // ── Zone 1: monthly goal bar ──
-            // Goal = total income this calendar month vs simple target
-            // Uses a stored goal amount; defaults to showing % of income vs spend
-            const monthIncome = transactions
-                .filter(t => t.type === 'Income' && new Date(t.date).getMonth() === now.getMonth() && new Date(t.date).getFullYear() === now.getFullYear())
-                .reduce((s, t) => s + parseFloat(t.amount||0), 0);
-            const monthSpend = transactions
-                .filter(t => (t.type === 'Spend' || (t.type === 'Bill' && t.isPaid)) && new Date(t.date||t.dueDate).getMonth() === now.getMonth())
-                .reduce((s, t) => s + parseFloat(t.amount||0), 0);
-            const goalPct = monthIncome > 0 ? Math.min(100, Math.round((monthIncome - monthSpend) / monthIncome * 100)) : 0;
-            if ($('goal-bar')) $('goal-bar').style.width = goalPct + '%';
-            if ($('goal-pct')) $('goal-pct').textContent = goalPct + '%';
-            if ($('hero-month-income')) $('hero-month-income').textContent = fmtCur.format(monthIncome);
-            if ($('hero-month-spend'))  $('hero-month-spend').textContent  = fmtCur.format(monthSpend);
-
-            renderUnpaidBills();
-            renderDashboardProjects();
-            renderLedger();
-        }
-
-        // Quick add pills — navigate to Log tab pre-selecting type
-        function quickNav(type) {
-            if (type === 'Project') {
-                navigateTo('tab-projects');
-                setTimeout(() => $('btn-new-project') && $('btn-new-project').click(), 150);
-                return;
-            }
-            navigateTo('tab-log');
             setTimeout(() => {
-                const radio = document.querySelector(`input[name="type"][value="${type}"]`);
-                if (radio) { radio.checked = true; radio.dispatchEvent(new Event('change')); }
-            }, 100);
+                toast.style.opacity = '0';
+                toast.style.transform = 'translateY(-20px)';
+                toast.style.transition = 'all 0.3s ease';
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
         }
 
-        function renderDashboardProjects() {
-            const container = $('dashboard-projects-container');
-            const list      = $('dashboard-projects-list');
-            list.innerHTML  = '';
+        function formatDateUI(dateStr) {
+            if (!dateStr || typeof dateStr !== 'string') return '--';
+            const parts = dateStr.split('-');
+            if (parts.length !== 3) return dateStr;
+            const dateObj = new Date(parts[0], parts[1] - 1, parts[2]);
+            if (isNaN(dateObj.getTime())) return dateStr;
+            return dateObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+        }
 
-            // Only show active (non-complete) projects, sorted by target date
-            const active = projects
-                .filter(p => p.status !== 'Complete')
-                .sort((a, b) => new Date(a.targetDate || '9999') - new Date(b.targetDate || '9999'));
+        function getDaysDifference(date1, date2) {
+            if (!date1 || !date2 || isNaN(date1.getTime()) || isNaN(date2.getTime())) return 0;
+            const d1 = new Date(date1.getFullYear(), date1.getMonth(), date1.getDate());
+            const d2 = new Date(date2.getFullYear(), date2.getMonth(), date2.getDate());
+            return Math.ceil((d2 - d1) / (1000 * 60 * 60 * 24));
+        }
 
-            if (active.length === 0) {
-                container.classList.add('hidden');
-                return;
+        function formatMoney(num) {
+            const safeNum = parseFloat(num) || 0;
+            const sign = safeNum < 0 ? '-' : '';
+            return sign + '$' + Math.abs(safeNum).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        }
+
+        function updateDashboard() {
+            let totalIncome = 0;
+            let totalSpend = 0;       // spend entries only — never includes bills
+            let unpaidBillsAmount = 0;
+            const unpaidBillsList = [];
+            const allLedger = [];     // every transaction including unpaid bills
+
+            transactions.forEach(tx => {
+                if (!tx) return;
+                const amount = parseFloat(tx.amount) || 0;
+                if (tx.type === 'income') {
+                    totalIncome += amount;
+                    allLedger.push(tx);
+                } else if (tx.type === 'spend') {
+                    totalSpend += amount;
+                    allLedger.push(tx);
+                } else if (tx.type === 'bill') {
+                    if (tx.isPaid) {
+                        // Paid bills count as spend — money has left the account
+                        totalSpend += amount;
+                        allLedger.push(tx);
+                    } else {
+                        // Unpaid: tracked separately, NOT deducted from balance
+                        unpaidBillsAmount += amount;
+                        unpaidBillsList.push(tx);
+                        allLedger.push(tx); // still shows in ledger
+                    }
+                }
+            });
+
+            // Available Balance = income minus spend (which includes paid bills).
+            // Unpaid bills have zero effect on this number.
+            const availableBalance = totalIncome - totalSpend;
+
+            // --- Available Balance card ---
+            const safeCard = document.getElementById('safeToSpendCard');
+            const safeText = document.getElementById('safeToSpendAmount');
+            const accent = document.getElementById('safeSpendAccent');
+            safeText.innerText = formatMoney(availableBalance);
+            if (availableBalance < 0) {
+                safeText.className = 'text-5xl font-extrabold tracking-tight text-rose-400 mb-1';
+                safeCard.classList.add('border-rose-900/50', 'bg-rose-950/20');
+                safeCard.classList.remove('border-slate-700');
+                accent.className = 'absolute top-0 right-0 w-24 h-24 bg-rose-900/20 rounded-bl-full -z-10';
+            } else {
+                safeText.className = 'text-5xl font-extrabold tracking-tight text-emerald-400 mb-1';
+                safeCard.classList.remove('border-rose-900/50', 'bg-rose-950/20');
+                safeCard.classList.add('border-slate-700');
+                accent.className = 'absolute top-0 right-0 w-24 h-24 bg-emerald-900/20 rounded-bl-full -z-10';
             }
 
-            container.classList.remove('hidden');
+            // --- Income / Spend breakdown cards ---
+            document.getElementById('totalIncomeAmount').innerText = formatMoney(totalIncome);
+            document.getElementById('totalSpendAmount').innerText = formatMoney(totalSpend);
 
-            const today = new Date(); today.setHours(0,0,0,0);
+            // --- Unpaid Bills card ---
+            document.getElementById('upcomingBillsTotal').innerText = formatMoney(unpaidBillsAmount);
+            const countEl = document.getElementById('upcomingBillsCount');
+            const billsCard = document.getElementById('upcomingBillsCard');
+            if (unpaidBillsList.length === 0) {
+                countEl.innerText = 'None outstanding';
+                billsCard.classList.remove('border-amber-800/50');
+                billsCard.classList.add('border-slate-800');
+            } else {
+                countEl.innerText = `${unpaidBillsList.length} bill${unpaidBillsList.length > 1 ? 's' : ''} pending`;
+                billsCard.classList.add('border-amber-800/50');
+                billsCard.classList.remove('border-slate-800');
+            }
 
-            // Update count badge
-            const countEl = $('dash-proj-count');
-            if (countEl) countEl.textContent = active.length;
+            // --- Ledger: all transactions, unpaid bills sorted by due date at top ---
+            const ledgerEl = document.getElementById('recentLedgerList');
+            ledgerEl.innerHTML = '';
+            if (allLedger.length === 0) {
+                ledgerEl.innerHTML = '<div class="p-8 text-center text-slate-500 text-sm">No transactions logged yet.</div>';
+            } else {
+                // Sort: unpaid bills first (by due date), then rest by date descending
+                const unpaidSorted = unpaidBillsList.slice().sort((a, b) =>
+                    new Date(a.dueDate || 0) - new Date(b.dueDate || 0));
+                const paidAndSpend = allLedger
+                    .filter(tx => !(tx.type === 'bill' && !tx.isPaid))
+                    .sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0));
+                const ordered = [...unpaidSorted, ...paidAndSpend].slice(0, 30);
 
-            active.forEach(p => {
-                const amt = parseFloat(p.amount) || 0;
+                ordered.forEach((tx, index, arr) => {
+                    const isUnpaidBill = tx.type === 'bill' && !tx.isPaid;
+                    const isPaidBill = tx.type === 'bill' && tx.isPaid;
 
-                const statusConfig = {
-                    'Planned':     { bg: 'bg-violet-500/15', text: 'text-violet-400', dot: 'bg-violet-400' },
-                    'In Progress': { bg: 'bg-amber-500/15',  text: 'text-amber-400',  dot: 'bg-amber-400'  },
-                };
-                const sc = statusConfig[p.status] || statusConfig['Planned'];
+                    let icon, amountColor, amountPrefix, bgIcon, rowBg;
+                    if (tx.type === 'income') {
+                        icon = 'ph-trend-up'; amountColor = 'text-emerald-400'; amountPrefix = '+';
+                        bgIcon = 'bg-emerald-900/20 text-emerald-400'; rowBg = '';
+                    } else if (tx.type === 'spend') {
+                        icon = 'ph-shopping-cart'; amountColor = 'text-rose-400'; amountPrefix = '−';
+                        bgIcon = 'bg-rose-900/20 text-rose-400'; rowBg = '';
+                    } else if (isPaidBill) {
+                        icon = 'ph-check-circle'; amountColor = 'text-slate-400'; amountPrefix = '−';
+                        bgIcon = 'bg-slate-700 text-slate-400'; rowBg = '';
+                    } else {
+                        // Unpaid bill
+                        icon = 'ph-clock'; amountColor = 'text-amber-400'; amountPrefix = '';
+                        bgIcon = 'bg-amber-900/20 text-amber-400'; rowBg = 'bg-amber-950/10';
+                    }
 
-                let dateHtml = '';
-                if (p.targetDate) {
-                    const d = new Date(p.targetDate);
-                    d.setMinutes(d.getMinutes() + d.getTimezoneOffset());
-                    d.setHours(0,0,0,0);
-                    const diff = Math.ceil((d - today) / (1000*60*60*24));
-                    let dateColor = 'text-slate-500';
-                    let dateLabel = p.targetDate;
-                    if (diff < 0)       { dateColor = 'text-rose-400';  dateLabel = `Overdue ${Math.abs(diff)}d`; }
-                    else if (diff === 0){ dateColor = 'text-rose-400';  dateLabel = 'Due Today'; }
-                    else if (diff <= 7) { dateColor = 'text-amber-400'; dateLabel = `${diff}d away`; }
-                    dateHtml = `<span class="text-[10px] ${dateColor}">${dateLabel}</span>`;
-                }
+                    const daysAway = isUnpaidBill ? getDaysDifference(new Date(), new Date(tx.dueDate)) : null;
+                    let dueBadge = '';
+                    if (isUnpaidBill) {
+                        let badgeColor = 'bg-slate-700 text-slate-300';
+                        let badgeText = `Due ${formatDateUI(tx.dueDate)}`;
+                        if (daysAway < 0) { badgeColor = 'bg-rose-900/60 text-rose-300'; badgeText = `Overdue ${Math.abs(daysAway)}d`; }
+                        else if (daysAway === 0) { badgeColor = 'bg-rose-900/60 text-rose-300'; badgeText = 'Due today'; }
+                        else if (daysAway <= 3) { badgeColor = 'bg-amber-900/60 text-amber-300'; badgeText = `Due in ${daysAway}d`; }
+                        dueBadge = `<span class="text-xs font-bold px-2 py-0.5 rounded-full ${badgeColor}">${badgeText}</span>`;
+                    }
 
-                list.innerHTML += `
-                    <div class="flex items-center justify-between bg-slate-900/50 border border-slate-800/50 p-3 rounded-xl">
-                        <div class="flex items-center gap-3 min-w-0">
-                            <div class="p-2 bg-slate-800 rounded-lg flex-shrink-0">
-                                <i class="ph-fill ph-projector-screen-chart ${sc.text} text-base"></i>
-                            </div>
-                            <div class="min-w-0">
-                                <p class="font-medium text-sm text-slate-200 truncate">${p.name}</p>
-                                <div class="flex items-center gap-2 mt-0.5 flex-wrap">
-                                    <span class="${sc.bg} ${sc.text} text-[10px] font-semibold px-1.5 py-0.5 rounded-full flex items-center gap-1">
-                                        <span class="w-1 h-1 rounded-full ${sc.dot} inline-block"></span>${p.status}
-                                    </span>
-                                    ${dateHtml}
-                                    ${p.remind ? `<span class="text-[10px] text-amber-400 flex items-center gap-0.5"><i class="ph-fill ph-bell text-[10px]"></i>${p.remindDays || 7}d</span>` : ''}
+                    const dateLabel = isUnpaidBill
+                        ? `<span class="text-xs text-slate-500">Logged · unpaid</span>`
+                        : `<span class="text-xs text-slate-500">${formatDateUI(tx.date)}${tx.receipt ? ' · 📎' : ''}${isPaidBill ? ' · paid bill' : ''}</span>`;
+
+                    const payBtn = isUnpaidBill
+                        ? `<button onclick="payBill('${tx.id}')" class="px-3 py-1.5 bg-blue-600 text-white text-xs font-bold rounded-lg active:bg-blue-700 transition-colors flex items-center gap-1"><i class="ph-bold ph-check"></i> Pay</button>`
+                        : '';
+
+                    const borderClass = index < arr.length - 1 ? 'border-b border-slate-700/50' : '';
+                    const el = document.createElement('div');
+                    el.className = `p-4 flex flex-col gap-2 ${borderClass} ${rowBg}`;
+                    el.innerHTML = `
+                        <div class="flex justify-between items-center gap-2">
+                            <div class="flex items-center gap-3 min-w-0">
+                                <div class="${bgIcon} p-2 rounded-full border border-slate-700/50 shrink-0">
+                                    <i class="ph-fill ${icon} text-lg"></i>
+                                </div>
+                                <div class="min-w-0">
+                                    <p class="font-bold text-slate-100 leading-tight truncate">${tx.description}</p>
+                                    <div class="flex items-center gap-2 mt-0.5 flex-wrap">${dateLabel}${dueBadge}</div>
                                 </div>
                             </div>
+                            <span class="font-bold ${amountColor} text-right shrink-0">${amountPrefix}${formatMoney(tx.amount)}</span>
                         </div>
-                        <span class="text-sm font-bold text-violet-400 flex-shrink-0 ml-2">${amt > 0 ? fmtCur.format(amt) : '—'}</span>
-                    </div>
-                `;
-            });
-        }
-
-        function renderUnpaidBills() {
-            const container = $('action-required-container');
-            const list = $('unpaid-bills-list');
-            list.innerHTML = '';
-
-            const unpaid = transactions.filter(t => t.type === 'Bill' && t.isPaid === false);
-            if (unpaid.length === 0) {
-                container.classList.add('hidden');
-                return;
-            }
-            
-            container.classList.remove('hidden');
-            unpaid.sort((a, b) => new Date(a.dueDate) - new Date(b.dueDate));
-
-            const today = new Date();
-            today.setHours(0,0,0,0);
-
-            unpaid.forEach(bill => {
-                const due = new Date(bill.dueDate);
-                // Adjust for local timezone diffs securely
-                due.setMinutes(due.getMinutes() + due.getTimezoneOffset());
-                
-                const diffTime = due - today;
-                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-                
-                let dueText = `Due in ${diffDays}d`;
-                let dueColor = 'text-slate-400';
-                
-                if (diffDays < 0) {
-                    dueText = `Overdue ${Math.abs(diffDays)}d`;
-                    dueColor = 'text-rose-500 font-bold';
-                } else if (diffDays === 0) {
-                    dueText = 'Due Today';
-                    dueColor = 'text-rose-400 font-bold';
-                } else if (diffDays <= 3) {
-                    dueColor = 'text-amber-400';
-                }
-
-                list.innerHTML += `
-                    <div class="flex items-center justify-between bg-slate-900 border border-slate-800 p-3 rounded-xl">
-                        <div>
-                            <p class="font-medium text-slate-200">${bill.description}</p>
-                            <p class="text-xs ${dueColor}">${dueText} &bull; ${bill.isRecurring ? '<i class="ph ph-arrows-clockwise"></i> Repeating' : 'One-time'}</p>
+                        <div class="flex justify-end items-center gap-1">
+                            ${payBtn}
+                            <button onclick="editTx('${tx.id}')" class="p-1.5 text-slate-500 hover:text-slate-300 transition-colors"><i class="ph-bold ph-pencil-simple"></i></button>
+                            <button onclick="deleteTx('${tx.id}')" class="p-1.5 text-rose-500/60 hover:text-rose-400 transition-colors"><i class="ph-bold ph-trash"></i></button>
                         </div>
-                        <div class="flex items-center gap-3">
-                            <span class="font-bold text-rose-300">${fmtCur.format(bill.amount)}</span>
-                            <button onclick="payBill('${bill.id}')" class="bg-emerald-500/10 text-emerald-400 p-2 rounded-lg hover:bg-emerald-500/20 active:scale-95 transition">
-                                <i class="ph-bold ph-check text-xl"></i>
-                            </button>
-                        </div>
-                    </div>
-                `;
-            });
-        }
-
-        function renderLedger() {
-            const list = $('recent-ledger');
-            list.innerHTML = '';
-            
-            const recent = [...transactions].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)).slice(0, 20);
-
-            // Update count badge on the toggle header
-            const countEl = $('ledger-count');
-            if (countEl) countEl.textContent = recent.length > 0 ? recent.length : '';
-            
-            if (recent.length === 0) {
-                list.innerHTML = `<p class="text-slate-500 text-sm italic pt-1">No transactions yet.</p>`;
-                return;
+                    `;
+                    ledgerEl.appendChild(el);
+                });
             }
 
-            recent.forEach(t => {
-                let icon = 'ph-wallet';
-                let iconColor = 'text-slate-400';
-                let amtColor = 'text-slate-300';
-                let sign = '';
-
-                if (t.type === 'Income') {
-                    icon = 'ph-trend-up'; iconColor = 'text-emerald-400'; amtColor = 'text-emerald-400'; sign = '+';
-                } else if (t.type === 'Spend') {
-                    icon = 'ph-shopping-cart'; iconColor = 'text-rose-400'; amtColor = 'text-slate-300'; sign = '-';
-                } else if (t.type === 'Bill') {
-                    icon = 'ph-receipt'; 
-                    iconColor = t.isPaid ? 'text-slate-500' : 'text-amber-400'; 
-                    amtColor = t.isPaid ? 'text-slate-500' : 'text-slate-300';
-                    sign = '-';
-                }
-
-                const dateStr = t.type === 'Bill' && !t.isPaid ? `Due: ${t.dueDate}` : `Date: ${t.date}`;
-
-                list.innerHTML += `
-                    <div class="flex items-center justify-between bg-slate-900/50 border border-slate-800/50 p-3 rounded-xl group">
-                        <div class="flex items-center gap-3">
-                            <div class="p-2 bg-slate-800 rounded-lg"><i class="ph-fill ${icon} ${iconColor} text-lg"></i></div>
-                            <div>
-                                <p class="font-medium text-sm text-slate-200">${t.description}</p>
-                                <p class="text-[10px] text-slate-500">${dateStr}</p>
-                            </div>
-                        </div>
-                        <div class="flex items-center gap-3">
-                            <span class="font-semibold text-sm ${amtColor}">${sign}${fmtCur.format(t.amount)}</span>
-                            <div class="flex flex-col gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
-                                <button onclick="editTransaction('${t.id}')" class="text-slate-500 hover:text-blue-400"><i class="ph-fill ph-pencil-simple"></i></button>
-                                <button onclick="deleteTransaction('${t.id}')" class="text-slate-500 hover:text-rose-400"><i class="ph-fill ph-trash"></i></button>
-                            </div>
-                        </div>
-                    </div>
-                `;
-            });
-        }
-
-        // --- Action Logic ---
-        function payBill(id) {
-            const bill = transactions.find(t => t.id === id);
-            if (!bill) return;
-
-            bill.isPaid = true;
-            bill.date = new Date().toISOString().split('T')[0];
-            
-            // Crucial Logic: Spawn Recurring Clone
-            if (bill.isRecurring) {
-                let d = new Date(bill.dueDate);
-                d.setMinutes(d.getMinutes() + d.getTimezoneOffset());
-                d.setMonth(d.getMonth() + 1); // Exact 1 month jump
-                
-                const newBill = {
-                    ...bill,
-                    id: crypto.randomUUID(),
-                    isPaid: false,
-                    dueDate: d.toISOString().split('T')[0],
-                    createdAt: new Date().toISOString()
-                };
-                delete newBill.date;
-                transactions.push(newBill);
-                showToast("Bill marked paid. Next month's bill created.", "success");
+            // Sync banner
+            const b = document.getElementById('sync-warning-banner');
+            const hideBanner = localStorage.getItem('hideTightShipSyncBanner') === 'true';
+            if (!accessToken && !driveFileId && !hideBanner) {
+                b.classList.remove('hidden');
             } else {
-                showToast("Bill marked paid.", "success");
+                b.classList.add('hidden');
             }
-            
-            saveData().then(() => renderDashboard());
         }
 
-        function deleteTransaction(id) {
-            transactions = transactions.filter(t => t.id !== id);
-            saveData().then(() => renderDashboard());
-            showToast("Transaction deleted.");
+        function updateFormUI() {
+            const type = document.querySelector('input[name="txType"]:checked').value;
+            const lblDesc = document.getElementById('lblDescription');
+            const lblDate = document.getElementById('lblDate');
+            const toggleContainer = document.getElementById('billPaidToggleContainer');
+            const btn = document.getElementById('btn-submit');
+            toggleContainer.classList.add('hidden');
+            if (type === 'income') {
+                lblDesc.innerText = 'Source';
+                lblDate.innerText = 'Date Received';
+                document.getElementById('txDescription').placeholder = 'e.g. Freelance Client';
+                btn.innerText = editingTxId ? "Update Income" : "Save Income";
+            } else if (type === 'spend') {
+                lblDesc.innerText = 'Vendor';
+                lblDate.innerText = 'Date Spent';
+                document.getElementById('txDescription').placeholder = 'e.g. Grocery Store';
+                btn.innerText = editingTxId ? "Update Spending" : "Save Spending";
+            } else if (type === 'bill') {
+                lblDesc.innerText = 'Biller';
+                document.getElementById('txDescription').placeholder = 'e.g. Electricity Co.';
+                toggleContainer.classList.remove('hidden');
+                btn.innerText = editingTxId ? "Update Bill" : "Save Bill";
+                syncBillDateLabel();
+            }
+            document.getElementById('txDate').required = true;
+            document.getElementById('field-date').classList.remove('hidden');
+            document.getElementById('field-due-date').classList.add('hidden');
+            document.getElementById('input-due-date').required = false;
         }
 
-        function editTransaction(id) {
-            const t = transactions.find(x => x.id === id);
-            if (!t) return;
+        function toggleBillPaid() {
+            const checkbox = document.getElementById('txIsPaid');
+            checkbox.checked = !checkbox.checked;
+            syncBillPaidUI(checkbox.checked);
+            syncBillDateLabel();
+        }
 
-            editingId = id;
-            $('log-title').textContent = "Edit Transaction";
-            $('btn-save').textContent = "Update Transaction";
-
-            // Populate Form
-            document.querySelector(`input[name="type"][value="${t.type}"]`).checked = true;
-            $('input-amount').value = t.amount;
-            $('input-desc').value = t.description;
-            
-            if (t.type === 'Bill') {
-                $('input-ispaid').checked = t.isPaid;
-                $('input-recurring').checked = t.isRecurring;
-                $('input-date').value = t.isPaid ? t.date : t.dueDate;
+        // FIX 3: Extracted UI state sync into its own function so editTx()
+        // can call it directly without triggering the checkbox flip.
+        function syncBillPaidUI(isPaid) {
+            const icon = document.getElementById('billPaidIcon');
+            const text = document.getElementById('billPaidText');
+            const subtext = document.getElementById('billPaidSubText');
+            const container = document.getElementById('billPaidToggleContainer');
+            if (isPaid) {
+                icon.className = 'ph-fill ph-check-circle text-blue-400 text-3xl';
+                text.innerText = 'I have already paid this';
+                text.className = 'font-bold text-blue-300';
+                subtext.className = 'text-xs text-blue-400/80';
+                container.className = 'bg-blue-900/20 border border-blue-800/50 rounded-2xl p-4 flex items-center justify-between cursor-pointer';
             } else {
-                $('input-date').value = t.date;
+                icon.className = 'ph-fill ph-clock text-rose-400 text-3xl';
+                text.innerText = 'This is unpaid / due soon';
+                text.className = 'font-bold text-rose-300';
+                subtext.className = 'text-xs text-rose-400/80';
+                container.className = 'bg-rose-900/20 border border-rose-800/50 rounded-2xl p-4 flex items-center justify-between cursor-pointer';
             }
-            
-            if (t.receipt) {
-                receiptBase64 = t.receipt;
-                $('receipt-preview').src = t.receipt;
-                $('receipt-preview').classList.remove('hidden');
-            }
-
-            toggleFormFields();
-            navigateTo('tab-log');
         }
 
-        // --- Log Form Logic ---
-        function toggleFormFields() {
-            const type = document.querySelector('input[name="type"]:checked').value;
-            const isBill = type === 'Bill';
-            const isPaid = $('input-ispaid').checked;
-
-            if (isBill) {
-                $('bill-options').classList.remove('hidden');
-                $('date-label').textContent = isPaid ? 'Date Paid' : 'Due Date';
+        function syncBillDateLabel() {
+            const isPaid = document.getElementById('txIsPaid').checked;
+            if (isPaid) {
+                document.getElementById('field-due-date').classList.add('hidden');
+                document.getElementById('field-date').classList.remove('hidden');
+                document.getElementById('input-due-date').required = false;
+                document.getElementById('txDate').required = true;
             } else {
-                $('bill-options').classList.add('hidden');
-                $('date-label').textContent = 'Date';
+                document.getElementById('field-due-date').classList.remove('hidden');
+                document.getElementById('field-date').classList.add('hidden');
+                document.getElementById('input-due-date').required = true;
+                document.getElementById('txDate').required = false;
             }
         }
 
-        document.querySelectorAll('input[name="type"]').forEach(r => r.addEventListener('change', toggleFormFields));
-        $('input-ispaid').addEventListener('change', toggleFormFields);
-
-        // Pre-fill today's date
-        $('input-date').value = new Date().toISOString().split('T')[0];
-
-        function clearLogForm() {
-            editingId = null;
-            receiptBase64 = null;
-            $('log-form').reset();
-            $('log-title').textContent = "Log Entry";
-            $('btn-save').textContent = "Save Transaction";
-            $('input-date').value = new Date().toISOString().split('T')[0];
-            $('receipt-preview').classList.add('hidden');
-            $('receipt-preview').src = '';
-            toggleFormFields();
-        }
-
-        // Image Compression (HTML5 Canvas)
-        $('input-receipt').addEventListener('change', function(e) {
-            const file = e.target.files[0];
+        async function handleReceiptUpload(event) {
+            const file = event.target.files[0];
             if (!file) return;
+            const preview = document.getElementById('receiptPreview');
+            preview.src = URL.createObjectURL(file);
+            preview.classList.remove('hidden');
+            document.getElementById('receiptPrompt').classList.add('hidden');
+            document.getElementById('receiptChangeText').classList.remove('hidden');
+            currentBase64Receipt = await compressImage(file);
+        }
 
-            const reader = new FileReader();
-            reader.onload = function(event) {
-                const img = new Image();
-                img.onload = function() {
-                    const canvas = $('receipt-canvas');
-                    const ctx = canvas.getContext('2d');
-                    let width = img.width;
-                    let height = img.height;
-                    const MAX = 1200;
+        function compressImage(file) {
+            return new Promise((resolve) => {
+                const reader = new FileReader();
+                reader.readAsDataURL(file);
+                reader.onload = (e) => {
+                    const img = new Image();
+                    img.src = e.target.result;
+                    img.onload = () => {
+                        const canvas = document.createElement('canvas');
+                        const MAX_SIZE = 1200;
+                        let width = img.width, height = img.height;
+                        if (width > height && width > MAX_SIZE) { height *= MAX_SIZE / width; width = MAX_SIZE; }
+                        else if (height > MAX_SIZE) { width *= MAX_SIZE / height; height = MAX_SIZE; }
+                        canvas.width = width; canvas.height = height;
+                        canvas.getContext('2d').drawImage(img, 0, 0, width, height);
+                        resolve(canvas.toDataURL('image/jpeg', 0.8));
+                    };
+                };
+            });
+        }
 
-                    if (width > height && width > MAX) {
-                        height *= MAX / width; width = MAX;
-                    } else if (height > MAX) {
-                        width *= MAX / height; height = MAX;
-                    }
-
-                    canvas.width = width;
-                    canvas.height = height;
-                    ctx.drawImage(img, 0, 0, width, height);
-                    
-                    receiptBase64 = canvas.toDataURL('image/jpeg', 0.8);
-                    $('receipt-preview').src = receiptBase64;
-                    $('receipt-preview').classList.remove('hidden');
-                }
-                img.src = event.target.result;
-            }
-            reader.readAsDataURL(file);
-        });
-
-        $('log-form').addEventListener('submit', async (e) => {
+        function handleLogTransaction(e) {
             e.preventDefault();
-            const btn = $('btn-save');
-            const originalText = btn.textContent;
-            
-            const type = document.querySelector('input[name="type"]:checked').value;
-            const amount = parseFloat($('input-amount').value);
-            const desc = $('input-desc').value.trim();
-            const dateVal = $('input-date').value;
+            const btn = document.getElementById('btn-submit');
+            const originalText = btn.innerText;
+            const originalClasses = btn.className;
+            btn.innerText = editingTxId ? "Updating..." : "Saving...";
+            btn.classList.add('opacity-80', 'pointer-events-none');
 
-            // Guardrail
-            if (isNaN(amount) || amount <= 0) {
-                showToast("Amount must be greater than zero.", "error");
-                return;
-            }
-            if (!dateVal) {
-                showToast("Date is required.", "error");
-                return;
-            }
-
-            btn.textContent = "Saving...";
-            
-            const trans = {
-                id: editingId || crypto.randomUUID(),
-                type,
-                amount,
-                description: desc,
-                createdAt: editingId ? transactions.find(t=>t.id===editingId).createdAt : new Date().toISOString(),
-                receipt: receiptBase64
-            };
-
-            if (type === 'Bill') {
-                const isPaid = $('input-ispaid').checked;
-                trans.isPaid = isPaid;
-                trans.isRecurring = $('input-recurring').checked;
-                if (isPaid) trans.date = dateVal;
-                else trans.dueDate = dateVal;
-            } else {
-                trans.date = dateVal;
-            }
-
-            if (editingId) {
-                const idx = transactions.findIndex(t => t.id === editingId);
-                transactions[idx] = trans;
-            } else {
-                transactions.push(trans);
-            }
-
-            await saveData();
-            
-            btn.textContent = "Success! ✓";
-            showToast(editingId ? "Transaction updated." : "Transaction logged.", "success");
-            
             setTimeout(() => {
-                clearLogForm();
-                navigateTo('tab-dashboard');
-            }, 600);
-        });
+                const type = document.querySelector('input[name="txType"]:checked').value;
+                const amount = parseFloat(document.getElementById('txAmount').value);
+                const description = document.getElementById('txDescription').value.trim();
+                let date = document.getElementById('txDate').value;
+                let isPaid = true;
+                let dueDate = null;
 
-        // --- Settings & Sync Logic ---
-
-        // Smart Paste
-        $('btn-smart-paste').addEventListener('click', () => {
-            const text = $('smart-paste-area').value;
-            if (!text.trim()) return showToast("Nothing to process", "error");
-
-            const lines = text.split('\n');
-            let added = 0;
-
-            lines.forEach(line => {
-                if(!line.trim()) return;
-                // Regex looks for an amount > 0
-                const amtMatch = line.match(/\$?(?!0\.(?:00?|0?))(\d+(?:\.\d{2})?)/);
-                const dateMatch = line.match(/(\d{4}-\d{2}-\d{2})|(\d{1,2}\/\d{1,2}(?:\/\d{2,4})?)/);
-                
-                if (amtMatch) {
-                    const amount = parseFloat(amtMatch[1]);
-                    if (amount > 0) {
-                        let date = new Date().toISOString().split('T')[0]; // fallback today
-                        if (dateMatch) {
-                            try { date = new Date(dateMatch[0]).toISOString().split('T')[0]; } catch(e){}
-                        }
-                        
-                        let desc = line.replace(amtMatch[0], '').replace(dateMatch ? dateMatch[0] : '', '').trim();
-                        // Strip remaining extra spaces and symbols if desired
-                        desc = desc.replace(/^[-\s]+|[-\s]+$/g, '') || 'Imported Entry';
-                        
-                        transactions.push({
-                            id: crypto.randomUUID(), type: 'Spend', amount, description: desc, date, createdAt: new Date().toISOString()
-                        });
-                        added++;
-                    }
+                if (type === 'bill') {
+                    isPaid = document.getElementById('txIsPaid').checked;
+                    if (!isPaid) { dueDate = document.getElementById('input-due-date').value; date = null; }
                 }
-            });
 
-            if (added > 0) {
-                saveData();
-                showToast(`Parsed ${added} transactions.`, "success");
-                $('smart-paste-area').value = '';
-            } else {
-                showToast("Could not detect any valid transactions.", "error");
-            }
-        });
+                if (isNaN(amount) || amount <= 0) {
+                    showToast('Please enter a valid positive amount.', 'error');
+                    btn.innerText = originalText; btn.className = originalClasses; return;
+                }
+                if (!description || (isPaid && !date) || (!isPaid && !dueDate)) {
+                    showToast('Please fill all required fields.', 'error');
+                    btn.innerText = originalText; btn.className = originalClasses; return;
+                }
 
-        // CSV Import via PapaParse
-        $('btn-import-csv').addEventListener('click', () => {
-            const file = $('input-csv').files[0];
-            if (!file) return showToast("Select a CSV file first.", "error");
-
-            Papa.parse(file, {
-                header: true, skipEmptyLines: true,
-                complete: function(results) {
-                    let added = 0;
-                    results.data.forEach(row => {
-                        // Very generic mapper assuming columns might have 'Amount', 'Date', 'Description'
-                        let amtRaw = row['Amount'] || row['amount'] || row['Value'] || '';
-                        let amount = parseFloat(amtRaw.replace(/[^\d.-]/g, ''));
-                        
-                        let desc = row['Description'] || row['description'] || row['Name'] || 'CSV Import';
-                        let date = row['Date'] || row['date'] || new Date().toISOString().split('T')[0];
-
-                        // Attempt format standardization
-                        try { date = new Date(date).toISOString().split('T')[0]; } catch(e){ date = new Date().toISOString().split('T')[0]; }
-
-                        if (!isNaN(amount) && amount !== 0) {
-                            let type = amount > 0 ? 'Income' : 'Spend';
-                            transactions.push({
-                                id: crypto.randomUUID(), type, amount: Math.abs(amount), description: desc, date, createdAt: new Date().toISOString()
-                            });
-                            added++;
-                        }
+                const wasEdit = !!editingTxId;
+                if (editingTxId) {
+                    const txIndex = transactions.findIndex(t => t.id === editingTxId);
+                    if (txIndex > -1) {
+                        transactions[txIndex] = {
+                            ...transactions[txIndex],
+                            type, amount, description, date, isPaid, dueDate,
+                            receipt: currentBase64Receipt || transactions[txIndex].receipt,
+                            updatedAt: new Date().toISOString()
+                        };
+                    }
+                } else {
+                    transactions.push({
+                        id: Date.now().toString(36) + Math.random().toString(36).substring(2),
+                        type, amount, description, date, isPaid, dueDate,
+                        receipt: currentBase64Receipt,
+                        createdAt: new Date().toISOString()
                     });
-
-                    if (added > 0) {
-                        saveData();
-                        showToast(`Imported ${added} records.`, "success");
-                    } else {
-                        showToast("No valid columns (Amount, Date, Description) found.", "error");
-                    }
-                }
-            });
-        });
-
-        // Prune Ledger
-        $('btn-prune').addEventListener('click', async () => {
-            const now = new Date();
-            const cutoff = new Date(now.setDate(now.getDate() - 90));
-            
-            const toKeep = [];
-            const toArchive =[];
-            
-            transactions.forEach(t => {
-                // Never prune unpaid bills
-                if (t.type === 'Bill' && !t.isPaid) {
-                    toKeep.push(t);
-                    return;
-                }
-                const tDate = new Date(t.date || t.createdAt);
-                if (tDate < cutoff) toArchive.push(t);
-                else toKeep.push(t);
-            });
-
-            if (toArchive.length === 0) {
-                return showToast("No old transactions to prune.");
-            }
-
-            try {
-                const existingArchive = await localforage.getItem('ts-archive') || [];
-                await localforage.setItem('ts-archive',[...existingArchive, ...toArchive]);
-                transactions = toKeep;
-                await saveData();
-                showToast(`Pruned ${toArchive.length} entries to archive.`, "success");
-                renderDashboard();
-            } catch (err) {
-                showToast("Failed to archive.", "error");
-            }
-        });
-
-        // Wipe Memory
-        $('btn-wipe').addEventListener('click', () => {
-            if (confirm("DANGER: This will permanently wipe all local data. Are you absolutely sure?")) {
-                localforage.clear().then(() => {
-                    transactions =[];
-                    renderDashboard();
-                    showToast("Memory wiped.", "error");
-                });
-            }
-        });
-
-        // Load data on startup
-        window.onload = function () {
-            loadData();
-        };
-
-        // ═══════════════════════════════════════════════
-        //  PROJECT ALLOCATIONS — completely separate from
-        //  transactions. Never affects the math engine.
-        // ═══════════════════════════════════════════════
-        let projects = [];
-        let editingProjectId = null;
-
-        // Load projects from localforage
-        async function loadProjects() {
-            try {
-                const stored = await localforage.getItem('ts-projects');
-                projects = stored || [];
-                renderProjects();
-                renderDashboardProjects();
-            } catch(e) {}
-        }
-
-        async function saveProjects() {
-            try {
-                await localforage.setItem('ts-projects', projects);
-            } catch(e) {
-                showToast("Failed to save projects.", "error");
-            }
-        }
-
-        // Render the project list + summary bar
-        function renderProjects() {
-            const list = $('projects-list');
-            list.innerHTML = '';
-
-            let total = 0;
-            let inProgressCount = 0;
-            let completeCount = 0;
-
-            if (projects.length === 0) {
-                list.innerHTML = `<p class="text-slate-500 text-sm italic text-center py-8">No projects yet. Tap <strong>New</strong> to plan ahead.</p>`;
-            }
-
-            // Sort: Planned → In Progress → Complete, then by date
-            const sorted = [...projects].sort((a, b) => {
-                const order = { 'Planned': 0, 'In Progress': 1, 'Complete': 2 };
-                if (order[a.status] !== order[b.status]) return order[a.status] - order[b.status];
-                return new Date(a.targetDate || '9999') - new Date(b.targetDate || '9999');
-            });
-
-            sorted.forEach(p => {
-                const amt = parseFloat(p.amount) || 0;
-                if (p.status !== 'Complete') total += amt;
-                if (p.status === 'In Progress') inProgressCount++;
-                if (p.status === 'Complete') completeCount++;
-
-                // Status badge colours
-                const statusConfig = {
-                    'Planned':     { bg: 'bg-violet-500/15', text: 'text-violet-400', dot: 'bg-violet-400' },
-                    'In Progress': { bg: 'bg-amber-500/15',  text: 'text-amber-400',  dot: 'bg-amber-400'  },
-                    'Complete':    { bg: 'bg-emerald-500/15',text: 'text-emerald-400',dot: 'bg-emerald-400' },
-                };
-                const sc = statusConfig[p.status] || statusConfig['Planned'];
-
-                // Date display
-                let dateHtml = '';
-                if (p.targetDate) {
-                    const d = new Date(p.targetDate);
-                    d.setMinutes(d.getMinutes() + d.getTimezoneOffset());
-                    const today = new Date(); today.setHours(0,0,0,0);
-                    const diff = Math.ceil((d - today) / (1000*60*60*24));
-                    let dateColor = 'text-slate-500';
-                    let dateLabel = `Target: ${p.targetDate}`;
-                    if (p.status !== 'Complete') {
-                        if (diff < 0)      { dateColor = 'text-rose-400'; dateLabel = `Overdue ${Math.abs(diff)}d`; }
-                        else if (diff <= 7){ dateColor = 'text-amber-400'; dateLabel = `${diff}d away`; }
-                    }
-                    dateHtml = `<span class="${dateColor}">${dateLabel}</span>`;
                 }
 
-                list.innerHTML += `
-                    <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 space-y-3 ${p.status === 'Complete' ? 'opacity-60' : ''}">
-                        <div class="flex items-start justify-between gap-3">
-                            <div class="flex-1 min-w-0">
-                                <div class="flex items-center gap-2 flex-wrap">
-                                    <span class="font-semibold text-slate-100 truncate">${p.name}</span>
-                                    <span class="${sc.bg} ${sc.text} text-[10px] font-semibold px-2 py-0.5 rounded-full flex items-center gap-1">
-                                        <span class="w-1.5 h-1.5 rounded-full ${sc.dot} inline-block"></span>${p.status}
-                                    </span>
-                                    ${p.remind ? `<span class="text-amber-400 text-[10px] flex items-center gap-0.5"><i class="ph-fill ph-bell"></i>${p.remindDays || 7}d</span>` : ''}
-                                </div>
-                                <div class="flex items-center gap-3 mt-1 text-[11px] flex-wrap">
-                                    ${dateHtml}
-                                </div>
-                            </div>
-                            <div class="text-right flex-shrink-0">
-                                <p class="text-lg font-bold text-violet-400">${fmtCur.format(amt)}</p>
-                            </div>
-                        </div>
-                        ${p.notes ? `<p class="text-xs text-slate-400 bg-slate-800/60 rounded-lg px-3 py-2 leading-relaxed">${p.notes}</p>` : ''}
-                        <div class="flex gap-2 pt-1">
-                            <button onclick="editProject('${p.id}')" class="flex-1 bg-slate-800 text-slate-300 text-xs font-medium py-2 rounded-lg flex items-center justify-center gap-1 hover:bg-slate-700 active:scale-95 transition">
-                                <i class="ph-fill ph-pencil-simple"></i> Edit
-                            </button>
-                            <button onclick="deleteProject('${p.id}')" class="bg-rose-500/10 text-rose-400 text-xs font-medium py-2 px-4 rounded-lg flex items-center justify-center gap-1 hover:bg-rose-500/20 active:scale-95 transition">
-                                <i class="ph-fill ph-trash"></i>
-                            </button>
-                        </div>
-                    </div>
-                `;
-            });
-
-            $('proj-total').textContent = fmtCur.format(total);
-            $('proj-inprogress-count').textContent = inProgressCount;
-            $('proj-complete-count').textContent = completeCount;
-        }
-
-        // Open modal for new project
-        $('btn-new-project').addEventListener('click', () => {
-            editingProjectId = null;
-            $('project-modal-title').textContent = 'New Project';
-            $('proj-input-name').value = '';
-            $('proj-input-amount').value = '';
-            $('proj-input-date').value = '';
-            $('proj-input-notes').value = '';
-            $('proj-input-remind').checked = false;
-            $('proj-input-remind-days').value = 7;
-            $('remind-options').classList.add('hidden');
-            $('remind-preview').textContent = '7 days';
-            document.querySelector('input[name="proj-status"][value="Planned"]').checked = true;
-            openProjectModal();
-        });
-
-        function editProject(id) {
-            const p = projects.find(x => x.id === id);
-            if (!p) return;
-            editingProjectId = id;
-            $('project-modal-title').textContent = 'Edit Project';
-            $('proj-input-name').value = p.name;
-            $('proj-input-amount').value = p.amount || '';
-            $('proj-input-date').value = p.targetDate || '';
-            $('proj-input-notes').value = p.notes || '';
-            $('proj-input-remind').checked = p.remind || false;
-            $('proj-input-remind-days').value = p.remindDays || 7;
-            $('remind-options').classList.toggle('hidden', !p.remind);
-            $('remind-preview').textContent = `${p.remindDays || 7} days`;
-            const statusRadio = document.querySelector(`input[name="proj-status"][value="${p.status}"]`);
-            if (statusRadio) statusRadio.checked = true;
-            openProjectModal();
-        }
-
-        function deleteProject(id) {
-            if (!confirm("Remove this project?")) return;
-            projects = projects.filter(p => p.id !== id);
-            saveProjects().then(() => renderProjects());
-            showToast("Project removed.");
-        }
-
-        function openProjectModal() {
-            $('project-modal').classList.remove('hidden');
-            requestAnimationFrame(() => $('proj-input-name').focus());
-        }
-
-        function closeProjectModal() {
-            $('project-modal').classList.add('hidden');
-        }
-
-        // Show/hide reminder options when toggle changes
-        $('proj-input-remind').addEventListener('change', function() {
-            $('remind-options').classList.toggle('hidden', !this.checked);
-            if (this.checked) requestNotificationPermission();
-        });
-
-        // Live preview of days
-        $('proj-input-remind-days').addEventListener('input', function() {
-            $('remind-preview').textContent = `${this.value || 1} day${this.value == 1 ? '' : 's'}`;
-        });
-
-        $('btn-close-modal').addEventListener('click', closeProjectModal);
-        $('project-modal-backdrop').addEventListener('click', closeProjectModal);
-
-        $('btn-save-project').addEventListener('click', () => {
-            const name       = $('proj-input-name').value.trim();
-            const amount     = parseFloat($('proj-input-amount').value) || 0;
-            const date       = $('proj-input-date').value;
-            const notes      = $('proj-input-notes').value.trim();
-            const status     = document.querySelector('input[name="proj-status"]:checked').value;
-            const remind     = $('proj-input-remind').checked;
-            const remindDays = parseInt($('proj-input-remind-days').value) || 7;
-
-            if (!name) {
-                showToast("Project name is required.", "error");
-                return;
-            }
-            if (remind && !date) {
-                showToast("A target date is required to set a reminder.", "error");
-                return;
-            }
-
-            const projectData = { name, amount, targetDate: date, notes, status, remind, remindDays };
-
-            if (editingProjectId) {
-                const idx = projects.findIndex(p => p.id === editingProjectId);
-                if (idx > -1) {
-                    projects[idx] = { ...projects[idx], ...projectData };
-                    showToast("Project updated.", "success");
-                }
-            } else {
-                projects.push({
-                    id: crypto.randomUUID(),
-                    ...projectData,
-                    createdAt: new Date().toISOString()
-                });
-                showToast("Project saved.", "success");
-            }
-
-            saveProjects().then(() => {
-                renderProjects();
-                closeProjectModal();
-            });
-        });
-
-        // ── NOTIFICATION SYSTEM ──────────────────────────────
-
-        async function requestNotificationPermission() {
-            if (!('Notification' in window)) {
-                showToast("Your browser doesn't support notifications.", "error");
-                return false;
-            }
-            if (Notification.permission === 'granted') return true;
-            if (Notification.permission === 'denied') {
-                showToast("Notifications are blocked. Enable them in your browser settings.", "error");
-                return false;
-            }
-            const result = await Notification.requestPermission();
-            if (result === 'granted') {
-                showToast("Notifications enabled.", "success");
-                return true;
-            } else {
-                showToast("Notifications permission denied.", "error");
-                return false;
-            }
-        }
-
-        function fireNotification(title, body) {
-            if (Notification.permission !== 'granted') return;
-            new Notification(title, {
-                body,
-                icon: './icon-192.png',
-                badge: './icon-192.png',
-                tag: `tight-ship-${title}`,  // prevents duplicates
-            });
-        }
-
-        function checkProjectReminders() {
-            if (!('Notification' in window) || Notification.permission !== 'granted') return;
-
-            const today = new Date();
-            today.setHours(0, 0, 0, 0);
-
-            projects.forEach(p => {
-                if (!p.remind || !p.targetDate || p.status === 'Complete') return;
-
-                const target = new Date(p.targetDate);
-                target.setMinutes(target.getMinutes() + target.getTimezoneOffset());
-                target.setHours(0, 0, 0, 0);
-
-                const diffDays = Math.round((target - today) / (1000 * 60 * 60 * 24));
-                const remindDays = p.remindDays || 7;
-
-                // On the day
-                if (diffDays === 0) {
-                    fireNotification(
-                        `📅 Today: ${p.name}`,
-                        `Your project "${p.name}" is due today${p.amount ? ` — ${fmtCur.format(p.amount)} allocated` : ''}.`
-                    );
-                }
-                // Advance warning
-                else if (diffDays === remindDays) {
-                    fireNotification(
-                        `⏰ Upcoming: ${p.name}`,
-                        `"${p.name}" is due in ${remindDays} day${remindDays === 1 ? '' : 's'}${p.amount ? ` — ${fmtCur.format(p.amount)} allocated` : ''}.`
-                    );
-                }
-            });
-        }
-
-        // In-app alert banner for reminders (shown on app open)
-        function checkInAppReminders() {
-            const today = new Date();
-            today.setHours(0, 0, 0, 0);
-
-            const alerts = [];
-
-            projects.forEach(p => {
-                if (!p.remind || !p.targetDate || p.status === 'Complete') return;
-
-                const target = new Date(p.targetDate);
-                target.setMinutes(target.getMinutes() + target.getTimezoneOffset());
-                target.setHours(0, 0, 0, 0);
-
-                const diffDays = Math.round((target - today) / (1000 * 60 * 60 * 24));
-                const remindDays = p.remindDays || 7;
-
-                if (diffDays === 0) {
-                    alerts.push({ label: `Due Today`, name: p.name, color: 'rose' });
-                } else if (diffDays > 0 && diffDays <= remindDays) {
-                    alerts.push({ label: `${diffDays}d away`, name: p.name, color: diffDays <= 3 ? 'amber' : 'violet' });
-                } else if (diffDays < 0) {
-                    alerts.push({ label: `Overdue ${Math.abs(diffDays)}d`, name: p.name, color: 'rose' });
-                }
-            });
-
-            if (alerts.length === 0) return;
-
-            // Show one toast per alert, staggered
-            alerts.forEach((alert, i) => {
-                setTimeout(() => {
-                    showToast(`${alert.label}: ${alert.name}`, alert.color === 'rose' ? 'error' : 'info');
-                }, i * 800);
-            });
-        }
-
-        // Render projects when tab is opened
-        document.querySelectorAll('.nav-btn').forEach(btn => {
-            btn.addEventListener('click', () => {
-                if (btn.dataset.target === 'tab-projects') renderProjects();
-            });
-        });
-
-        // Also show reminder badge on project cards
-        // (update renderProjects to show bell icon if remind is on)
-        const _origRenderProjects = renderProjects;
-
-        // Load projects on startup + run reminder checks
-        loadProjects().then(() => {
-            checkProjectReminders();   // browser notifications
-            checkInAppReminders();     // in-app toasts
-        });
-
-        // ═══════════════════════════════════════════════
-        //  BACKUP & RESTORE
-        // ═══════════════════════════════════════════════
-
-        // Track last backup time
-        async function updateBackupLabel() {
-            const ts = await localforage.getItem('ts-last-backup');
-            const label = $('last-backup-label');
-            const warning = $('backup-warning');
-            const warnText = $('backup-warning-text');
-            if (!ts) {
-                label.textContent = 'Never backed up';
-                label.className = 'text-xs text-rose-400 font-medium';
-                warning.classList.remove('hidden');
-                warnText.textContent = 'No backup found. Download one now to protect your data.';
-                return;
-            }
-            const d = new Date(ts);
-            const daysSince = Math.floor((Date.now() - d) / (1000 * 60 * 60 * 24));
-            const dateStr = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-            label.textContent = `Last backup: ${dateStr}`;
-            if (daysSince > 30) {
-                label.className = 'text-xs text-amber-400 font-medium';
-                warning.classList.remove('hidden');
-                warnText.textContent = `It's been ${daysSince} days since your last backup. Consider downloading a fresh copy.`;
-            } else {
-                label.className = 'text-xs text-emerald-400';
-                warning.classList.add('hidden');
-            }
-        }
-
-        // Download full JSON backup
-        $('btn-backup-json').addEventListener('click', async () => {
-            try {
-                const payload = {
-                    version: 1,
-                    exportedAt: new Date().toISOString(),
-                    transactions,
-                    projects,
-                };
-                const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
-                const url  = URL.createObjectURL(blob);
-                const a    = document.createElement('a');
-                const date = new Date().toISOString().split('T')[0];
-                a.href = url;
-                a.download = `tight-ship-backup-${date}.json`;
-                a.click();
-                URL.revokeObjectURL(url);
-
-                await localforage.setItem('ts-last-backup', new Date().toISOString());
-                updateBackupLabel();
-                showToast('Backup downloaded.', 'success');
-            } catch(e) {
-                showToast('Backup failed.', 'error');
-            }
-        });
-
-        // Restore from JSON backup file
-        $('input-restore-json').addEventListener('change', async (e) => {
-            const file = e.target.files[0];
-            if (!file) return;
-            const reader = new FileReader();
-            reader.onload = async (ev) => {
                 try {
-                    const data = JSON.parse(ev.target.result);
-                    if (!confirm('This will replace ALL current data with the backup. Are you sure?')) return;
-
-                    if (Array.isArray(data)) {
-                        // Legacy format: plain transactions array
-                        transactions = data;
-                    } else if (data.transactions) {
-                        transactions = data.transactions || [];
-                        projects     = data.projects     || [];
-                    } else {
-                        showToast('Unrecognised backup format.', 'error');
-                        return;
-                    }
-
-                    await localforage.setItem('ts-transactions', transactions);
-                    await localforage.setItem('ts-projects', projects);
-                    await localforage.setItem('ts-last-backup', new Date().toISOString());
-
-                    renderDashboard();
-                    renderProjects();
-                    updateBackupLabel();
-                    showToast('Data restored successfully.', 'success');
-                } catch(err) {
-                    showToast('Could not read backup file.', 'error');
+                    saveDataLocally();
+                    btn.innerText = "Success! ✓";
+                    btn.className = "w-full bg-emerald-500 text-white font-bold text-lg py-4 rounded-2xl shadow-lg shadow-emerald-900/20 transition-all pointer-events-none";
+                    setTimeout(() => {
+                        resetLogForm();
+                        switchTab('dashboard');
+                        showToast(wasEdit ? 'Transaction Updated' : 'Logged Successfully', 'success');
+                    }, 800);
+                } catch (error) {
+                    console.error(error);
+                    showToast('Error saving data. Please check connection.', 'error');
+                    btn.innerText = originalText; btn.className = originalClasses;
                 }
-            };
-            reader.readAsText(file);
-            e.target.value = ''; // reset input
-        });
-
-        // ═══════════════════════════════════════════════
-        //  MONTHLY SUMMARY
-        // ═══════════════════════════════════════════════
-
-        // Populate month/year selectors
-        function initSummarySelectors() {
-            const monthSel = $('summary-month');
-            const yearSel  = $('summary-year');
-            const months   = ['January','February','March','April','May','June',
-                              'July','August','September','October','November','December'];
-            const now = new Date();
-
-            months.forEach((m, i) => {
-                const opt = document.createElement('option');
-                opt.value = i;
-                opt.textContent = m;
-                if (i === now.getMonth()) opt.selected = true;
-                monthSel.appendChild(opt);
-            });
-
-            for (let y = now.getFullYear(); y >= now.getFullYear() - 3; y--) {
-                const opt = document.createElement('option');
-                opt.value = y;
-                opt.textContent = y;
-                if (y === now.getFullYear()) opt.selected = true;
-                yearSel.appendChild(opt);
-            }
+            }, 150);
         }
 
-        // Compute the summary data for a given month/year
-        function computeMonthlySummary(month, year) {
-            const inMonth = (dateStr) => {
-                if (!dateStr) return false;
-                const d = new Date(dateStr);
-                return d.getMonth() === month && d.getFullYear() === year;
-            };
+        function editTx(id) {
+            const tx = transactions.find(t => t.id === id);
+            if (!tx) return;
+            editingTxId = id;
+            currentBase64Receipt = tx.receipt || null;
 
-            let totalIncome = 0, totalSpend = 0, billsPaid = 0, billsOwed = 0;
-            const incomeRows = [], spendRows = [], billRows = [];
+            document.querySelector(`input[name="txType"][value="${tx.type}"]`).checked = true;
+            updateFormUI();
 
-            transactions.forEach(t => {
-                const amt = parseFloat(t.amount) || 0;
-                const date = t.type === 'Bill' ? (t.isPaid ? t.date : t.dueDate) : t.date;
-                if (!inMonth(date)) return;
+            document.getElementById('txAmount').value = tx.amount;
+            document.getElementById('txDescription').value = tx.description;
 
-                if (t.type === 'Income') { totalIncome += amt; incomeRows.push(t); }
-                if (t.type === 'Spend')  { totalSpend  += amt; spendRows.push(t); }
-                if (t.type === 'Bill') {
-                    if (t.isPaid) { billsPaid += amt; }
-                    else          { billsOwed += amt; }
-                    billRows.push(t);
+            if (tx.type === 'bill') {
+                document.getElementById('txIsPaid').checked = tx.isPaid;
+                syncBillPaidUI(tx.isPaid); // Use extracted helper — avoids toggling the value
+                syncBillDateLabel();
+                if (tx.isPaid) {
+                    document.getElementById('txDate').value = tx.date;
+                } else {
+                    document.getElementById('input-due-date').value = tx.dueDate;
                 }
-            });
-
-            const monthProjects = projects.filter(p => {
-                if (!p.targetDate) return false;
-                const d = new Date(p.targetDate);
-                return d.getMonth() === month && d.getFullYear() === year;
-            });
-
-            return {
-                totalIncome, totalSpend, billsPaid, billsOwed,
-                net: totalIncome - totalSpend - billsPaid,
-                incomeRows, spendRows, billRows, monthProjects
-            };
-        }
-
-        // Export CSV
-        $('btn-export-csv').addEventListener('click', () => {
-            const month = parseInt($('summary-month').value);
-            const year  = parseInt($('summary-year').value);
-            const s = computeMonthlySummary(month, year);
-            const mName = ['January','February','March','April','May','June',
-                           'July','August','September','October','November','December'][month];
-
-            const rows = [
-                ['Tight Ship — Monthly Summary'],
-                [`${mName} ${year}`],
-                [],
-                ['SUMMARY'],
-                ['Total Income',  fmtCur.format(s.totalIncome)],
-                ['Total Spend',   fmtCur.format(s.totalSpend)],
-                ['Bills Paid',    fmtCur.format(s.billsPaid)],
-                ['Bills Owed',    fmtCur.format(s.billsOwed)],
-                ['Net',           fmtCur.format(s.net)],
-                [],
-                ['INCOME', 'Date', 'Amount'],
-                ...s.incomeRows.map(t => [t.description, t.date, fmtCur.format(t.amount)]),
-                [],
-                ['SPENDING', 'Date', 'Amount'],
-                ...s.spendRows.map(t => [t.description, t.date, fmtCur.format(t.amount)]),
-                [],
-                ['BILLS', 'Due Date', 'Amount', 'Status'],
-                ...s.billRows.map(t => [t.description, t.dueDate || t.date, fmtCur.format(t.amount), t.isPaid ? 'Paid' : 'Unpaid']),
-                [],
-                ['PROJECTS DUE THIS MONTH', 'Status', 'Amount'],
-                ...s.monthProjects.map(p => [p.name, p.status, p.amount ? fmtCur.format(p.amount) : '—']),
-            ];
-
-            const csv = rows.map(r => r.map(c => `"${String(c).replace(/"/g,'""')}"`).join(',')).join('\n');
-            const blob = new Blob([csv], { type: 'text/csv' });
-            const url  = URL.createObjectURL(blob);
-            const a    = document.createElement('a');
-            a.href = url;
-            a.download = `tight-ship-${mName.toLowerCase()}-${year}.csv`;
-            a.click();
-            URL.revokeObjectURL(url);
-            showToast(`${mName} ${year} exported as CSV.`, 'success');
-        });
-
-        // Print / PDF
-        $('btn-export-pdf').addEventListener('click', () => {
-            const month = parseInt($('summary-month').value);
-            const year  = parseInt($('summary-year').value);
-            const s = computeMonthlySummary(month, year);
-            const mName = ['January','February','March','April','May','June',
-                           'July','August','September','October','November','December'][month];
-
-            const tableRows = (headers, rows) => `
-                <table>
-                    <thead><tr>${headers.map(h => `<th>${h}</th>`).join('')}</tr></thead>
-                    <tbody>${rows.length ? rows.map(r => `<tr>${r.map(c => `<td>${c}</td>`).join('')}</tr>`).join('') : `<tr><td colspan="${headers.length}" style="color:#888;font-style:italic;">No entries</td></tr>`}</tbody>
-                </table>`;
-
-            const html = `<!DOCTYPE html>
-<html><head><meta charset="UTF-8">
-<title>Tight Ship — ${mName} ${year}</title>
-<style>
-  body { font-family: -apple-system, sans-serif; color: #111; max-width: 800px; margin: 40px auto; padding: 0 20px; }
-  h1 { font-size: 22px; margin: 0 0 4px; } 
-  .sub { color: #666; font-size: 13px; margin-bottom: 28px; }
-  .summary-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 32px; }
-  .stat { background: #f5f5f5; border-radius: 8px; padding: 12px 16px; }
-  .stat-label { font-size: 10px; text-transform: uppercase; letter-spacing: .08em; color: #888; margin-bottom: 4px; }
-  .stat-val { font-size: 20px; font-weight: 600; }
-  .green { color: #16a34a; } .red { color: #dc2626; } .blue { color: #2563eb; }
-  h2 { font-size: 13px; text-transform: uppercase; letter-spacing: .08em; color: #555; border-bottom: 1px solid #ddd; padding-bottom: 6px; margin: 24px 0 10px; }
-  table { width: 100%; border-collapse: collapse; font-size: 13px; }
-  th { text-align: left; padding: 6px 8px; background: #f5f5f5; border-bottom: 1px solid #ddd; font-weight: 500; }
-  td { padding: 6px 8px; border-bottom: 1px solid #f0f0f0; }
-  .footer { margin-top: 40px; font-size: 11px; color: #aaa; text-align: center; }
-  @media print { body { margin: 0; } }
-</style>
-</head><body>
-<h1>Monthly Summary</h1>
-<div class="sub">${mName} ${year} &nbsp;·&nbsp; Generated ${new Date().toLocaleDateString()}</div>
-<div class="summary-grid">
-  <div class="stat"><div class="stat-label">Income</div><div class="stat-val green">${fmtCur.format(s.totalIncome)}</div></div>
-  <div class="stat"><div class="stat-label">Spend + Bills</div><div class="stat-val red">${fmtCur.format(s.totalSpend + s.billsPaid)}</div></div>
-  <div class="stat"><div class="stat-label">Net</div><div class="stat-val ${s.net >= 0 ? 'green' : 'red'}">${fmtCur.format(s.net)}</div></div>
-  <div class="stat"><div class="stat-label">Bills Owed</div><div class="stat-val red">${fmtCur.format(s.billsOwed)}</div></div>
-  <div class="stat"><div class="stat-label">Projects</div><div class="stat-val blue">${s.monthProjects.length}</div></div>
-</div>
-<h2>Income</h2>
-${tableRows(['Description','Date','Amount'], s.incomeRows.map(t => [t.description, t.date, fmtCur.format(t.amount)]))}
-<h2>Spending</h2>
-${tableRows(['Description','Date','Amount'], s.spendRows.map(t => [t.description, t.date, fmtCur.format(t.amount)]))}
-<h2>Bills</h2>
-${tableRows(['Description','Due Date','Amount','Status'], s.billRows.map(t => [t.description, t.dueDate||t.date, fmtCur.format(t.amount), t.isPaid?'Paid':'Unpaid']))}
-<h2>Projects due this month</h2>
-${tableRows(['Project','Status','Allocated'], s.monthProjects.map(p => [p.name, p.status, p.amount ? fmtCur.format(p.amount) : '—']))}
-<div class="footer">Tight Ship command centre</div>
-</body></html>`;
-
-            const win = window.open('', '_blank');
-            if (win) {
-                win.document.write(html);
-                win.document.close();
-                win.onload = () => win.print();
             } else {
-                showToast('Please allow pop-ups to print.', 'error');
+                document.getElementById('txDate').value = tx.date;
             }
-        });
 
-        // Show backup warning when setup tab opens
-        document.querySelectorAll('.nav-btn').forEach(btn => {
-            btn.addEventListener('click', () => {
-                if (btn.dataset.target === 'tab-setup') updateBackupLabel();
+            if (currentBase64Receipt) {
+                const preview = document.getElementById('receiptPreview');
+                preview.src = currentBase64Receipt;
+                preview.classList.remove('hidden');
+                document.getElementById('receiptPrompt').classList.add('hidden');
+                document.getElementById('receiptChangeText').classList.remove('hidden');
+            }
+
+            const btnSubmit = document.getElementById('btn-submit');
+            btnSubmit.innerText = "Update Transaction";
+            btnSubmit.classList.remove('w-full');
+            btnSubmit.classList.add('w-2/3');
+            document.getElementById('btn-cancel-edit').classList.remove('hidden');
+            switchTab('log');
+        }
+
+        function cancelEdit() { editingTxId = null; resetLogForm(); switchTab('dashboard'); }
+
+        function deleteTx(id) {
+            if (confirm("Are you sure you want to permanently delete this transaction?")) {
+                transactions = transactions.filter(t => t.id !== id);
+                saveDataLocally();
+                showToast('Transaction deleted', 'info');
+            }
+        }
+
+        function payBill(id) {
+            const tx = transactions.find(t => t.id === id);
+            if (tx) {
+                tx.isPaid = true;
+                tx.date = new Date().toISOString().split('T')[0];
+                tx.dueDate = null;
+                saveDataLocally();
+                showToast('Bill marked as paid!', 'success');
+            }
+        }
+
+        function resetLogForm() {
+            document.getElementById('txForm').reset();
+            document.getElementById('txDate').valueAsDate = new Date();
+            document.getElementById('input-due-date').valueAsDate = new Date();
+            currentBase64Receipt = null;
+            editingTxId = null;
+            document.getElementById('receiptPreview').classList.add('hidden');
+            document.getElementById('receiptPreview').src = '';
+            document.getElementById('receiptPrompt').classList.remove('hidden');
+            document.getElementById('receiptChangeText').classList.add('hidden');
+            document.getElementById('txIsPaid').checked = true;
+            syncBillPaidUI(true);
+            updateFormUI();
+            const btnSubmit = document.getElementById('btn-submit');
+            btnSubmit.classList.remove('w-2/3', 'pointer-events-none');
+            btnSubmit.classList.add('w-full');
+            document.getElementById('btn-cancel-edit').classList.add('hidden');
+        }
+
+        function shareApp() {
+            if (navigator.share) {
+                navigator.share({ title: 'Tight Ship', text: 'Check out this finance tracker!', url: window.location.href }).catch(console.error);
+            } else {
+                const dummy = document.createElement('input');
+                document.body.appendChild(dummy);
+                dummy.value = window.location.href;
+                dummy.select();
+                document.execCommand('copy');
+                document.body.removeChild(dummy);
+                showToast('Link copied to clipboard!', 'success');
+            }
+        }
+
+        function dismissSyncBanner() {
+            localStorage.setItem('hideTightShipSyncBanner', 'true');
+            document.getElementById('sync-warning-banner').classList.add('hidden');
+        }
+
+        function saveDataLocally() {
+            localStorage.setItem('tightShipTransactions', JSON.stringify(transactions));
+            updateDashboard();
+            syncToDriveBackground();
+        }
+
+        function downloadJson() {
+            const a = document.createElement('a');
+            a.setAttribute("href", "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(transactions, null, 2)));
+            a.setAttribute("download", "tight-ship-export.json");
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            showToast('Data exported successfully', 'success');
+        }
+
+        function promptWipeData() {
+            document.getElementById('wipeOverlay').classList.remove('hidden');
+            document.getElementById('wipeOverlay').classList.add('flex');
+        }
+
+        function closeWipePrompt() {
+            document.getElementById('wipeOverlay').classList.add('hidden');
+            document.getElementById('wipeOverlay').classList.remove('flex');
+        }
+
+        function executeWipeData() {
+            transactions = [];
+            localStorage.removeItem('tightShipTransactions');
+            updateDashboard();
+            closeWipePrompt();
+            showToast('Device memory wiped clean.', 'success');
+        }
+
+        /* Google Drive */
+        function gapiLoaded() { gapi.load('client', initializeGapiClient); }
+        async function initializeGapiClient() {
+            try { await gapi.client.init({ discoveryDocs: ['https://www.googleapis.com/discovery/v1/apis/drive/v3/rest'] }); }
+            catch (err) { console.error('Error initializing GAPI client', err); }
+        }
+        function gisLoaded() {
+            tokenClient = google.accounts.oauth2.initTokenClient({
+                client_id: GOOGLE_CLIENT_ID, scope: SCOPES,
+                callback: (tokenResponse) => {
+                    if (tokenResponse && tokenResponse.access_token) {
+                        accessToken = tokenResponse.access_token;
+                        updateDriveUI(true);
+                        showToast('Connected to Google Drive', 'success');
+                    }
+                },
             });
-        });
-
-        // Run on startup
-        initSummarySelectors();
-        updateBackupLabel();
-
+        }
+        function handleAuthClick() {
+            if (GOOGLE_CLIENT_ID === 'YOUR_GOOGLE_CLIENT_ID') { showToast('Developer Error: Missing Client ID.', 'error'); return; }
+            tokenClient.requestAccessToken({ prompt: gapi.client.getToken() === null ? 'consent' : '' });
+        }
+        function handleSignoutClick() {
+            const token = gapi.client.getToken();
+            if (token) {
+                google.accounts.oauth2.revoke(token.access_token, () => {
+                    gapi.client.setToken('');
+                    accessToken = null;
+                    driveFileId = null;
+                    updateDriveUI(false);
+                    showToast('Disconnected from Drive', 'info');
+                });
+            }
+        }
+        function updateDriveUI(isAuthenticated) {
+            document.getElementById('driveUnauthUI').classList.toggle('hidden', isAuthenticated);
+            document.getElementById('driveAuthUI').classList.toggle('hidden', !isAuthenticated);
+            const statusText = document.getElementById('syncStatusText');
+            if (isAuthenticated) {
+                statusText.innerText = 'Connected & Ready';
+                statusText.className = 'text-sm font-bold text-emerald-400';
+            } else {
+                statusText.innerText = 'Not connected';
+                statusText.className = 'text-sm text-slate-500';
+            }
+        }
+        async function findFileId() {
+            try {
+                const response = await gapi.client.drive.files.list({
+                    q: `name='${FILE_NAME}' and spaces='appDataFolder'`,
+                    spaces: 'appDataFolder', fields: 'files(id, name)',
+                });
+                const files = response.result.files;
+                return (files && files.length > 0) ? files[0].id : null;
+            } catch (err) { console.error(err); throw new Error('Error searching Drive'); }
+        }
+        async function syncToDrive() {
+            if (!accessToken) return handleAuthClick();
+            const fileContent = JSON.stringify(transactions);
+            const metadata = { name: FILE_NAME, parents: ['appDataFolder'] };
+            try {
+                showToast('Backing up to Drive...', 'info');
+                const fileId = await findFileId();
+                const form = new FormData();
+                form.append('metadata', new Blob([JSON.stringify(fileId ? {} : metadata)], { type: 'application/json' }));
+                form.append('file', new Blob([fileContent], { type: 'application/json' }));
+                const url = fileId
+                    ? `https://www.googleapis.com/upload/drive/v3/files/${fileId}?uploadType=multipart`
+                    : `https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart`;
+                const res = await fetch(url, { method: fileId ? 'PATCH' : 'POST', headers: { 'Authorization': 'Bearer ' + accessToken }, body: form });
+                if (res.ok) { showToast('Backup successful!', 'success'); }
+                else { throw new Error('Upload failed'); }
+            } catch (error) { console.error(error); showToast('Sync failed. Please try again.', 'error'); }
+        }
+        async function syncToDriveBackground() {
+            if (!accessToken) return;
+            const fileContent = JSON.stringify(transactions);
+            const metadata = { name: FILE_NAME, parents: ['appDataFolder'] };
+            try {
+                const fileId = await findFileId();
+                const form = new FormData();
+                form.append('metadata', new Blob([JSON.stringify(fileId ? {} : metadata)], { type: 'application/json' }));
+                form.append('file', new Blob([fileContent], { type: 'application/json' }));
+                const url = fileId
+                    ? `https://www.googleapis.com/upload/drive/v3/files/${fileId}?uploadType=multipart`
+                    : `https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart`;
+                await fetch(url, { method: fileId ? 'PATCH' : 'POST', headers: { 'Authorization': 'Bearer ' + accessToken }, body: form });
+            } catch (error) { console.error("Background sync failed", error); }
+        }
+        async function syncFromDrive() {
+            if (!accessToken) return handleAuthClick();
+            try {
+                showToast('Checking Drive for data...', 'info');
+                const fileId = await findFileId();
+                if (!fileId) { showToast('No backup found on Drive.', 'error'); return; }
+                const response = await gapi.client.drive.files.get({ fileId, alt: 'media' });
+                if (response.result && Array.isArray(response.result)) {
+                    transactions = response.result;
+                    saveDataLocally();
+                    showToast('Data restored successfully!', 'success');
+                } else { throw new Error('Invalid data format'); }
+            } catch (error) { console.error(error); showToast('Failed to download data.', 'error'); }
+        }
     </script>
 </body>
 </html>
