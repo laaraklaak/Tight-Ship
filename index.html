@@ -10,8 +10,6 @@
     
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
-    <script src="https://accounts.google.com/gsi/client" async defer></script>
-    <script src="https://apis.google.com/js/api.js" async defer></script>
 
     <style>
         :root { color-scheme: dark; }
@@ -34,7 +32,6 @@
 
     <main class="flex-1 overflow-y-auto pb-24 w-full max-w-lg mx-auto relative bg-slate-950">
         
-        <!-- TAB 1: DASHBOARD -->
         <section id="tab-dashboard" class="tab-content active p-4 space-y-6">
             <header class="pt-4 pb-2 flex items-center justify-between">
                 <div class="w-8"></div>
@@ -44,7 +41,6 @@
                 </button>
             </header>
 
-            <!-- Available Balance (Income - Spend only, bills never deducted until paid) -->
             <div class="bg-slate-800 rounded-3xl p-6 shadow-lg border border-slate-700 text-center flex flex-col items-center justify-center transition-colors duration-300 relative overflow-hidden" id="safeToSpendCard">
                 <div class="absolute top-0 right-0 w-24 h-24 bg-emerald-900/20 rounded-bl-full -z-10" id="safeSpendAccent"></div>
                 <p class="text-sm font-semibold text-slate-400 uppercase tracking-wider mb-2">Available Balance</p>
@@ -52,7 +48,6 @@
                 <p class="text-xs text-slate-400 mt-2 bg-slate-900/50 px-3 py-1 rounded-full border border-slate-700/50">Income − Spend − Paid Bills</p>
             </div>
 
-            <!-- Income / Spend row -->
             <div class="grid grid-cols-2 gap-3">
                 <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 flex flex-col gap-1 shadow-sm">
                     <div class="flex items-center gap-2 mb-1">
@@ -75,7 +70,6 @@
                 </div>
             </div>
 
-            <!-- Unpaid Bills card -->
             <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 flex justify-between items-center shadow-md" id="upcomingBillsCard">
                 <div class="flex items-center gap-3">
                     <div class="bg-amber-900/30 p-2 rounded-full border border-amber-900/50">
@@ -89,29 +83,21 @@
                 <h3 id="upcomingBillsTotal" class="text-2xl font-bold tracking-tight text-amber-400">$0.00</h3>
             </div>
 
-            <div id="sync-warning-banner" class="hidden bg-amber-50 border border-amber-200 p-4 rounded-2xl flex flex-col sm:flex-row gap-3 items-start sm:items-center justify-between shadow-sm">
-                <div class="flex gap-3 items-start">
-                    <div class="text-amber-600 mt-0.5"><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg></div>
-                    <div>
-                        <p class="text-sm font-bold text-amber-900">Backup Required</p>
-                        <p class="text-xs text-amber-700 font-medium">Connect to Google Drive to secure your data.</p>
-                    </div>
-                </div>
-                <div class="flex gap-2 w-full sm:w-auto mt-1 sm:mt-0">
-                    <button onclick="dismissSyncBanner()" class="px-3 py-2 text-amber-700 text-xs font-bold rounded-lg hover:bg-amber-100 transition-colors">Dismiss</button>
-                    <button onclick="switchTab('settings')" class="flex-1 sm:flex-none px-4 py-2 bg-amber-600 text-white text-xs font-bold rounded-lg shadow-sm hover:bg-amber-700 transition-colors text-center">Fix Now</button>
-                </div>
-            </div>
-
             <div>
-                <h3 class="text-sm font-bold text-slate-500 uppercase tracking-wider mb-3 ml-1">Ledger</h3>
-                <div class="bg-slate-800 rounded-2xl border border-slate-700 shadow-sm overflow-hidden" id="recentLedgerList">
-                    <div class="p-8 text-center text-slate-500 text-sm">No transactions logged yet.</div>
+                <button onclick="toggleLedger()" class="w-full flex items-center justify-between mb-3 px-1 group outline-none">
+                    <h3 class="text-sm font-bold text-slate-500 uppercase tracking-wider group-hover:text-slate-300 transition-colors">Ledger</h3>
+                    <div class="p-1 rounded-full bg-slate-800 border border-slate-700 text-slate-400 group-hover:text-slate-200 transition-all">
+                        <i id="ledgerChevron" class="ph-bold ph-caret-down transition-transform duration-300"></i>
+                    </div>
+                </button>
+                <div id="ledgerContainer" class="hidden transition-all duration-300">
+                    <div class="bg-slate-800 rounded-2xl border border-slate-700 shadow-sm overflow-hidden" id="recentLedgerList">
+                        <div class="p-8 text-center text-slate-500 text-sm">No transactions logged yet.</div>
+                    </div>
                 </div>
             </div>
         </section>
 
-        <!-- TAB 2: LOG TRANSACTION -->
         <section id="tab-log" class="tab-content p-4">
             <h2 class="text-2xl font-bold text-slate-100 mb-6 pt-2">Log Transaction</h2>
 
@@ -202,40 +188,8 @@
             </form>
         </section>
 
-        <!-- TAB 3: SETTINGS -->
         <section id="tab-settings" class="tab-content p-4 space-y-8">
-            <h2 class="text-2xl font-bold text-slate-100 mb-2 pt-2">Settings & Sync</h2>
-
-            <div class="bg-slate-800 rounded-3xl p-5 shadow-sm border border-slate-700">
-                <div class="flex items-center gap-4 mb-4">
-                    <div class="bg-blue-900/30 p-3 rounded-2xl text-blue-400 border border-blue-800/50">
-                        <i class="ph-fill ph-google-drive-logo text-3xl"></i>
-                    </div>
-                    <div>
-                        <h3 class="font-bold text-slate-100 text-lg">Google Drive Sync</h3>
-                        <p class="text-sm text-slate-400" id="syncStatusText">Not connected</p>
-                    </div>
-                </div>
-                
-                <div id="driveUnauthUI" class="space-y-3">
-                    <p class="text-sm text-slate-400 mb-4">Backup your ledger safely to a hidden app-data folder in your Google Drive.</p>
-                    <button onclick="handleAuthClick()" class="w-full bg-slate-900 border border-slate-700 text-slate-100 font-bold py-3 rounded-xl active:scale-[0.98] transition-all flex justify-center items-center gap-2 hover:bg-slate-800">
-                        <i class="ph-bold ph-link"></i> Connect Account
-                    </button>
-                </div>
-
-                <div id="driveAuthUI" class="hidden space-y-3">
-                    <button onclick="syncToDrive()" class="w-full bg-emerald-600 text-white font-bold py-3 rounded-xl active:scale-[0.98] transition-transform flex justify-center items-center gap-2">
-                        <i class="ph-bold ph-cloud-arrow-up"></i> Backup Now
-                    </button>
-                    <button onclick="syncFromDrive()" class="w-full bg-slate-900 border border-slate-700 text-slate-100 font-bold py-3 rounded-xl active:scale-[0.98] transition-transform flex justify-center items-center gap-2">
-                        <i class="ph-bold ph-cloud-arrow-down"></i> Restore Data
-                    </button>
-                    <button onclick="handleSignoutClick()" class="w-full text-sm text-slate-500 hover:text-slate-300 mt-2 py-2 underline transition-colors">
-                        Disconnect Account
-                    </button>
-                </div>
-            </div>
+            <h2 class="text-2xl font-bold text-slate-100 mb-2 pt-2">Settings & Data</h2>
 
             <div>
                 <h3 class="text-sm font-bold text-slate-500 uppercase tracking-wider mb-3 ml-1">Share App</h3>
@@ -255,13 +209,13 @@
             <div>
                 <h3 class="text-sm font-bold text-slate-500 uppercase tracking-wider mb-3 ml-1">Local Data</h3>
                 <div class="bg-slate-800 rounded-2xl border border-slate-700 shadow-sm overflow-hidden flex flex-col">
-                    <button onclick="downloadJson()" class="flex items-center gap-3 p-4 border-b border-slate-700/50 hover:bg-slate-700/50 active:bg-slate-700 transition-colors text-left w-full group">
+                    <button onclick="downloadCSV()" class="flex items-center gap-3 p-4 border-b border-slate-700/50 hover:bg-slate-700/50 active:bg-slate-700 transition-colors text-left w-full group">
                         <div class="bg-slate-900 p-2 rounded-full text-slate-400 group-hover:text-slate-300 border border-slate-700">
-                            <i class="ph-bold ph-download-simple text-lg"></i>
+                            <i class="ph-bold ph-file-csv text-lg"></i>
                         </div>
                         <div>
-                            <p class="font-bold text-slate-100">Export Ledger</p>
-                            <p class="text-xs text-slate-400">Save as .json file to your device</p>
+                            <p class="font-bold text-slate-100">Export to Excel</p>
+                            <p class="text-xs text-slate-400">Save as a readable .csv file</p>
                         </div>
                     </button>
                     
@@ -280,10 +234,8 @@
     </main>
 
 
-    <!-- How to Use Guide Modal -->
     <div id="guideOverlay" class="fixed inset-0 z-[110] bg-slate-950/90 backdrop-blur-sm hidden items-end justify-center p-0">
         <div class="bg-slate-900 border border-slate-700 rounded-t-3xl w-full max-w-lg shadow-2xl" style="animation: slideInUp 0.35s cubic-bezier(0.16,1,0.3,1) forwards;">
-            <!-- Header -->
             <div class="flex items-center justify-between px-6 pt-5 pb-3 border-b border-slate-800">
                 <p class="text-xs font-bold text-slate-500 uppercase tracking-wider" id="guideStepLabel">Step 1 of 5</p>
                 <button onclick="closeGuide()" class="w-8 h-8 rounded-full bg-slate-800 flex items-center justify-center text-slate-400 hover:text-slate-200 transition-colors">
@@ -291,10 +243,8 @@
                 </button>
             </div>
 
-            <!-- Slides -->
             <div id="guideSlides" class="overflow-hidden">
 
-                <!-- Slide 1 -->
                 <div class="guide-slide px-6 py-6">
                     <div class="w-14 h-14 rounded-2xl bg-emerald-900/30 border border-emerald-800/50 flex items-center justify-center mb-4">
                         <i class="ph-fill ph-boat text-3xl text-emerald-400"></i>
@@ -317,7 +267,6 @@
                     </div>
                 </div>
 
-                <!-- Slide 2 -->
                 <div class="guide-slide px-6 py-6 hidden">
                     <div class="w-14 h-14 rounded-2xl bg-blue-900/30 border border-blue-800/50 flex items-center justify-center mb-4">
                         <i class="ph-fill ph-squares-four text-3xl text-blue-400"></i>
@@ -355,7 +304,6 @@
                     </div>
                 </div>
 
-                <!-- Slide 3 -->
                 <div class="guide-slide px-6 py-6 hidden">
                     <div class="w-14 h-14 rounded-2xl bg-rose-900/30 border border-rose-800/50 flex items-center justify-center mb-4">
                         <i class="ph-fill ph-plus-circle text-3xl text-rose-400"></i>
@@ -378,13 +326,12 @@
                     </div>
                 </div>
 
-                <!-- Slide 4 -->
                 <div class="guide-slide px-6 py-6 hidden">
                     <div class="w-14 h-14 rounded-2xl bg-amber-900/30 border border-amber-800/50 flex items-center justify-center mb-4">
                         <i class="ph-fill ph-clock text-3xl text-amber-400"></i>
                     </div>
                     <h2 class="text-2xl font-bold text-slate-100 mb-2">Managing Bills</h2>
-                    <p class="text-slate-400 text-sm leading-relaxed mb-4">Unpaid bills appear at the top of your Ledger with a due-date badge.</p>
+                    <p class="text-slate-400 text-sm leading-relaxed mb-4">Unpaid bills appear at the top of your Ledger. Note: Your ledger is collapsed by default! Tap "Ledger" to expand it.</p>
                     <div class="space-y-3">
                         <div class="bg-slate-800 rounded-xl p-4 border border-amber-900/40 flex items-center justify-between">
                             <div>
@@ -403,32 +350,22 @@
                     </div>
                 </div>
 
-                <!-- Slide 5 -->
                 <div class="guide-slide px-6 py-6 hidden">
                     <div class="w-14 h-14 rounded-2xl bg-slate-800 border border-slate-700 flex items-center justify-center mb-4">
-                        <i class="ph-fill ph-google-drive-logo text-3xl text-blue-400"></i>
+                        <i class="ph-fill ph-device-mobile text-3xl text-blue-400"></i>
                     </div>
                     <h2 class="text-2xl font-bold text-slate-100 mb-2">Keeping Your Data Safe</h2>
-                    <p class="text-slate-400 text-sm leading-relaxed mb-4">Your data is stored on this device. To back it up, connect Google Drive in <span class="font-bold text-slate-300">Settings</span>.</p>
+                    <p class="text-slate-400 text-sm leading-relaxed mb-4">Your data is stored securely right here on this device. You can download it anytime from the <span class="font-bold text-slate-300">Settings</span> tab.</p>
                     <div class="space-y-3">
                         <div class="bg-slate-800 rounded-xl p-3 border border-slate-700 flex gap-3 items-center">
-                            <i class="ph-fill ph-cloud-arrow-up text-blue-400 text-xl shrink-0"></i>
-                            <p class="text-xs text-slate-400"><span class="font-bold text-slate-100">Backup Now</span> — saves everything to a private folder in your Drive.</p>
-                        </div>
-                        <div class="bg-slate-800 rounded-xl p-3 border border-slate-700 flex gap-3 items-center">
-                            <i class="ph-fill ph-cloud-arrow-down text-blue-400 text-xl shrink-0"></i>
-                            <p class="text-xs text-slate-400"><span class="font-bold text-slate-100">Restore Data</span> — loads your backup if you switch devices.</p>
-                        </div>
-                        <div class="bg-slate-800 rounded-xl p-3 border border-slate-700 flex gap-3 items-center">
-                            <i class="ph-fill ph-download-simple text-slate-400 text-xl shrink-0"></i>
-                            <p class="text-xs text-slate-400"><span class="font-bold text-slate-100">Export Ledger</span> — downloads a JSON file to your device anytime.</p>
+                            <i class="ph-fill ph-file-csv text-blue-400 text-xl shrink-0"></i>
+                            <p class="text-xs text-slate-400"><span class="font-bold text-slate-100">Export to Excel</span> — downloads your data as a clean spreadsheet to your device.</p>
                         </div>
                     </div>
                 </div>
 
             </div>
 
-            <!-- Step dots + nav -->
             <div class="flex items-center justify-between px-6 py-5 border-t border-slate-800">
                 <button onclick="guidePrev()" id="guidePrevBtn" class="px-4 py-2 rounded-xl bg-slate-800 border border-slate-700 text-slate-300 font-bold text-sm active:scale-[0.97] transition-all disabled:opacity-30" disabled>Back</button>
                 <div class="flex gap-1.5" id="guideDots"></div>
@@ -437,14 +374,13 @@
         </div>
     </div>
 
-    <!-- Wipe Confirmation Modal -->
     <div id="wipeOverlay" class="fixed inset-0 z-[100] bg-slate-950/80 backdrop-blur-sm hidden items-center justify-center p-4">
         <div class="bg-slate-800 border border-slate-700 rounded-3xl p-8 max-w-sm w-full text-center shadow-2xl animate-enter">
             <div class="mx-auto w-20 h-20 bg-rose-900/30 rounded-full flex items-center justify-center mb-6 border border-rose-800/50">
                 <i class="ph-bold ph-warning text-4xl text-rose-400"></i>
             </div>
             <h3 class="text-2xl font-bold text-slate-100 mb-2">Are you absolutely sure?</h3>
-            <p class="text-slate-400 mb-8 text-sm">This will delete all data on this device. If you haven't synced to Drive, it's gone forever.</p>
+            <p class="text-slate-400 mb-8 text-sm">This will permanently delete all data from this device. Once it's gone, it's gone forever.</p>
             <div class="flex gap-3">
                 <button onclick="closeWipePrompt()" class="flex-1 bg-slate-900 border border-slate-700 text-slate-100 font-bold py-3 rounded-xl active:scale-[0.98] transition-transform">Cancel</button>
                 <button onclick="executeWipeData()" class="flex-1 bg-rose-600 text-white font-bold py-3 rounded-xl active:scale-[0.98] transition-transform">Yes, Wipe It</button>
@@ -452,7 +388,6 @@
         </div>
     </div>
 
-    <!-- Navigation -->
     <nav class="fixed bottom-0 w-full max-w-lg mx-auto bg-slate-900/95 backdrop-blur-md border-t border-slate-800 h-20 pb-safe flex justify-around items-center px-2 z-40">
         <button onclick="switchTab('dashboard')" id="nav-dashboard" class="nav-btn flex-1 flex flex-col items-center justify-center py-2 transition-all text-slate-100">
             <div class="nav-pill flex flex-col items-center justify-center w-16 h-12 rounded-full bg-slate-800 transition-colors">
@@ -476,17 +411,10 @@
 
     <script>
         const FILE_NAME = 'tight-ship-ledger.json';
-        const GOOGLE_CLIENT_ID = '590906229865-rlo3ap84ngm5rr6hmsov2sg9ko0o24sp.apps.googleusercontent.com'; 
-        const SCOPES = 'https://www.googleapis.com/auth/drive.appdata';
 
         let transactions = JSON.parse(localStorage.getItem('tightShipTransactions')) || [];
         let currentBase64Receipt = null;
         let editingTxId = null;
-        let tokenClient;
-        let accessToken = null;
-        // FIX 1: driveFileId was referenced in updateDashboard() but never declared,
-        // causing a ReferenceError that silently aborted the entire function.
-        let driveFileId = null;
 
         document.addEventListener('DOMContentLoaded', () => {
             document.getElementById('txDate').valueAsDate = new Date();
@@ -578,6 +506,19 @@
             if (tabId === 'dashboard') updateDashboard();
         }
 
+        // --- NEW: Toggle Ledger Function ---
+        function toggleLedger() {
+            const container = document.getElementById('ledgerContainer');
+            const chevron = document.getElementById('ledgerChevron');
+            if (container.classList.contains('hidden')) {
+                container.classList.remove('hidden');
+                chevron.classList.add('rotate-180');
+            } else {
+                container.classList.add('hidden');
+                chevron.classList.remove('rotate-180');
+            }
+        }
+
         function showToast(message, type = 'info') {
             const container = document.getElementById('toast-container');
             const toast = document.createElement('div');
@@ -620,10 +561,10 @@
 
         function updateDashboard() {
             let totalIncome = 0;
-            let totalSpend = 0;       // spend entries only — never includes bills
+            let totalSpend = 0;
             let unpaidBillsAmount = 0;
             const unpaidBillsList = [];
-            const allLedger = [];     // every transaction including unpaid bills
+            const allLedger = [];
 
             transactions.forEach(tx => {
                 if (!tx) return;
@@ -636,20 +577,16 @@
                     allLedger.push(tx);
                 } else if (tx.type === 'bill') {
                     if (tx.isPaid) {
-                        // Paid bills count as spend — money has left the account
                         totalSpend += amount;
                         allLedger.push(tx);
                     } else {
-                        // Unpaid: tracked separately, NOT deducted from balance
                         unpaidBillsAmount += amount;
                         unpaidBillsList.push(tx);
-                        allLedger.push(tx); // still shows in ledger
+                        allLedger.push(tx);
                     }
                 }
             });
 
-            // Available Balance = income minus spend (which includes paid bills).
-            // Unpaid bills have zero effect on this number.
             const availableBalance = totalIncome - totalSpend;
 
             // --- Available Balance card ---
@@ -687,13 +624,12 @@
                 billsCard.classList.remove('border-slate-800');
             }
 
-            // --- Ledger: all transactions, unpaid bills sorted by due date at top ---
+            // --- Ledger ---
             const ledgerEl = document.getElementById('recentLedgerList');
             ledgerEl.innerHTML = '';
             if (allLedger.length === 0) {
                 ledgerEl.innerHTML = '<div class="p-8 text-center text-slate-500 text-sm">No transactions logged yet.</div>';
             } else {
-                // Sort: unpaid bills first (by due date), then rest by date descending
                 const unpaidSorted = unpaidBillsList.slice().sort((a, b) =>
                     new Date(a.dueDate || 0) - new Date(b.dueDate || 0));
                 const paidAndSpend = allLedger
@@ -716,7 +652,6 @@
                         icon = 'ph-check-circle'; amountColor = 'text-slate-400'; amountPrefix = '−';
                         bgIcon = 'bg-slate-700 text-slate-400'; rowBg = '';
                     } else {
-                        // Unpaid bill
                         icon = 'ph-clock'; amountColor = 'text-amber-400'; amountPrefix = '';
                         bgIcon = 'bg-amber-900/20 text-amber-400'; rowBg = 'bg-amber-950/10';
                     }
@@ -765,15 +700,6 @@
                     ledgerEl.appendChild(el);
                 });
             }
-
-            // Sync banner
-            const b = document.getElementById('sync-warning-banner');
-            const hideBanner = localStorage.getItem('hideTightShipSyncBanner') === 'true';
-            if (!accessToken && !driveFileId && !hideBanner) {
-                b.classList.remove('hidden');
-            } else {
-                b.classList.add('hidden');
-            }
         }
 
         function updateFormUI() {
@@ -813,8 +739,6 @@
             syncBillDateLabel();
         }
 
-        // FIX 3: Extracted UI state sync into its own function so editTx()
-        // can call it directly without triggering the checkbox flip.
         function syncBillPaidUI(isPaid) {
             const icon = document.getElementById('billPaidIcon');
             const text = document.getElementById('billPaidText');
@@ -943,7 +867,7 @@
                     }, 800);
                 } catch (error) {
                     console.error(error);
-                    showToast('Error saving data. Please check connection.', 'error');
+                    showToast('Error saving data.', 'error');
                     btn.innerText = originalText; btn.className = originalClasses;
                 }
             }, 150);
@@ -963,7 +887,7 @@
 
             if (tx.type === 'bill') {
                 document.getElementById('txIsPaid').checked = tx.isPaid;
-                syncBillPaidUI(tx.isPaid); // Use extracted helper — avoids toggling the value
+                syncBillPaidUI(tx.isPaid);
                 syncBillDateLabel();
                 if (tx.isPaid) {
                     document.getElementById('txDate').value = tx.date;
@@ -1044,25 +968,53 @@
             }
         }
 
-        function dismissSyncBanner() {
-            localStorage.setItem('hideTightShipSyncBanner', 'true');
-            document.getElementById('sync-warning-banner').classList.add('hidden');
-        }
-
         function saveDataLocally() {
             localStorage.setItem('tightShipTransactions', JSON.stringify(transactions));
             updateDashboard();
-            syncToDriveBackground();
         }
 
-        function downloadJson() {
+        function downloadCSV() {
+            if (transactions.length === 0) {
+                showToast('No data to export.', 'info');
+                return;
+            }
+
+            // Create CSV headers
+            let csvContent = "Date,Type,Description,Amount,Status\n";
+
+            // Loop through transactions and format rows
+            transactions.forEach(tx => {
+                const type = tx.type;
+                const description = `"${(tx.description || '').replace(/"/g, '""')}"`; // Escapes any quotes/commas in user input
+                const amount = tx.amount;
+                
+                let date = tx.date || '';
+                let status = 'Completed';
+
+                if (type === 'bill') {
+                    if (tx.isPaid) {
+                        status = 'Paid';
+                    } else {
+                        status = 'Unpaid';
+                        date = tx.dueDate || ''; // Use due date for unpaid bills
+                    }
+                }
+
+                // Add row to CSV
+                csvContent += `${date},${type},${description},${amount},${status}\n`;
+            });
+
+            // Create download link
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
-            a.setAttribute("href", "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(transactions, null, 2)));
-            a.setAttribute("download", "tight-ship-export.json");
+            a.setAttribute("href", url);
+            a.setAttribute("download", "tight-ship-ledger.csv");
             document.body.appendChild(a);
             a.click();
-            a.remove();
-            showToast('Data exported successfully', 'success');
+            document.body.removeChild(a);
+            
+            showToast('Ledger exported to Excel!', 'success');
         }
 
         function promptWipeData() {
@@ -1081,110 +1033,6 @@
             updateDashboard();
             closeWipePrompt();
             showToast('Device memory wiped clean.', 'success');
-        }
-
-        /* Google Drive */
-        function gapiLoaded() { gapi.load('client', initializeGapiClient); }
-        async function initializeGapiClient() {
-            try { await gapi.client.init({ discoveryDocs: ['https://www.googleapis.com/discovery/v1/apis/drive/v3/rest'] }); }
-            catch (err) { console.error('Error initializing GAPI client', err); }
-        }
-        function gisLoaded() {
-            tokenClient = google.accounts.oauth2.initTokenClient({
-                client_id: GOOGLE_CLIENT_ID, scope: SCOPES,
-                callback: (tokenResponse) => {
-                    if (tokenResponse && tokenResponse.access_token) {
-                        accessToken = tokenResponse.access_token;
-                        updateDriveUI(true);
-                        showToast('Connected to Google Drive', 'success');
-                    }
-                },
-            });
-        }
-        function handleAuthClick() {
-            if (GOOGLE_CLIENT_ID === 'YOUR_GOOGLE_CLIENT_ID') { showToast('Developer Error: Missing Client ID.', 'error'); return; }
-            tokenClient.requestAccessToken({ prompt: gapi.client.getToken() === null ? 'consent' : '' });
-        }
-        function handleSignoutClick() {
-            const token = gapi.client.getToken();
-            if (token) {
-                google.accounts.oauth2.revoke(token.access_token, () => {
-                    gapi.client.setToken('');
-                    accessToken = null;
-                    driveFileId = null;
-                    updateDriveUI(false);
-                    showToast('Disconnected from Drive', 'info');
-                });
-            }
-        }
-        function updateDriveUI(isAuthenticated) {
-            document.getElementById('driveUnauthUI').classList.toggle('hidden', isAuthenticated);
-            document.getElementById('driveAuthUI').classList.toggle('hidden', !isAuthenticated);
-            const statusText = document.getElementById('syncStatusText');
-            if (isAuthenticated) {
-                statusText.innerText = 'Connected & Ready';
-                statusText.className = 'text-sm font-bold text-emerald-400';
-            } else {
-                statusText.innerText = 'Not connected';
-                statusText.className = 'text-sm text-slate-500';
-            }
-        }
-        async function findFileId() {
-            try {
-                const response = await gapi.client.drive.files.list({
-                    q: `name='${FILE_NAME}' and spaces='appDataFolder'`,
-                    spaces: 'appDataFolder', fields: 'files(id, name)',
-                });
-                const files = response.result.files;
-                return (files && files.length > 0) ? files[0].id : null;
-            } catch (err) { console.error(err); throw new Error('Error searching Drive'); }
-        }
-        async function syncToDrive() {
-            if (!accessToken) return handleAuthClick();
-            const fileContent = JSON.stringify(transactions);
-            const metadata = { name: FILE_NAME, parents: ['appDataFolder'] };
-            try {
-                showToast('Backing up to Drive...', 'info');
-                const fileId = await findFileId();
-                const form = new FormData();
-                form.append('metadata', new Blob([JSON.stringify(fileId ? {} : metadata)], { type: 'application/json' }));
-                form.append('file', new Blob([fileContent], { type: 'application/json' }));
-                const url = fileId
-                    ? `https://www.googleapis.com/upload/drive/v3/files/${fileId}?uploadType=multipart`
-                    : `https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart`;
-                const res = await fetch(url, { method: fileId ? 'PATCH' : 'POST', headers: { 'Authorization': 'Bearer ' + accessToken }, body: form });
-                if (res.ok) { showToast('Backup successful!', 'success'); }
-                else { throw new Error('Upload failed'); }
-            } catch (error) { console.error(error); showToast('Sync failed. Please try again.', 'error'); }
-        }
-        async function syncToDriveBackground() {
-            if (!accessToken) return;
-            const fileContent = JSON.stringify(transactions);
-            const metadata = { name: FILE_NAME, parents: ['appDataFolder'] };
-            try {
-                const fileId = await findFileId();
-                const form = new FormData();
-                form.append('metadata', new Blob([JSON.stringify(fileId ? {} : metadata)], { type: 'application/json' }));
-                form.append('file', new Blob([fileContent], { type: 'application/json' }));
-                const url = fileId
-                    ? `https://www.googleapis.com/upload/drive/v3/files/${fileId}?uploadType=multipart`
-                    : `https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart`;
-                await fetch(url, { method: fileId ? 'PATCH' : 'POST', headers: { 'Authorization': 'Bearer ' + accessToken }, body: form });
-            } catch (error) { console.error("Background sync failed", error); }
-        }
-        async function syncFromDrive() {
-            if (!accessToken) return handleAuthClick();
-            try {
-                showToast('Checking Drive for data...', 'info');
-                const fileId = await findFileId();
-                if (!fileId) { showToast('No backup found on Drive.', 'error'); return; }
-                const response = await gapi.client.drive.files.get({ fileId, alt: 'media' });
-                if (response.result && Array.isArray(response.result)) {
-                    transactions = response.result;
-                    saveDataLocally();
-                    showToast('Data restored successfully!', 'success');
-                } else { throw new Error('Invalid data format'); }
-            } catch (error) { console.error(error); showToast('Failed to download data.', 'error'); }
         }
     </script>
 </body>
