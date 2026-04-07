@@ -1034,7 +1034,7 @@
             closeWipePrompt();
             showToast('Device memory wiped clean.', 'success');
         }
-        // --- UPDATE CHECKER ---
+     // --- UPDATE CHECKER ---
 const CURRENT_VERSION = "1.1"; // Change this whenever you update the app!
 
 async function checkForUpdates() {
@@ -1056,6 +1056,7 @@ async function checkForUpdates() {
 
 // Run the check 2 seconds after the app opens so it doesn't interrupt the user immediately
 setTimeout(checkForUpdates, 2000);
+      
     </script>
 </body>
 </html>
