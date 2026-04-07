@@ -1034,6 +1034,28 @@
             closeWipePrompt();
             showToast('Device memory wiped clean.', 'success');
         }
+        // --- UPDATE CHECKER ---
+const CURRENT_VERSION = "1.0"; // Change this whenever you update the app!
+
+async function checkForUpdates() {
+    try {
+        // Fetch the version file from GitHub. The random number stops the browser from checking its saved copy.
+        const response = await fetch('version.json?cachebuster=' + new Date().getTime());
+        const data = await response.json();
+        
+        if (data.version !== CURRENT_VERSION) {
+            // If GitHub has a newer version, tell the user!
+            if (confirm("A new version of Tight Ship is available! Click OK to update.")) {
+                window.location.reload(true); // Forces the phone to grab the new code
+            }
+        }
+    } catch (error) {
+        console.log("Could not check for updates right now (user might be offline).");
+    }
+}
+
+// Run the check 2 seconds after the app opens so it doesn't interrupt the user immediately
+setTimeout(checkForUpdates, 2000);
     </script>
 </body>
 </html>
